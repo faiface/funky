@@ -25,8 +25,8 @@ type Global struct {
 }
 
 type Eval struct {
-	Var  string
-	Expr Node
+	Strict Node
+	Then   Node
 }
 
 type Int64 struct {
@@ -41,6 +41,6 @@ func (a *Abst) String() string    { return fmt.Sprintf("(λ%s %v)", a.Bound, a.B
 func (a *Appl) String() string    { return fmt.Sprintf("(%v %v)", a.Left, a.Right) }
 func (v *Var) String() string     { return v.Name }
 func (g *Global) String() string  { return g.Name }
-func (e *Eval) String() string    { return fmt.Sprintf("(eval %s; %v)", e.Var, e.Expr) }
+func (e *Eval) String() string    { return fmt.Sprintf("(eval %v; %v)", e.Strict, e.Then) }
 func (i *Int64) String() string   { return fmt.Sprintf("%d", i.Value) }
 func (f *Float64) String() string { return fmt.Sprintf("%f", f.Value) }
