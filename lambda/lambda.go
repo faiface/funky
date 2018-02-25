@@ -1,4 +1,4 @@
-package lamdba
+package lambda
 
 import "fmt"
 
@@ -37,7 +37,7 @@ type Float64 struct {
 	Value float64
 }
 
-func (a *Abst) String() string    { return fmt.Sprintf("λ%s %v", a.Bound, a.Body) }
+func (a *Abst) String() string    { return fmt.Sprintf("(λ%s %v)", a.Bound, a.Body) }
 func (a *Appl) String() string    { return fmt.Sprintf("(%v %v)", a.Left, a.Right) }
 func (v *Var) String() string     { return v.Name }
 func (g *Global) String() string  { return g.Name }
