@@ -1,30 +1,18 @@
 package expr
 
-import "fmt"
-
-type SourceInfo struct {
-	Filename     string
-	Line, Column int
-}
-
-func (si *SourceInfo) String() string {
-	if si == nil {
-		return "<unknown source>"
-	}
-	return fmt.Sprintf("%s:%d:%d", si.Filename, si.Line, si.Column)
-}
+import "github.com/faiface/funky/parse/parseinfo"
 
 type Expr interface {
 	leftString() string
 	rightString() string
 	String() string
 
-	SourceInfo() *SourceInfo
+	SourceInfo() *parseinfo.Source
 }
 
 type (
 	Var struct {
-		SI   *SourceInfo
+		SI   *parseinfo.Source
 		Name string
 	}
 
@@ -38,6 +26,6 @@ type (
 	}
 )
 
-func (v *Var) SourceInfo() *SourceInfo  { return v.SI }
-func (a *Appl) SourceInfo() *SourceInfo { return a.Left.SourceInfo() }
-func (a *Abst) SourceInfo() *SourceInfo { return a.Bound.SourceInfo() }
+func (v *Var) SourceInfo() *parseinfo.Source  { return v.SI }
+func (a *Appl) SourceInfo() *parseinfo.Source { return a.Left.SourceInfo() }
+func (a *Abst) SourceInfo() *parseinfo.Source { return a.Bound.SourceInfo() }

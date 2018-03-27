@@ -4,10 +4,11 @@ import (
 	"fmt"
 
 	"github.com/faiface/funky/expr"
+	"github.com/faiface/funky/parse/parseinfo"
 )
 
 type Error struct {
-	SourceInfo *expr.SourceInfo
+	SourceInfo *parseinfo.Source
 	Msg        string
 }
 

@@ -4,11 +4,11 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/faiface/funky/expr"
+	"github.com/faiface/funky/parse/parseinfo"
 )
 
 type Token struct {
-	SourceInfo *expr.SourceInfo
+	SourceInfo *parseinfo.Source
 	Value      string
 }
 
@@ -26,7 +26,7 @@ func tokenize(filename, s string) <-chan Token {
 	go func() {
 		defer close(ch)
 
-		si := &expr.SourceInfo{
+		si := &parseinfo.Source{
 			Filename: filename,
 			Line:     1,
 			Column:   1,
@@ -88,7 +88,7 @@ func tokenize(filename, s string) <-chan Token {
 	return ch
 }
 
-func updateSIInPlace(si *expr.SourceInfo, r rune) {
+func updateSIInPlace(si *parseinfo.Source, r rune) {
 	if r == '\n' {
 		si.Line++
 		si.Column = 1
@@ -97,13 +97,13 @@ func updateSIInPlace(si *expr.SourceInfo, r rune) {
 	}
 }
 
-func copySI(si *expr.SourceInfo) *expr.SourceInfo {
-	newSI := &expr.SourceInfo{}
+func copySI(si *parseinfo.Source) *parseinfo.Source {
+	newSI := &parseinfo.Source{}
 	*newSI = *si
 	return newSI
 }
 
-func updateSI(si *expr.SourceInfo, r rune) *expr.SourceInfo {
+func updateSI(si *parseinfo.Source, r rune) *parseinfo.Source {
 	newSI := copySI(si)
 	updateSIInPlace(newSI, r)
 	return newSI
