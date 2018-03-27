@@ -12,8 +12,8 @@ type Error struct {
 	Msg        string
 }
 
-func (pe *Error) Error() string {
-	return fmt.Sprintf("%v: %v", pe.SourceInfo, pe.Msg)
+func (err *Error) Error() string {
+	return fmt.Sprintf("%v: %v", err.SourceInfo, err.Msg)
 }
 
 func Expression(tokens []Token) (expr.Expr, error) {
