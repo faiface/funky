@@ -123,9 +123,9 @@ func wrapAppl(left, right expr.Expr) expr.Expr {
 }
 
 func findClosingParen(tokens []Token) int {
-	round := 0 // ()
-	sharp := 0 // []
-	curly := 0 // {}
+	round := 0  // ()
+	square := 0 // []
+	curly := 0  // {}
 	for i := range tokens {
 		switch tokens[i].Value {
 		case "(":
@@ -133,18 +133,18 @@ func findClosingParen(tokens []Token) int {
 		case ")":
 			round--
 		case "[":
-			sharp++
+			square++
 		case "]":
-			sharp--
+			square--
 		case "{":
 			curly++
 		case "}":
 			curly--
 		}
-		if round < 0 || sharp < 0 || curly < 0 {
+		if round < 0 || square < 0 || curly < 0 {
 			return -1
 		}
-		if round == 0 && sharp == 0 && curly == 0 {
+		if round == 0 && square == 0 && curly == 0 {
 			return i
 		}
 	}
