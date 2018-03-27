@@ -7,17 +7,6 @@ import (
 	"github.com/faiface/funky/expr"
 )
 
-var SpecialRunes = []rune{'(', ')', '[', ']', '{', '}', ',', ';', '\\', 'λ', '#'}
-
-func IsSpecialRune(r rune) bool {
-	for _, special := range SpecialRunes {
-		if r == special {
-			return true
-		}
-	}
-	return false
-}
-
 type Token struct {
 	SourceInfo *expr.SourceInfo
 	Value      string
