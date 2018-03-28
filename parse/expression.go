@@ -11,12 +11,6 @@ func Expression(tokens []Token) (expr.Expr, error) {
 
 	for len(tokens) > 0 {
 		switch tokens[0].Value {
-		case "[", "]", "{", "}", ",":
-			return nil, &Error{
-				tokens[0].SourceInfo,
-				fmt.Sprintf("invalid character: %s", tokens[0].Value),
-			}
-
 		case ")":
 			return nil, &Error{
 				tokens[0].SourceInfo,
