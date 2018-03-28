@@ -26,11 +26,6 @@ type (
 	}
 )
 
-type Scheme struct {
-	Bound []string
-	Body  Type
-}
-
 func (v *Var) SourceInfo() *parseinfo.Source  { return v.SI }
 func (a *Appl) SourceInfo() *parseinfo.Source { return a.Cons.SourceInfo() }
 func (f *Func) SourceInfo() *parseinfo.Source { return f.From.SourceInfo() }
