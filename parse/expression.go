@@ -80,7 +80,7 @@ func Expression(tokens []Token) (expr.Expr, error) {
 			e = wrapExprAppl(e, afterSemicolon)
 			return e, nil
 
-		case ":":
+		case ":": // not a special symbol, must be space-separated
 			if e == nil {
 				return nil, &Error{
 					tokens[0].SourceInfo,
