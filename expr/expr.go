@@ -11,7 +11,7 @@ type Expr interface {
 	String() string
 
 	TypeInfo() types.Type
-	SetTypeInfo(types.Type)
+	WithTypeInfo(types.Type) Expr
 	SourceInfo() *parseinfo.Source
 }
 
@@ -42,6 +42,10 @@ func (a *Abst) TypeInfo() types.Type { return a.TI }
 func (v *Var) SetTypeInfo(t types.Type)  { v.TI = t }
 func (a *Appl) SetTypeInfo(t types.Type) { a.TI = t }
 func (a *Abst) SetTypeInfo(t types.Type) { a.TI = t }
+
+func (v *Var) WithTypeInfo(t types.Type) Expr  { return &Var{TI: t, SI: v.SI, Name: v.Name} }
+func (a *Appl) WithTypeInfo(t types.Type) Expr { return &Appl{TI: t, Left: a.Left, Right: a.Right} }
+func (a *Abst) WithTypeInfo(t types.Type) Expr { return &Abst{TI: t, Bound: a.Bound, Body: a.Body} }
 
 func (v *Var) SourceInfo() *parseinfo.Source  { return v.SI }
 func (a *Appl) SourceInfo() *parseinfo.Source { return a.Left.SourceInfo() }

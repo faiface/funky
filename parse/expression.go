@@ -103,7 +103,7 @@ func Expression(tokens []Token) (expr.Expr, error) {
 					"expression already has type info",
 				}
 			}
-			e.SetTypeInfo(t)
+			e = e.WithTypeInfo(t)
 			return e, nil
 
 		default:
