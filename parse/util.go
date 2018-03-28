@@ -35,7 +35,7 @@ func IsSpecial(s string) bool {
 	return IsSpecialRune([]rune(s)[0])
 }
 
-func IsConsName(name string) bool {
+func IsConstructor(name string) bool {
 	r, _ := utf8.DecodeRuneInString(name)
 	return unicode.IsUpper(r)
 }
