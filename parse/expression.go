@@ -107,10 +107,10 @@ func Expression(tokens []Token) (expr.Expr, error) {
 			return e, nil
 
 		default:
-			if IsSpecial(tokens[0].Value) {
+			if IsReserved(tokens[0].Value) {
 				return nil, &Error{
 					tokens[0].SourceInfo,
-					fmt.Sprintf("unexpected symbol: %s", tokens[0].Value),
+					fmt.Sprintf("unexpected: %s", tokens[0].Value),
 				}
 			}
 			e = wrapExprAppl(e, &expr.Var{

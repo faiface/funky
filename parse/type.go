@@ -61,10 +61,10 @@ func Type(tokens []Token) (types.Type, error) {
 			return &types.Func{From: t, To: rightSide}, nil
 
 		default:
-			if IsSpecial(tokens[0].Value) {
+			if IsReserved(tokens[0].Value) {
 				return nil, &Error{
 					tokens[0].SourceInfo,
-					fmt.Sprintf("unexpected symbol: %s", tokens[0].Value),
+					fmt.Sprintf("unexpected: %s", tokens[0].Value),
 				}
 			}
 			var ident types.Type

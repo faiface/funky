@@ -35,6 +35,14 @@ func IsSpecial(s string) bool {
 	return IsSpecialRune([]rune(s)[0])
 }
 
+func IsReserved(s string) bool {
+	switch s {
+	case ":", "=":
+		return true
+	}
+	return IsSpecial(s)
+}
+
 func IsConstructor(name string) bool {
 	r, _ := utf8.DecodeRuneInString(name)
 	return unicode.IsUpper(r)
