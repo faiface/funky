@@ -4,17 +4,7 @@ import (
 	"fmt"
 
 	"github.com/faiface/funky/expr"
-	"github.com/faiface/funky/parse/parseinfo"
 )
-
-type Error struct {
-	SourceInfo *parseinfo.Source
-	Msg        string
-}
-
-func (err *Error) Error() string {
-	return fmt.Sprintf("%v: %v", err.SourceInfo, err.Msg)
-}
 
 func Expression(tokens []Token) (expr.Expr, error) {
 	var e expr.Expr

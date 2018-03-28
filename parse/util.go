@@ -1,6 +1,20 @@
 package parse
 
-import "unicode/utf8"
+import (
+	"fmt"
+	"unicode/utf8"
+
+	"github.com/faiface/funky/parse/parseinfo"
+)
+
+type Error struct {
+	SourceInfo *parseinfo.Source
+	Msg        string
+}
+
+func (err *Error) Error() string {
+	return fmt.Sprintf("%v: %v", err.SourceInfo, err.Msg)
+}
 
 var SpecialRunes = []rune{'(', ')', '[', ']', '{', '}', ',', ';', '\\', 'λ', '#'}
 
