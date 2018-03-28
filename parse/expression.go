@@ -31,17 +31,17 @@ func Expression(tokens []Token) (expr.Expr, error) {
 					"no matching closing parenthesis",
 				}
 			}
-			if closing == 1 {
+			inParen, err := Expression(tokens[1:closing])
+			if err != nil {
+				return nil, err
+			}
+			if inParen == nil {
 				return nil, &Error{
 					tokens[0].SourceInfo,
 					"no expression in parentheses",
 				}
 			}
-			inParen, err := Expression(tokens[1:closing])
-			if err != nil {
-				return nil, err
-			}
-			e = wrapAppl(e, inParen)
+			e = wrapExprAppl(e, inParen)
 			tokens = tokens[closing+1:]
 
 		case "\\", "λ":
@@ -71,7 +71,7 @@ func Expression(tokens []Token) (expr.Expr, error) {
 					"no body in abstraction",
 				}
 			}
-			e = wrapAppl(e, &expr.Abst{
+			e = wrapExprAppl(e, &expr.Abst{
 				Bound: bound,
 				Body:  body,
 			})
@@ -82,7 +82,13 @@ func Expression(tokens []Token) (expr.Expr, error) {
 			if err != nil {
 				return nil, err
 			}
-			e = wrapAppl(e, afterSemicolon)
+			if afterSemicolon == nil {
+				return nil, &Error{
+					tokens[0].SourceInfo,
+					"no expression after ;",
+				}
+			}
+			e = wrapExprAppl(e, afterSemicolon)
 			return e, nil
 
 		default:
@@ -92,7 +98,7 @@ func Expression(tokens []Token) (expr.Expr, error) {
 					fmt.Sprintf("unexpected symbol: %s", tokens[0].Value),
 				}
 			}
-			e = wrapAppl(e, &expr.Var{
+			e = wrapExprAppl(e, &expr.Var{
 				SI:   tokens[0].SourceInfo,
 				Name: tokens[0].Value,
 			})
@@ -103,7 +109,7 @@ func Expression(tokens []Token) (expr.Expr, error) {
 	return e, nil
 }
 
-func wrapAppl(left, right expr.Expr) expr.Expr {
+func wrapExprAppl(left, right expr.Expr) expr.Expr {
 	if left == nil {
 		return right
 	}
