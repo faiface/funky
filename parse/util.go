@@ -2,6 +2,7 @@ package parse
 
 import (
 	"fmt"
+	"unicode"
 	"unicode/utf8"
 
 	"github.com/faiface/funky/parse/parseinfo"
@@ -32,4 +33,9 @@ func IsSpecial(s string) bool {
 		return false
 	}
 	return IsSpecialRune([]rune(s)[0])
+}
+
+func IsConsName(name string) bool {
+	r, _ := utf8.DecodeRuneInString(name)
+	return unicode.IsUpper(r)
 }

@@ -68,7 +68,7 @@ func Type(tokens []Token) (types.Type, error) {
 				}
 			}
 			var ident types.Type
-			if types.IsConsName(tokens[0].Value) {
+			if IsConsName(tokens[0].Value) {
 				ident = &types.Appl{Cons: &types.Var{
 					SI:   tokens[0].SourceInfo,
 					Name: tokens[0].Value,
