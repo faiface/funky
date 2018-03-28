@@ -45,17 +45,12 @@ func Expression(tokens []Token) (expr.Expr, error) {
 					"no bound variable in abstraction",
 				}
 			}
-			if IsSpecial(tokens[1].Value) {
-				return nil, &Error{
-					tokens[1].SourceInfo,
-					fmt.Sprintf("invalid bound variable name: %s", tokens[1].Value),
-				}
+			bound, boundEnd, err := parseBound(tokens[1:])
+			boundEnd++
+			if err != nil {
+				return nil, err
 			}
-			bound := &expr.Var{
-				SI:   tokens[1].SourceInfo,
-				Name: tokens[1].Value,
-			}
-			body, err := Expression(tokens[2:])
+			body, err := Expression(tokens[boundEnd:])
 			if err != nil {
 				return nil, err
 			}
@@ -85,6 +80,26 @@ func Expression(tokens []Token) (expr.Expr, error) {
 			e = wrapExprAppl(e, afterSemicolon)
 			return e, nil
 
+		case ":":
+			if e == nil {
+				return nil, &Error{
+					tokens[0].SourceInfo,
+					"no expression before :",
+				}
+			}
+			t, err := Type(tokens[1:])
+			if err != nil {
+				return nil, err
+			}
+			if t == nil {
+				return nil, &Error{
+					tokens[0].SourceInfo,
+					"no type after :",
+				}
+			}
+			e.SetTypeInfo(t)
+			return e, nil
+
 		default:
 			if IsSpecial(tokens[0].Value) {
 				return nil, &Error{
@@ -101,6 +116,39 @@ func Expression(tokens []Token) (expr.Expr, error) {
 	}
 
 	return e, nil
+}
+
+func parseBound(tokens []Token) (*expr.Var, int, error) {
+	var (
+		bound expr.Expr
+		end   int
+		err   error
+	)
+	if tokens[0].Value == "(" {
+		closing := findClosingParen(tokens)
+		if closing == -1 {
+			return nil, 0, &Error{
+				tokens[0].SourceInfo,
+				"no matching closing parenthesis",
+			}
+		}
+		bound, err = Expression(tokens[:closing+1])
+		end = closing + 1
+	} else {
+		bound, err = Expression(tokens[:1])
+		end = 1
+	}
+	if err != nil {
+		return nil, 0, err
+	}
+	boundVar, ok := bound.(*expr.Var)
+	if !ok {
+		return nil, 0, &Error{
+			tokens[0].SourceInfo,
+			"bound expression not a variable",
+		}
+	}
+	return boundVar, end, nil
 }
 
 func wrapExprAppl(left, right expr.Expr) expr.Expr {
