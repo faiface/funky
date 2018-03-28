@@ -35,7 +35,7 @@ func Type(tokens []Token) (types.Type, error) {
 					"no type in parentheses",
 				}
 			}
-			t, err = wrapTypeAppl(t, inParen)
+			t, err = typeAppl(t, inParen)
 			if err != nil {
 				return nil, err
 			}
@@ -80,7 +80,7 @@ func Type(tokens []Token) (types.Type, error) {
 				}
 			}
 			var err error
-			t, err = wrapTypeAppl(t, ident)
+			t, err = typeAppl(t, ident)
 			if err != nil {
 				return nil, err
 			}
@@ -91,7 +91,7 @@ func Type(tokens []Token) (types.Type, error) {
 	return t, nil
 }
 
-func wrapTypeAppl(left, right types.Type) (types.Type, error) {
+func typeAppl(left, right types.Type) (types.Type, error) {
 	switch left := left.(type) {
 	case nil:
 		return right, nil
