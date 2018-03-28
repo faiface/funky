@@ -97,6 +97,12 @@ func Expression(tokens []Token) (expr.Expr, error) {
 					"no type after :",
 				}
 			}
+			if e.TypeInfo() != nil {
+				return nil, &Error{
+					tokens[0].SourceInfo,
+					"expression already has type info",
+				}
+			}
 			e.SetTypeInfo(t)
 			return e, nil
 
