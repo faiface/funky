@@ -2,6 +2,8 @@ package expr
 
 import "fmt"
 
+//TODO: print type info (?)
+
 func (v *Var) leftString() string { return v.Name }
 func (a *Appl) leftString() string {
 	return fmt.Sprintf("%s %s", a.Left.leftString(), a.Right.rightString())
