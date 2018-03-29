@@ -55,4 +55,6 @@ func (a *Abst) SourceInfo() *parseinfo.Source { return a.Bound.SourceInfo() }
 
 func (v *Var) Map(f func(Expr) Expr) Expr  { return f(v) }
 func (a *Appl) Map(f func(Expr) Expr) Expr { return f(&Appl{a.TI, a.Left.Map(f), a.Right.Map(f)}) }
-func (a *Abst) Map(f func(Expr) Expr) Expr { return f(&Abst{a.TI, a.Bound, a.Body.Map(f)}) }
+func (a *Abst) Map(f func(Expr) Expr) Expr {
+	return f(&Abst{a.TI, a.Bound.Map(f).(*Var), a.Body.Map(f)})
+}

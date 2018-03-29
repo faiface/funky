@@ -35,7 +35,7 @@ func (f *Func) SourceInfo() *parseinfo.Source { return f.From.SourceInfo() }
 func (v *Var) Map(f func(Type) Type) Type { return f(v) }
 func (a *Appl) Map(f func(Type) Type) Type {
 	mapped := &Appl{
-		Cons: a.Cons,
+		Cons: a.Cons.Map(f).(*Var),
 		Args: make([]Type, len(a.Args)),
 	}
 	for i := range mapped.Args {
