@@ -13,6 +13,8 @@ type Expr interface {
 	TypeInfo() types.Type
 	WithTypeInfo(types.Type) Expr
 	SourceInfo() *parseinfo.Source
+
+	Map(func(Expr) Expr) Expr
 }
 
 type (
@@ -50,3 +52,7 @@ func (a *Abst) WithTypeInfo(t types.Type) Expr { return &Abst{TI: t, Bound: a.Bo
 func (v *Var) SourceInfo() *parseinfo.Source  { return v.SI }
 func (a *Appl) SourceInfo() *parseinfo.Source { return a.Left.SourceInfo() }
 func (a *Abst) SourceInfo() *parseinfo.Source { return a.Bound.SourceInfo() }
+
+func (v *Var) Map(f func(Expr) Expr) Expr  { return f(v) }
+func (a *Appl) Map(f func(Expr) Expr) Expr { return f(&Appl{a.TI, a.Left.Map(f), a.Right.Map(f)}) }
+func (a *Abst) Map(f func(Expr) Expr) Expr { return f(&Abst{a.TI, a.Bound, a.Body.Map(f)}) }

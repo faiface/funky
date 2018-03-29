@@ -8,6 +8,8 @@ type Type interface {
 	String() string
 
 	SourceInfo() *parseinfo.Source
+
+	Map(func(Type) Type) Type
 }
 
 type (
@@ -29,3 +31,21 @@ type (
 func (v *Var) SourceInfo() *parseinfo.Source  { return v.SI }
 func (a *Appl) SourceInfo() *parseinfo.Source { return a.Cons.SourceInfo() }
 func (f *Func) SourceInfo() *parseinfo.Source { return f.From.SourceInfo() }
+
+func (v *Var) Map(f func(Type) Type) Type { return f(v) }
+func (a *Appl) Map(f func(Type) Type) Type {
+	mapped := &Appl{
+		Cons: a.Cons,
+		Args: make([]Type, len(a.Args)),
+	}
+	for i := range mapped.Args {
+		mapped.Args[i] = a.Args[i].Map(f)
+	}
+	return f(mapped)
+}
+func (f *Func) Map(mf func(Type) Type) Type {
+	return mf(&Func{
+		From: f.From.Map(mf),
+		To:   f.To.Map(mf),
+	})
+}
