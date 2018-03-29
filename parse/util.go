@@ -19,7 +19,7 @@ func (err *Error) Error() string {
 
 var (
 	SpecialRunes = []rune{'(', ')', '[', ']', '{', '}', ',', ';', '\\', 'λ', '#'}
-	Keywords     = []string{"package", "import", "type", "def", ":", "="}
+	Keywords     = []string{"package", "import", "type", "def", ":", "=", "->"}
 )
 
 func IsSpecialRune(r rune) bool {
