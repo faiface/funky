@@ -17,7 +17,10 @@ func (err *Error) Error() string {
 	return fmt.Sprintf("%v: %v", err.SourceInfo, err.Msg)
 }
 
-var SpecialRunes = []rune{'(', ')', '[', ']', '{', '}', ',', ';', '\\', 'λ', '#'}
+var (
+	SpecialRunes = []rune{'(', ')', '[', ']', '{', '}', ',', ';', '\\', 'λ', '#'}
+	Keywords     = []string{"package", "import", "type", "def", ":", "="}
+)
 
 func IsSpecialRune(r rune) bool {
 	for _, special := range SpecialRunes {
@@ -35,12 +38,17 @@ func IsSpecial(s string) bool {
 	return IsSpecialRune([]rune(s)[0])
 }
 
-func IsReserved(s string) bool {
-	switch s {
-	case ":", "=":
-		return true
+func IsKeyword(s string) bool {
+	for _, keyword := range Keywords {
+		if s == keyword {
+			return true
+		}
 	}
-	return IsSpecial(s)
+	return false
+}
+
+func IsReserved(s string) bool {
+	return IsSpecial(s) || IsKeyword(s)
 }
 
 func IsConstructor(name string) bool {
