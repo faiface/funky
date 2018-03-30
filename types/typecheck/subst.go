@@ -38,3 +38,11 @@ func (s Subst) ApplyToExpr(e expr.Expr) expr.Expr {
 		return e.WithTypeInfo(s.ApplyToType(e.TypeInfo()))
 	})
 }
+
+func (s Subst) ApplyToEnv(env Env) Env {
+	newEnv := make(Env)
+	for v, t := range env {
+		newEnv[v] = s.ApplyToType(t)
+	}
+	return newEnv
+}
