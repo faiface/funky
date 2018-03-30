@@ -8,6 +8,7 @@ func Unify(t, u types.Type) (Subst, bool) {
 			return Unify(u, t) // u is *types.Var and t is not, so swap
 		}
 	}
+
 	switch t := t.(type) {
 	case *types.Var:
 		if _, ok := u.(*types.Var); !ok && ContainsVar(t.Name, u) {
@@ -51,5 +52,6 @@ func Unify(t, u types.Type) (Subst, bool) {
 		}
 		return s1.Compose(s2), true
 	}
+
 	panic("unreachable")
 }
