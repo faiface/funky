@@ -19,7 +19,8 @@ type (
 	}
 
 	Appl struct {
-		Cons *Var // type constructor (e.g. List, Map, Int, ...)
+		SI   *parseinfo.Source
+		Cons string // type constructor (e.g. List, Map, Int, ...)
 		Args []Type
 	}
 
@@ -29,13 +30,14 @@ type (
 )
 
 func (v *Var) SourceInfo() *parseinfo.Source  { return v.SI }
-func (a *Appl) SourceInfo() *parseinfo.Source { return a.Cons.SourceInfo() }
+func (a *Appl) SourceInfo() *parseinfo.Source { return a.SI }
 func (f *Func) SourceInfo() *parseinfo.Source { return f.From.SourceInfo() }
 
 func (v *Var) Map(f func(Type) Type) Type { return f(v) }
 func (a *Appl) Map(f func(Type) Type) Type {
 	mapped := &Appl{
-		Cons: a.Cons.Map(f).(*Var),
+		SI:   a.SI,
+		Cons: a.Cons,
 		Args: make([]Type, len(a.Args)),
 	}
 	for i := range mapped.Args {

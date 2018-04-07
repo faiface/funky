@@ -69,10 +69,10 @@ func Type(tokens []Token) (types.Type, error) {
 			}
 			var ident types.Type
 			if IsConstructor(tokens[0].Value) {
-				ident = &types.Appl{Cons: &types.Var{
+				ident = &types.Appl{
 					SI:   tokens[0].SourceInfo,
-					Name: tokens[0].Value,
-				}}
+					Cons: tokens[0].Value,
+				}
 			} else {
 				ident = &types.Var{
 					SI:   tokens[0].SourceInfo,
