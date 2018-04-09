@@ -3,8 +3,8 @@ package typecheck
 import "github.com/faiface/funky/types"
 
 func Unify(t, u types.Type) (Subst, bool) {
-	if _, ok := u.(*types.Var); ok {
-		if _, ok := t.(*types.Var); !ok {
+	if v1, ok := u.(*types.Var); ok {
+		if v2, ok := t.(*types.Var); !ok || v1.Name < v2.Name {
 			return Unify(u, t) // u is *types.Var and t is not, so swap
 		}
 	}
@@ -21,7 +21,7 @@ func Unify(t, u types.Type) (Subst, bool) {
 
 	case *types.Appl:
 		applU, ok := u.(*types.Appl)
-		if !ok || t.Cons.Name != applU.Cons.Name || len(t.Args) != len(applU.Args) {
+		if !ok || t.Cons != applU.Cons || len(t.Args) != len(applU.Args) {
 			// t and u are applications of different constructors
 			return nil, false
 		}

@@ -2,13 +2,19 @@ package typecheck
 
 import "github.com/faiface/funky/types"
 
-type Env map[string]types.Type
+type Vars map[string]types.Type
 
-func (env Env) Assume(v string, t types.Type) Env {
-	newEnv := make(Env)
-	for v, t := range env {
-		newEnv[v] = t
+func (vars Vars) Assume(v string, t types.Type) Vars {
+	newVars := make(Vars)
+	for v, t := range vars {
+		newVars[v] = t
 	}
-	newEnv[v] = t
-	return newEnv
+	newVars[v] = t
+	return newVars
+}
+
+type Defs map[string][]types.Type
+
+func (defs Defs) Define(name string, t types.Type) {
+	defs[name] = append(defs[name], t)
 }

@@ -39,8 +39,8 @@ func (s Subst) ApplyToExpr(e expr.Expr) expr.Expr {
 	})
 }
 
-func (s Subst) ApplyToEnv(env Env) Env {
-	newEnv := make(Env)
+func (s Subst) ApplyToVars(env Vars) Vars {
+	newEnv := make(Vars)
 	for v, t := range env {
 		newEnv[v] = s.ApplyToType(t)
 	}
