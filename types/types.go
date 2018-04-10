@@ -9,6 +9,7 @@ type Type interface {
 
 	SourceInfo() *parseinfo.Source
 
+	Equal(Type) bool
 	Map(func(Type) Type) Type
 }
 
@@ -32,6 +33,27 @@ type (
 func (v *Var) SourceInfo() *parseinfo.Source  { return v.SI }
 func (a *Appl) SourceInfo() *parseinfo.Source { return a.SI }
 func (f *Func) SourceInfo() *parseinfo.Source { return f.From.SourceInfo() }
+
+func (v *Var) Equal(t Type) bool {
+	tv, ok := t.(*Var)
+	return ok && v.Name == tv.Name
+}
+func (a *Appl) Equal(t Type) bool {
+	ta, ok := t.(*Appl)
+	if !ok || a.Cons != ta.Cons || len(a.Args) != len(ta.Args) {
+		return false
+	}
+	for i := range a.Args {
+		if !a.Args[i].Equal(ta.Args[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (f *Func) Equal(t Type) bool {
+	tf, ok := t.(*Func)
+	return ok && f.From.Equal(tf.From) && f.To.Equal(tf.To)
+}
 
 func (v *Var) Map(f func(Type) Type) Type { return f(v) }
 func (a *Appl) Map(f func(Type) Type) Type {
