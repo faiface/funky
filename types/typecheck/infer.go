@@ -18,23 +18,29 @@ func (err *NotBoundError) Error() string {
 }
 
 type CannotApplyError struct {
-	Left, Right expr.Expr
+	Cases []struct {
+		Left  expr.Expr
+		Right expr.Expr
+		Err   error
+	}
 }
 
 func (err *CannotApplyError) Error() string {
-	return fmt.Sprintf(
-		"%v: cannot apply (%v) to (%v)",
-		err.Left.SourceInfo(),
-		err.Left.TypeInfo(),
-		err.Right.TypeInfo(),
-	)
+	return "cannot apply"
+}
+
+type NoMatchErr struct {
+	Results []InferResult
+}
+
+func (err *NoMatchErr) Error() string {
+	return "no match"
 }
 
 type InferResult struct {
 	Type  types.Type
 	Subst Subst
 	Expr  expr.Expr
-	Err   error
 }
 
 func Infer(global Defs, e expr.Expr) ([]InferResult, error) {
@@ -44,12 +50,25 @@ func Infer(global Defs, e expr.Expr) ([]InferResult, error) {
 }
 
 func infer(varIndex *int, global Defs, local Vars, e expr.Expr) (results []InferResult, err error) {
-	typeInfo := e.TypeInfo()
-	if typeInfo != nil {
-		defer func() {
-			//TODO: check if matches results and filter accordingly
-		}()
-	}
+	defer func() {
+		if err != nil || e.TypeInfo() == nil {
+			return
+		}
+		// filter infer results by the type info
+		var filtered []InferResult
+		for _, r := range results {
+			if IsSpec(r.Type, e.TypeInfo()) {
+				filtered = append(filtered, r)
+			}
+		}
+		if len(filtered) == 0 {
+			err = &NoMatchErr{results}
+			results = nil
+			return
+		}
+		results = filtered
+		err = nil
+	}()
 
 	switch e := e.(type) {
 	case *expr.Var:
@@ -86,11 +105,8 @@ func infer(varIndex *int, global Defs, local Vars, e expr.Expr) (results []Infer
 			}
 		}
 		results = nil
+		cannotApplyErr := new(CannotApplyError)
 		for _, r1 := range results1 {
-			if r1.Err != nil {
-				results = append(results, InferResult{Err: r1.Err})
-				continue
-			}
 			results2, err := infer(
 				varIndex,
 				global,
@@ -98,14 +114,14 @@ func infer(varIndex *int, global Defs, local Vars, e expr.Expr) (results []Infer
 				e.Right,
 			)
 			if err != nil {
-				panic("unreachable")
+				cannotApplyErr.Cases = append(cannotApplyErr.Cases, struct {
+					Left  expr.Expr
+					Right expr.Expr
+					Err   error
+				}{r1.Expr, nil, err})
 			}
 			resultType := newVar(varIndex)
 			for _, r2 := range results2 {
-				if r2.Err != nil {
-					results = append(results, InferResult{Err: r2.Err})
-					continue
-				}
 				s, ok := Unify(
 					r2.Subst.ApplyToType(r1.Type),
 					&types.Func{
@@ -114,9 +130,11 @@ func infer(varIndex *int, global Defs, local Vars, e expr.Expr) (results []Infer
 					},
 				)
 				if !ok {
-					results = append(results, InferResult{
-						Err: &CannotApplyError{r1.Expr, r2.Expr},
-					})
+					cannotApplyErr.Cases = append(cannotApplyErr.Cases, struct {
+						Left  expr.Expr
+						Right expr.Expr
+						Err   error
+					}{r1.Expr, r2.Expr, nil})
 					continue
 				}
 				t := s.ApplyToType(resultType)
@@ -131,6 +149,9 @@ func infer(varIndex *int, global Defs, local Vars, e expr.Expr) (results []Infer
 				})
 			}
 		}
+		if len(results) == 0 {
+			return nil, cannotApplyErr
+		}
 		return results, nil
 
 	case *expr.Abst:
@@ -142,10 +163,6 @@ func infer(varIndex *int, global Defs, local Vars, e expr.Expr) (results []Infer
 		}
 		results = nil
 		for _, r := range bodyResults {
-			if r.Err != nil {
-				results = append(results, InferResult{Err: r.Err})
-				continue
-			}
 			inferredBindType := r.Subst.ApplyToType(bindType)
 			t := &types.Func{
 				From: inferredBindType,
