@@ -18,8 +18,8 @@ func Expression(tokens []Token) (expr.Expr, error) {
 			}
 
 		case "(":
-			closing := findClosingParen(tokens)
-			if closing == -1 {
+			closing, ok := findClosingParen(tokens)
+			if !ok {
 				return nil, &Error{
 					tokens[0].SourceInfo,
 					"no matching closing parenthesis",
@@ -131,8 +131,8 @@ func parseBound(tokens []Token) (*expr.Var, int, error) {
 		err   error
 	)
 	if tokens[0].Value == "(" {
-		closing := findClosingParen(tokens)
-		if closing == -1 {
+		closing, ok := findClosingParen(tokens)
+		if !ok {
 			return nil, 0, &Error{
 				tokens[0].SourceInfo,
 				"no matching closing parenthesis",
@@ -167,7 +167,7 @@ func wrapExprAppl(left, right expr.Expr) expr.Expr {
 	}
 }
 
-func findClosingParen(tokens []Token) int {
+func findClosingParen(tokens []Token) (i int, ok bool) {
 	round := 0  // ()
 	square := 0 // []
 	curly := 0  // {}
@@ -187,11 +187,11 @@ func findClosingParen(tokens []Token) int {
 			curly--
 		}
 		if round < 0 || square < 0 || curly < 0 {
-			return -1
+			return i, false
 		}
 		if round == 0 && square == 0 && curly == 0 {
-			return i
+			return i, true
 		}
 	}
-	return -1
+	return len(tokens), false
 }
