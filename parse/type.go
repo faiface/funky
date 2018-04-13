@@ -18,8 +18,8 @@ func Type(tokens []Token) (types.Type, error) {
 			}
 
 		case "(":
-			closing := findClosingParen(tokens)
-			if closing == -1 {
+			closing, ok := findClosingParen(tokens)
+			if !ok {
 				return nil, &Error{
 					tokens[0].SourceInfo,
 					"no matching closing parenthesis",
