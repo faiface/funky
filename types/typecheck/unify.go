@@ -3,9 +3,9 @@ package typecheck
 import "github.com/faiface/funky/types"
 
 func Unify(t, u types.Type) (Subst, bool) {
-	if v1, ok := u.(*types.Var); ok {
-		if v2, ok := t.(*types.Var); !ok || v1.Name < v2.Name {
-			return Unify(u, t) // u is *types.Var and t is not, so swap
+	if v2, ok := u.(*types.Var); ok {
+		if v1, ok := t.(*types.Var); !ok || v1.Name < v2.Name {
+			return Unify(u, t)
 		}
 	}
 

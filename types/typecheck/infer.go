@@ -46,7 +46,14 @@ type InferResult struct {
 func Infer(global Defs, e expr.Expr) ([]InferResult, error) {
 	varIndex := 0
 	e = instExpr(&varIndex, e)
-	return infer(&varIndex, global, make(Vars), e)
+	results, err := infer(&varIndex, global, make(Vars), e)
+	if err != nil {
+		return nil, err
+	}
+	for i := range results {
+		results[i].Expr = results[i].Subst.ApplyToExpr(results[i].Expr)
+	}
+	return results, nil
 }
 
 func infer(varIndex *int, global Defs, local Vars, e expr.Expr) (results []InferResult, err error) {
@@ -155,7 +162,12 @@ func infer(varIndex *int, global Defs, local Vars, e expr.Expr) (results []Infer
 		return results, nil
 
 	case *expr.Abst:
-		bindType := newVar(varIndex)
+		var bindType types.Type
+		if f, ok := e.TypeInfo().(*types.Func); ok {
+			bindType = f.From
+		} else {
+			bindType = newVar(varIndex)
+		}
 		newLocal := local.Assume(e.Bound.Name, bindType)
 		bodyResults, err := infer(varIndex, global, newLocal, e.Body)
 		if err != nil {
