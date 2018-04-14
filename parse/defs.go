@@ -28,8 +28,17 @@ func TreeToDefs(tree Tree) (map[string][]expr.Expr, error) {
 		bodyTree, nextDef, _ := FindNextSpecial(after, "def")
 		tree = nextDef
 
-		nameLit, ok := nameTree.(*Literal)
-		if !ok {
+		var name string
+
+		if lit, ok := nameTree.(*Literal); ok {
+			name = lit.Value
+		} else if infix, ok := nameTree.(*Infix); ok && infix.Left == nil && infix.Right == nil {
+			if lit, ok := infix.In.(*Literal); ok {
+				name = lit.Value
+			}
+		}
+
+		if name == "" {
 			return nil, &Error{
 				nameTree.SourceInfo(),
 				"definition name must be simple identifier",
@@ -52,7 +61,7 @@ func TreeToDefs(tree Tree) (map[string][]expr.Expr, error) {
 			}
 		}
 
-		defs[nameLit.Value] = append(defs[nameLit.Value], body.WithTypeInfo(typ))
+		defs[name] = append(defs[name], body.WithTypeInfo(typ))
 	}
 
 	return defs, nil
