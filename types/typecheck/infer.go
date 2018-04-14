@@ -65,6 +65,9 @@ func infer(varIndex *int, global Defs, local Vars, e expr.Expr) (results []Infer
 		var filtered []InferResult
 		for _, r := range results {
 			if IsSpec(r.Type, e.TypeInfo()) {
+				s, _ := Unify(r.Type, e.TypeInfo())
+				r.Type = s.ApplyToType(r.Type)
+				r.Subst = r.Subst.Compose(s)
 				filtered = append(filtered, r)
 			}
 		}
