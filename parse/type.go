@@ -2,108 +2,97 @@ package parse
 
 import (
 	"fmt"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/faiface/funky/types"
 )
 
-func Type(tokens []Token) (types.Type, error) {
-	var t types.Type
-
-	for len(tokens) > 0 {
-		switch tokens[0].Value {
-		case ")":
-			return nil, &Error{
-				tokens[0].SourceInfo,
-				"no matching opening parenthesis",
-			}
-
-		case "(":
-			closing, ok := findClosingParen(tokens)
-			if !ok {
-				return nil, &Error{
-					tokens[0].SourceInfo,
-					"no matching closing parenthesis",
-				}
-			}
-			inParen, err := Type(tokens[1:closing])
-			if err != nil {
-				return nil, err
-			}
-			if inParen == nil {
-				return nil, &Error{
-					tokens[0].SourceInfo,
-					"no type in parentheses",
-				}
-			}
-			t, err = typeAppl(t, inParen)
-			if err != nil {
-				return nil, err
-			}
-			tokens = tokens[closing+1:]
-
-		case "->":
-			if t == nil {
-				return nil, &Error{
-					tokens[0].SourceInfo,
-					"no left side in function type",
-				}
-			}
-			rightSide, err := Type(tokens[1:])
-			if err != nil {
-				return nil, err
-			}
-			if rightSide == nil {
-				return nil, &Error{
-					tokens[0].SourceInfo,
-					"no right side in function type",
-				}
-			}
-			return &types.Func{From: t, To: rightSide}, nil
-
-		default:
-			if IsReserved(tokens[0].Value) {
-				return nil, &Error{
-					tokens[0].SourceInfo,
-					fmt.Sprintf("unexpected: %s", tokens[0].Value),
-				}
-			}
-			var ident types.Type
-			if IsConstructor(tokens[0].Value) {
-				ident = &types.Appl{
-					SI:   tokens[0].SourceInfo,
-					Cons: tokens[0].Value,
-				}
-			} else {
-				ident = &types.Var{
-					SI:   tokens[0].SourceInfo,
-					Name: tokens[0].Value,
-				}
-			}
-			var err error
-			t, err = typeAppl(t, ident)
-			if err != nil {
-				return nil, err
-			}
-			tokens = tokens[1:]
-		}
-	}
-
-	return t, nil
+func IsConstructor(name string) bool {
+	r, _ := utf8.DecodeRuneInString(name)
+	return unicode.IsUpper(r) || !unicode.IsLetter(r)
 }
 
-func typeAppl(left, right types.Type) (types.Type, error) {
-	switch left := left.(type) {
-	case nil:
-		return right, nil
-
-	case *types.Appl:
-		left.Args = append(left.Args, right)
-		return left, nil
-
-	default:
-		return nil, &Error{
-			right.SourceInfo(),
-			fmt.Sprintf("not a type constructor: %v", left),
-		}
+func Type(tokens []Token) (types.Type, error) {
+	tree, err := MultiTree(tokens)
+	if err != nil {
+		return nil, err
 	}
+	return TreeToType(tree)
+}
+
+func TreeToType(tree Tree) (types.Type, error) {
+	if tree == nil {
+		return nil, nil
+	}
+
+	switch tree := tree.(type) {
+	case *Literal:
+		if IsConstructor(tree.Value) {
+			return &types.Appl{SI: tree.SI, Cons: tree.Value}, nil
+		}
+		return &types.Var{SI: tree.SI, Name: tree.Value}, nil
+
+	case *Paren:
+		switch tree.Type {
+		case "(":
+			return TreeToType(tree.Inside)
+		}
+		return nil, &Error{tree.SI, fmt.Sprintf("unexpected: %s", tree.Type)}
+
+	case *Special:
+		return nil, &Error{tree.SI, fmt.Sprintf("unexpected: %s", tree.Type)}
+
+	case *Lambda:
+		return nil, &Error{tree.SI, fmt.Sprintf("unexpected: %s", tree.Type)}
+
+	case *Prefix:
+		left, err := TreeToType(tree.Left)
+		if err != nil {
+			return nil, err
+		}
+		leftAppl, ok := left.(*types.Appl)
+		if !ok {
+			return nil, &Error{
+				left.SourceInfo(),
+				fmt.Sprintf("not a type constructor: %v", left),
+			}
+		}
+		right, err := TreeToType(tree.Right)
+		leftAppl.Args = append(leftAppl.Args, right)
+		return leftAppl, nil
+
+	case *Infix:
+		in, err := TreeToType(tree.In)
+		if err != nil {
+			return nil, err
+		}
+		left, err := TreeToType(tree.Left)
+		if err != nil {
+			return nil, err
+		}
+		right, err := TreeToType(tree.Right)
+		if err != nil {
+			return nil, err
+		}
+		if left == nil || right == nil {
+			return nil, &Error{
+				in.SourceInfo(),
+				"missing operand in infix constructor",
+			}
+		}
+		inAppl, ok := in.(*types.Appl)
+		if !ok || inAppl.Cons != "->" || len(inAppl.Args) != 0 {
+			return nil, &Error{
+				left.SourceInfo(),
+				fmt.Sprintf("not a type constructor: %v", in),
+			}
+		}
+		return &types.Func{
+			From: left,
+			To:   right,
+		}, nil
+	}
+
+	panic("unreachable")
 }

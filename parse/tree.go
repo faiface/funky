@@ -1,12 +1,23 @@
 package parse
 
 import (
+	"fmt"
 	"unicode"
 
 	"github.com/faiface/funky/parse/parseinfo"
 )
 
+type Error struct {
+	SourceInfo *parseinfo.Source
+	Msg        string
+}
+
+func (err *Error) Error() string {
+	return fmt.Sprintf("%v: %v", err.SourceInfo, err.Msg)
+}
+
 type Tree interface {
+	String() string
 	SourceInfo() *parseinfo.Source
 }
 
@@ -30,6 +41,7 @@ type (
 
 	Lambda struct {
 		SI           *parseinfo.Source
+		Type         string
 		Bound, After Tree
 	}
 
@@ -42,12 +54,100 @@ type (
 	}
 )
 
+func (l *Literal) String() string { return l.Value }
+func (p *Paren) String() string {
+	switch p.Type {
+	case "(":
+		return "(" + p.Inside.String() + ")"
+	case "[":
+		return "[" + p.Inside.String() + "]"
+	case "{":
+		return "{" + p.Inside.String() + "}"
+	}
+	panic("unreachable")
+}
+func (s *Special) String() string { return s.Type + " " + s.After.String() }
+func (l *Lambda) String() string  { return l.Type + l.Bound.String() + " " + l.After.String() }
+func (p *Prefix) String() string  { return p.Left.String() + " " + p.Right.String() }
+func (i *Infix) String() string {
+	switch {
+	case i.Left == nil && i.Right == nil:
+		return i.In.String()
+	case i.Left == nil:
+		return i.In.String() + " " + i.Right.String()
+	case i.Right == nil:
+		return i.Left.String() + " " + i.In.String()
+	default:
+		return i.Left.String() + " " + i.In.String() + " " + i.Right.String()
+	}
+}
+
 func (l *Literal) SourceInfo() *parseinfo.Source { return l.SI }
 func (p *Paren) SourceInfo() *parseinfo.Source   { return p.SI }
 func (s *Special) SourceInfo() *parseinfo.Source { return s.SI }
 func (l *Lambda) SourceInfo() *parseinfo.Source  { return l.SI }
 func (p *Prefix) SourceInfo() *parseinfo.Source  { return p.Left.SourceInfo() }
-func (i *Infix) SourceInfo() *parseinfo.Source   { return i.In.SourceInfo() }
+func (i *Infix) SourceInfo() *parseinfo.Source   { return i.Left.SourceInfo() }
+
+func FindNextSpecial(tree Tree, special ...string) (before, at, after Tree) {
+	if tree == nil {
+		return nil, nil, nil
+	}
+
+	switch tree := tree.(type) {
+	case *Literal, *Paren:
+		return tree, nil, nil
+
+	case *Special:
+		matches := false
+		for _, s := range special {
+			if tree.Type == s {
+				matches = true
+				break
+			}
+		}
+		if matches {
+			return nil, tree, tree.After
+		}
+		afterBefore, afterAt, afterAfter := FindNextSpecial(tree.After, special...)
+		return &Special{
+			SI:    tree.SI,
+			Type:  tree.Type,
+			After: afterBefore,
+		}, afterAt, afterAfter
+
+	case *Lambda:
+		afterBefore, afterAt, afterAfter := FindNextSpecial(tree.After, special...)
+		return &Lambda{
+			SI:    tree.SI,
+			Type:  tree.Type,
+			Bound: tree.Bound,
+			After: afterBefore,
+		}, afterAt, afterAfter
+
+	case *Prefix:
+		// special can't be in the left
+		rightBefore, rightAt, rightAfter := FindNextSpecial(tree.Right, special...)
+		if rightBefore == nil {
+			return tree.Left, rightAt, rightAfter
+		}
+		return &Prefix{
+			Left:  tree.Left,
+			Right: rightBefore,
+		}, rightAt, rightAfter
+
+	case *Infix:
+		// special can't be in the left or in
+		rightBefore, rightAt, rightAfter := FindNextSpecial(tree.Right, special...)
+		return &Infix{
+			Left:  tree.Left,
+			In:    tree.In,
+			Right: rightBefore,
+		}, rightAt, rightAfter
+	}
+
+	panic("unreachable")
+}
 
 func SingleTree(tokens []Token) (t Tree, end int, err error) {
 	switch tokens[0].Value {
@@ -101,11 +201,12 @@ func SingleTree(tokens []Token) (t Tree, end int, err error) {
 		}
 		return &Lambda{
 			SI:    tokens[0].SourceInfo,
+			Type:  tokens[0].Value,
 			Bound: bound,
 			After: after,
 		}, len(tokens), nil
 
-	case ",", ";", ":", "|":
+	case ",", ";", ":", "|", "=", "package", "import", "record", "enum", "alias", "def", "switch", "case":
 		after, err := MultiTree(tokens[1:])
 		if err != nil {
 			return nil, 0, err
@@ -134,15 +235,6 @@ func SingleTree(tokens []Token) (t Tree, end int, err error) {
 	}
 }
 
-func hasLetterOrDigit(s string) bool {
-	for _, r := range s {
-		if unicode.IsLetter(r) || unicode.IsDigit(r) {
-			return true
-		}
-	}
-	return false
-}
-
 func MultiTree(tokens []Token) (Tree, error) {
 	var t Tree
 
@@ -168,4 +260,42 @@ func MultiTree(tokens []Token) (Tree, error) {
 	}
 
 	return t, nil
+}
+
+func hasLetterOrDigit(s string) bool {
+	for _, r := range s {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			return true
+		}
+	}
+	return false
+}
+
+func findClosingParen(tokens []Token) (i int, ok bool) {
+	round := 0  // ()
+	square := 0 // []
+	curly := 0  // {}
+	for i := range tokens {
+		switch tokens[i].Value {
+		case "(":
+			round++
+		case ")":
+			round--
+		case "[":
+			square++
+		case "]":
+			square--
+		case "{":
+			curly++
+		case "}":
+			curly--
+		}
+		if round < 0 || square < 0 || curly < 0 {
+			return i, false
+		}
+		if round == 0 && square == 0 && curly == 0 {
+			return i, true
+		}
+	}
+	return len(tokens), false
 }

@@ -7,6 +7,17 @@ import (
 	"github.com/faiface/funky/parse/parseinfo"
 )
 
+var SpecialRunes = []rune{'(', ')', '[', ']', '{', '}', ',', ';', '\\', 'λ', '#'}
+
+func IsSpecialRune(r rune) bool {
+	for _, special := range SpecialRunes {
+		if r == special {
+			return true
+		}
+	}
+	return false
+}
+
 type Token struct {
 	SourceInfo *parseinfo.Source
 	Value      string
