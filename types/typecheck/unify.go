@@ -4,7 +4,7 @@ import "github.com/faiface/funky/types"
 
 func Unify(t, u types.Type) (Subst, bool) {
 	if v2, ok := u.(*types.Var); ok {
-		if v1, ok := t.(*types.Var); !ok || v1.Name < v2.Name {
+		if v1, ok := t.(*types.Var); !ok || lesserName(v1.Name, v2.Name) {
 			return Unify(u, t)
 		}
 	}
@@ -54,4 +54,14 @@ func Unify(t, u types.Type) (Subst, bool) {
 	}
 
 	panic("unreachable")
+}
+
+func lesserName(s, t string) bool {
+	if len(s) < len(t) {
+		return true
+	}
+	if len(s) > len(t) {
+		return false
+	}
+	return s < t
 }
