@@ -70,7 +70,7 @@ func indent(s string) string {
 }
 
 func (err *NoMatchError) Error() string {
-	s := fmt.Sprintf("%v: expression type does not match required type: %v\n", err.SourceInfo, err.TypeInfo)
+	s := fmt.Sprintf("%v: does not match required type: %v\n", err.SourceInfo, err.TypeInfo)
 	s += "admissible types are:"
 	for _, r := range err.Results {
 		s += fmt.Sprintf("\n  %v", r.Type)
