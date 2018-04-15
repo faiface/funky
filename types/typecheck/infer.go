@@ -274,15 +274,17 @@ func infer(varIndex *int, global Defs, local Vars, e expr.Expr) (results []Infer
 	case *expr.Abst:
 		var (
 			bindType types.Type
-			bodyType = e.Body.TypeInfo()
+			bodyType types.Type
 		)
 		if f, ok := e.TypeInfo().(*types.Func); ok {
 			bindType = f.From
+			bodyType = e.Body.TypeInfo()
 			if bodyType == nil {
 				bodyType = f.To
 			}
 		} else {
 			bindType = newVar(varIndex)
+			bodyType = e.Body.TypeInfo()
 		}
 		newLocal := local.Assume(e.Bound.Name, bindType)
 		bodyResults, err := infer(varIndex, global, newLocal, e.Body.WithTypeInfo(bodyType))
