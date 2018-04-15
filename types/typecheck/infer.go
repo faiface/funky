@@ -181,7 +181,6 @@ func infer(varIndex *int, global Defs, local Vars, e expr.Expr) (results []Infer
 			return
 		}
 		results = filtered
-		err = nil
 	}()
 
 	switch e := e.(type) {
