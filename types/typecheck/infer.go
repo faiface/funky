@@ -31,7 +31,7 @@ type (
 		Results    []InferResult
 	}
 
-	AmbiguousMatchError struct {
+	AmbiguousError struct {
 		SourceInfo *parseinfo.Source
 		TypeInfo   types.Type
 		Results    []InferResult
@@ -55,6 +55,20 @@ func (err *CannotApplyError) Error() string {
 	return s
 }
 
+func indent(s string) string {
+	var b strings.Builder
+	if len(s) > 0 {
+		b.WriteString("  ")
+	}
+	for _, r := range s {
+		b.WriteRune(r)
+		if r == '\n' {
+			b.WriteString("  ")
+		}
+	}
+	return b.String()
+}
+
 func (err *NoMatchError) Error() string {
 	s := fmt.Sprintf("%v: expression type does not match required type: %v\n", err.SourceInfo, err.TypeInfo)
 	s += "admissible types are:"
@@ -64,8 +78,62 @@ func (err *NoMatchError) Error() string {
 	return s
 }
 
-func (err *AmbiguousMatchError) Error() string {
-	return "ambiguous match (TODO)"
+func (err *AmbiguousError) Error() string {
+	traversals := make([]<-chan expr.Expr, len(err.Results))
+	for i := range traversals {
+		traversals[i] = traverse(err.Results[i].Subst.ApplyToExpr(err.Results[i].Expr))
+	}
+	// the idea is to concurrently traverse all inferred expressions and find the first
+	// variable that differs in type across the results and report it
+	for {
+		var exprs []expr.Expr
+		for i := range traversals {
+			exprs = append(exprs, <-traversals[i])
+		}
+		for i := 1; i < len(exprs); i++ {
+			if !exprs[0].TypeInfo().Equal(exprs[i].TypeInfo()) {
+				// we found one source of ambiguity, we report it
+				s := fmt.Sprintf("%v: ambiguous, multiple admissible types:", exprs[0].SourceInfo())
+			accumulateTypes:
+				for j, e := range exprs {
+					for k := 0; k < j; k++ {
+						if exprs[k].TypeInfo().Equal(e.TypeInfo()) {
+							continue accumulateTypes
+						}
+					}
+					s += fmt.Sprintf("\n  %v", e.TypeInfo())
+				}
+				// drain traversals
+				for _, ch := range traversals {
+					for range ch {
+					}
+				}
+				return s
+			}
+		}
+	}
+}
+
+func traverse(e expr.Expr) <-chan expr.Expr {
+	ch := make(chan expr.Expr)
+	go func() {
+		traverseHelper(ch, e)
+		close(ch)
+	}()
+	return ch
+}
+
+func traverseHelper(ch chan<- expr.Expr, e expr.Expr) {
+	switch e := e.(type) {
+	case *expr.Var:
+		ch <- e
+	case *expr.Appl:
+		traverseHelper(ch, e.Right)
+		traverseHelper(ch, e.Left)
+	case *expr.Abst:
+		traverseHelper(ch, e.Bound)
+		traverseHelper(ch, e.Body)
+	}
 }
 
 type InferResult struct {
@@ -108,7 +176,7 @@ func infer(varIndex *int, global Defs, local Vars, e expr.Expr) (results []Infer
 			return
 		}
 		if len(filtered) > 1 {
-			err = &AmbiguousMatchError{e.SourceInfo(), e.TypeInfo(), results}
+			err = &AmbiguousError{e.SourceInfo(), e.TypeInfo(), results}
 			results = nil
 			return
 		}
@@ -242,20 +310,6 @@ func infer(varIndex *int, global Defs, local Vars, e expr.Expr) (results []Infer
 	}
 
 	panic("unreachable")
-}
-
-func indent(s string) string {
-	var b strings.Builder
-	if len(s) > 0 {
-		b.WriteString("  ")
-	}
-	for _, r := range s {
-		b.WriteRune(r)
-		if r == '\n' {
-			b.WriteString("  ")
-		}
-	}
-	return b.String()
 }
 
 func newVar(varIndex *int) *types.Var {
