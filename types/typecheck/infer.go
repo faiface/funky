@@ -211,11 +211,10 @@ func infer(varIndex *int, global Defs, local Vars, e expr.Expr) (results []Infer
 		if err != nil {
 			return nil, err
 		}
-		{ // if the right side is wrong in itself, return a simple error from there
-			_, err := infer(varIndex, global, local, e.Right)
-			if err != nil {
-				return nil, err
-			}
+		// if the right side is wrong in itself, return a simple error from there
+		_, err = infer(varIndex, global, local, e.Right)
+		if err != nil {
+			return nil, err
 		}
 		results = nil
 		cannotApplyErr := &CannotApplyError{
