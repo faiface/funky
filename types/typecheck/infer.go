@@ -131,7 +131,7 @@ func traverseHelper(ch chan<- expr.Expr, e expr.Expr) {
 		traverseHelper(ch, e.Right)
 		traverseHelper(ch, e.Left)
 	case *expr.Abst:
-		traverseHelper(ch, e.Bound)
+		ch <- e.Bound
 		traverseHelper(ch, e.Body)
 	}
 }
