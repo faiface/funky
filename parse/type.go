@@ -8,9 +8,9 @@ import (
 	"github.com/faiface/funky/types"
 )
 
-func IsConstructor(name string) bool {
+func IsTypeName(name string) bool {
 	r, _ := utf8.DecodeRuneInString(name)
-	return unicode.IsUpper(r) || !unicode.IsLetter(r)
+	return unicode.IsUpper(r)
 }
 
 func Type(tokens []Token) (types.Type, error) {
@@ -28,8 +28,8 @@ func TreeToType(tree Tree) (types.Type, error) {
 
 	switch tree := tree.(type) {
 	case *Literal:
-		if IsConstructor(tree.Value) {
-			return &types.Appl{SI: tree.SI, Cons: tree.Value}, nil
+		if IsTypeName(tree.Value) {
+			return &types.Appl{SI: tree.SI, Name: tree.Value}, nil
 		}
 		return &types.Var{SI: tree.SI, Name: tree.Value}, nil
 
@@ -75,17 +75,17 @@ func TreeToType(tree Tree) (types.Type, error) {
 		if err != nil {
 			return nil, err
 		}
-		if left == nil || right == nil {
-			return nil, &Error{
-				in.SourceInfo(),
-				"missing operand in infix constructor",
-			}
-		}
-		inAppl, ok := in.(*types.Appl)
-		if !ok || inAppl.Cons != "->" || len(inAppl.Args) != 0 {
+		inVar, ok := in.(*types.Var)
+		if !ok || inVar.Name != "->" {
 			return nil, &Error{
 				left.SourceInfo(),
 				fmt.Sprintf("not a type constructor: %v", in),
+			}
+		}
+		if left == nil || right == nil {
+			return nil, &Error{
+				in.SourceInfo(),
+				"missing operands in function type",
 			}
 		}
 		return &types.Func{
