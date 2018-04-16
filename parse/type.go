@@ -13,6 +13,11 @@ func IsTypeName(name string) bool {
 	return unicode.IsUpper(r)
 }
 
+func IsTypeVar(name string) bool {
+	r, _ := utf8.DecodeRuneInString(name)
+	return unicode.IsLower(r)
+}
+
 func Type(tokens []Token) (types.Type, error) {
 	tree, err := MultiTree(tokens)
 	if err != nil {
@@ -31,7 +36,10 @@ func TreeToType(tree Tree) (types.Type, error) {
 		if IsTypeName(tree.Value) {
 			return &types.Appl{SI: tree.SI, Name: tree.Value}, nil
 		}
-		return &types.Var{SI: tree.SI, Name: tree.Value}, nil
+		if IsTypeVar(tree.Value) || tree.Value == "->" {
+			return &types.Var{SI: tree.SI, Name: tree.Value}, nil
+		}
+		return nil, &Error{tree.SI, fmt.Sprintf("invalid type identifier: %s", tree.Value)}
 
 	case *Paren:
 		switch tree.Type {
