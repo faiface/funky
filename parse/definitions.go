@@ -29,17 +29,95 @@ func TreeToDefinitions(tree Tree) (names map[string]types.Name, defs map[string]
 		}
 		definition, next, _ := FindNextSpecial(after, "record", "enum", "alias", "def")
 		tree = next
+
 		switch at.(*Special).Type {
-		case "def":
-			name, e, err := treeToDef(definition)
+		case "record":
+			name, record, err := treeToRecord(definition)
 			if err != nil {
 				return nil, nil, err
 			}
-			defs[name] = append(defs[name], e)
+			if names[name] != nil {
+				return nil, nil, &Error{
+					record.SourceInfo(),
+					fmt.Sprintf("type %s already exists", name),
+				}
+			}
+			names[name] = record
+
+		case "def":
+			name, body, err := treeToDef(definition)
+			if err != nil {
+				return nil, nil, err
+			}
+			defs[name] = append(defs[name], body)
 		}
 	}
 
 	return names, defs, nil
+}
+
+func treeToRecord(tree Tree) (name string, record *types.Record, err error) {
+	headerTree, _, fieldsTree := FindNextSpecial(tree, "=")
+
+	header := Flatten(headerTree)
+	if len(header) == 0 {
+		return "", nil, &Error{tree.SourceInfo(), "missing type name"}
+	}
+	nameLit, ok := header[0].(*Literal)
+	if !ok {
+		return "", nil, &Error{header[0].SourceInfo(), "type name must be a simple identifier"}
+	}
+	name = nameLit.Value
+	if !IsTypeName(name) {
+		return "", nil, &Error{nameLit.SI, "invalid type name (must start with an upper-case letter)"}
+	}
+	var args []string
+	for _, argTree := range header[1:] {
+		argLit, ok := argTree.(*Literal)
+		if !ok {
+			return "", nil, &Error{argTree.SourceInfo(), "type argument must be a simple identifier"}
+		}
+		argName := argLit.Value
+		if !IsTypeVar(argName) {
+			return "", nil, &Error{argLit.SI, "invalid type variable (must start with a lower-case letter)"}
+		}
+		args = append(args, argName)
+	}
+
+	var fields []types.Field
+
+	for fieldsTree != nil {
+		fieldTree, _, after := FindNextSpecial(fieldsTree, ",")
+		fieldsTree = after
+
+		if fieldTree == nil {
+			continue
+		}
+
+		field, err := TreeToExpr(fieldTree)
+		if err != nil {
+			return "", nil, err
+		}
+		fieldVar, ok := field.(*expr.Var)
+		if !ok {
+			return "", nil, &Error{field.SourceInfo(), "record field must be a simple variable"}
+		}
+		if fieldVar.TypeInfo() == nil {
+			return "", nil, &Error{field.SourceInfo(), "missing record field type"}
+		}
+
+		fields = append(fields, types.Field{
+			SI:   fieldVar.SourceInfo(),
+			Name: fieldVar.Name,
+			Type: fieldVar.TypeInfo(),
+		})
+	}
+
+	return name, &types.Record{
+		SI:     tree.SourceInfo(),
+		Args:   args,
+		Fields: fields,
+	}, nil
 }
 
 func treeToDef(tree Tree) (string, expr.Expr, error) {
