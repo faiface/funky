@@ -17,7 +17,7 @@ func (f *Func) insideString() string { return "(" + f.String() + ")" }
 
 func (v *Var) String() string { return v.Name }
 func (a *Appl) String() string {
-	s := a.Cons
+	s := a.Name
 	for _, arg := range a.Args {
 		s += " " + arg.insideString()
 	}

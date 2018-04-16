@@ -21,7 +21,7 @@ func Unify(t, u types.Type) (Subst, bool) {
 
 	case *types.Appl:
 		applU, ok := u.(*types.Appl)
-		if !ok || t.Cons != applU.Cons || len(t.Args) != len(applU.Args) {
+		if !ok || t.Name != applU.Name || len(t.Args) != len(applU.Args) {
 			// t and u are applications of different constructors
 			return nil, false
 		}

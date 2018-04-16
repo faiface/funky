@@ -15,7 +15,7 @@ func isSpec(bind map[string]types.Type, t, u types.Type) bool {
 		return bind[t.Name].Equal(u)
 	case *types.Appl:
 		ua, ok := u.(*types.Appl)
-		if !ok || t.Cons != ua.Cons || len(t.Args) != len(ua.Args) {
+		if !ok || t.Name != ua.Name || len(t.Args) != len(ua.Args) {
 			return false
 		}
 		for i := range t.Args {
