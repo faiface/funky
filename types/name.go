@@ -1,10 +1,6 @@
 package types
 
-import (
-	"go/types"
-
-	"github.com/faiface/funky/parse/parseinfo"
-)
+import "github.com/faiface/funky/parse/parseinfo"
 
 type Name interface {
 	SourceInfo() *parseinfo.Source
@@ -15,29 +11,33 @@ type (
 	Record struct {
 		SI     *parseinfo.Source
 		Args   []string
-		Fields []struct {
-			SI   *parseinfo.Source
-			Name string
-			Type types.Type
-		}
+		Fields []Field
 	}
 
 	Enum struct {
-		SI           *parseinfo.Source
-		Args         []string
-		Alternatives []struct {
-			SI     *parseinfo.Source
-			Name   string
-			Fields []types.Type
-		}
+		SI   *parseinfo.Source
+		Args []string
+		Alts []Alternative
 	}
 
 	Alias struct {
 		SI   *parseinfo.Source
 		Args []string
-		Type types.Type
+		Type Type
 	}
 )
+
+type Field struct {
+	SI   *parseinfo.Source
+	Name string
+	Type Type
+}
+
+type Alternative struct {
+	SI     *parseinfo.Source
+	Name   string
+	Fields []Type
+}
 
 func (r *Record) SourceInfo() *parseinfo.Source { return r.SI }
 func (e *Enum) SourceInfo() *parseinfo.Source   { return e.SI }
