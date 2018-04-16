@@ -21,7 +21,7 @@ type (
 
 	Appl struct {
 		SI   *parseinfo.Source
-		Cons string // type constructor (e.g. List, Map, Int, ...)
+		Name string // type name (e.g. List, Map, Int, ...)
 		Args []Type
 	}
 
@@ -40,7 +40,7 @@ func (v *Var) Equal(t Type) bool {
 }
 func (a *Appl) Equal(t Type) bool {
 	ta, ok := t.(*Appl)
-	if !ok || a.Cons != ta.Cons || len(a.Args) != len(ta.Args) {
+	if !ok || a.Name != ta.Name || len(a.Args) != len(ta.Args) {
 		return false
 	}
 	for i := range a.Args {
@@ -59,7 +59,7 @@ func (v *Var) Map(f func(Type) Type) Type { return f(v) }
 func (a *Appl) Map(f func(Type) Type) Type {
 	mapped := &Appl{
 		SI:   a.SI,
-		Cons: a.Cons,
+		Name: a.Name,
 		Args: make([]Type, len(a.Args)),
 	}
 	for i := range mapped.Args {
