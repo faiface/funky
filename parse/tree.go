@@ -149,6 +149,37 @@ func FindNextSpecial(tree Tree, special ...string) (before, at, after Tree) {
 	panic("unreachable")
 }
 
+func Flatten(tree Tree) []Tree {
+	var flat []Tree
+	for t := range flatten(tree) {
+		flat = append(flat, t)
+	}
+	return flat
+}
+
+func flatten(tree Tree) <-chan Tree {
+	ch := make(chan Tree)
+	go func() {
+		flattenHelper(ch, tree)
+		close(ch)
+	}()
+	return ch
+}
+
+func flattenHelper(ch chan<- Tree, tree Tree) {
+	switch tree := tree.(type) {
+	case *Literal, *Paren, *Special, *Lambda:
+		ch <- tree
+	case *Prefix:
+		flattenHelper(ch, tree.Left)
+		flattenHelper(ch, tree.Right)
+	case *Infix:
+		flattenHelper(ch, tree.Left)
+		flattenHelper(ch, tree.In)
+		flattenHelper(ch, tree.Right)
+	}
+}
+
 func SingleTree(tokens []Token) (t Tree, end int, err error) {
 	switch tokens[0].Value {
 	case ")", "]", "}":
