@@ -7,22 +7,26 @@ import (
 	"github.com/faiface/funky/types"
 )
 
-func Definitions(tokens []Token) (names map[string]types.Name, defs map[string][]expr.Expr, err error) {
+type Definition struct {
+	Name  string
+	Value interface{} // expr.Expr, *types.Record, *types.Enum, *types.Alias
+}
+
+func Definitions(tokens []Token) ([]Definition, error) {
 	tree, err := MultiTree(tokens)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	return TreeToDefinitions(tree)
 }
 
-func TreeToDefinitions(tree Tree) (names map[string]types.Name, defs map[string][]expr.Expr, err error) {
-	names = make(map[string]types.Name)
-	defs = make(map[string][]expr.Expr)
+func TreeToDefinitions(tree Tree) ([]Definition, error) {
+	var definitions []Definition
 
 	for tree != nil {
 		before, at, after := FindNextSpecial(tree, "record", "enum", "alias", "def")
 		if before != nil {
-			return nil, nil, &Error{
+			return nil, &Error{
 				tree.SourceInfo(),
 				fmt.Sprintf("expected record, enum, alias or def"),
 			}
@@ -34,26 +38,20 @@ func TreeToDefinitions(tree Tree) (names map[string]types.Name, defs map[string]
 		case "record":
 			name, record, err := treeToRecord(definition)
 			if err != nil {
-				return nil, nil, err
+				return nil, err
 			}
-			if names[name] != nil {
-				return nil, nil, &Error{
-					record.SourceInfo(),
-					fmt.Sprintf("type %s already exists", name),
-				}
-			}
-			names[name] = record
+			definitions = append(definitions, Definition{name, record})
 
 		case "def":
 			name, body, err := treeToDef(definition)
 			if err != nil {
-				return nil, nil, err
+				return nil, err
 			}
-			defs[name] = append(defs[name], body)
+			definitions = append(definitions, Definition{name, body})
 		}
 	}
 
-	return names, defs, nil
+	return definitions, nil
 }
 
 func treeToRecord(tree Tree) (name string, record *types.Record, err error) {
