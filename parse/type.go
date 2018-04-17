@@ -67,6 +67,9 @@ func TreeToType(tree Tree) (types.Type, error) {
 			}
 		}
 		right, err := TreeToType(tree.Right)
+		if err != nil {
+			return nil, err
+		}
 		leftAppl.Args = append(leftAppl.Args, right)
 		return leftAppl, nil
 
