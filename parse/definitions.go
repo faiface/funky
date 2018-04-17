@@ -152,11 +152,18 @@ func treeToEnum(tree Tree) (name string, enum *types.Enum, err error) {
 
 		fieldTrees := Flatten(altTree)
 
-		altNameLit, ok := fieldTrees[0].(*Literal)
-		if !ok {
-			return "", nil, &Error{fieldTrees[0].SourceInfo(), "enum alternative name must be simple variable"}
+		altNameExpr, err := TreeToExpr(fieldTrees[0])
+		if err != nil {
+			return "", nil, err
 		}
-		altName := altNameLit.Value
+		if altNameExpr.TypeInfo() != nil {
+			return "", nil, &Error{altNameExpr.SourceInfo(), "enum alternative name cannot have type"}
+		}
+		altNameVar, ok := altNameExpr.(*expr.Var)
+		if !ok {
+			return "", nil, &Error{altNameExpr.SourceInfo(), "enum alternative name must be simple variable"}
+		}
+		altName := altNameVar.Name
 
 		var fields []types.Type
 		for _, fieldTree := range fieldTrees[1:] {
