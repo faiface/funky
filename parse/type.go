@@ -33,10 +33,10 @@ func TreeToType(tree Tree) (types.Type, error) {
 
 	switch tree := tree.(type) {
 	case *Literal:
-		if IsTypeName(tree.Value) {
+		if IsTypeName(tree.Value) || tree.Value == "->" {
 			return &types.Appl{SI: tree.SourceInfo(), Name: tree.Value}, nil
 		}
-		if IsTypeVar(tree.Value) || tree.Value == "->" {
+		if IsTypeVar(tree.Value) {
 			return &types.Var{SI: tree.SourceInfo(), Name: tree.Value}, nil
 		}
 		return nil, &Error{tree.SourceInfo(), fmt.Sprintf("invalid type identifier: %s", tree.Value)}
@@ -86,8 +86,8 @@ func TreeToType(tree Tree) (types.Type, error) {
 		if err != nil {
 			return nil, err
 		}
-		inVar, ok := in.(*types.Var)
-		if !ok || inVar.Name != "->" {
+		inAppl, ok := in.(*types.Appl)
+		if !ok || inAppl.Name != "->" || len(inAppl.Args) != 0 {
 			return nil, &Error{
 				left.SourceInfo(),
 				fmt.Sprintf("not a type constructor: %v", in),
