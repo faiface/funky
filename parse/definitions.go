@@ -67,7 +67,7 @@ func treeToRecord(tree Tree) (name string, record *types.Record, err error) {
 	}
 	name = nameLit.Value
 	if !IsTypeName(name) {
-		return "", nil, &Error{nameLit.SI, "invalid type name (must start with an upper-case letter)"}
+		return "", nil, &Error{nameLit.SourceInfo(), "invalid type name (must start with an upper-case letter)"}
 	}
 	var args []string
 	for _, argTree := range header[1:] {
@@ -77,7 +77,7 @@ func treeToRecord(tree Tree) (name string, record *types.Record, err error) {
 		}
 		argName := argLit.Value
 		if !IsTypeVar(argName) {
-			return "", nil, &Error{argLit.SI, "invalid type variable (must start with a lower-case letter)"}
+			return "", nil, &Error{argLit.SourceInfo(), "invalid type variable (must start with a lower-case letter)"}
 		}
 		args = append(args, argName)
 	}

@@ -21,21 +21,21 @@ func TreeToExpr(tree Tree) (expr.Expr, error) {
 
 	switch tree := tree.(type) {
 	case *Literal:
-		return &expr.Var{SI: tree.SI, Name: tree.Value}, nil
+		return &expr.Var{SI: tree.SourceInfo(), Name: tree.Value}, nil
 
 	case *Paren:
 		switch tree.Type {
 		case "(":
 			return TreeToExpr(tree.Inside)
 		}
-		return nil, &Error{tree.SI, fmt.Sprintf("unexpected: %s", tree.Type)}
+		return nil, &Error{tree.SourceInfo(), fmt.Sprintf("unexpected: %s", tree.Type)}
 
 	case *Special:
 		switch tree.Type {
 		case ";":
 			return TreeToExpr(tree.After)
 		}
-		return nil, &Error{tree.SI, fmt.Sprintf("unexpected: %s", tree.Type)}
+		return nil, &Error{tree.SourceInfo(), fmt.Sprintf("unexpected: %s", tree.Type)}
 
 	case *Lambda:
 		bound, err := TreeToExpr(tree.Bound)
@@ -44,7 +44,7 @@ func TreeToExpr(tree Tree) (expr.Expr, error) {
 		}
 		boundVar, ok := bound.(*expr.Var)
 		if !ok {
-			return nil, &Error{tree.SI, "bound expression not a variable"}
+			return nil, &Error{tree.SourceInfo(), "bound expression not a variable"}
 		}
 		body, err := TreeToExpr(tree.After)
 		if err != nil {

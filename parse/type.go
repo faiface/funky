@@ -34,25 +34,25 @@ func TreeToType(tree Tree) (types.Type, error) {
 	switch tree := tree.(type) {
 	case *Literal:
 		if IsTypeName(tree.Value) {
-			return &types.Appl{SI: tree.SI, Name: tree.Value}, nil
+			return &types.Appl{SI: tree.SourceInfo(), Name: tree.Value}, nil
 		}
 		if IsTypeVar(tree.Value) || tree.Value == "->" {
-			return &types.Var{SI: tree.SI, Name: tree.Value}, nil
+			return &types.Var{SI: tree.SourceInfo(), Name: tree.Value}, nil
 		}
-		return nil, &Error{tree.SI, fmt.Sprintf("invalid type identifier: %s", tree.Value)}
+		return nil, &Error{tree.SourceInfo(), fmt.Sprintf("invalid type identifier: %s", tree.Value)}
 
 	case *Paren:
 		switch tree.Type {
 		case "(":
 			return TreeToType(tree.Inside)
 		}
-		return nil, &Error{tree.SI, fmt.Sprintf("unexpected: %s", tree.Type)}
+		return nil, &Error{tree.SourceInfo(), fmt.Sprintf("unexpected: %s", tree.Type)}
 
 	case *Special:
-		return nil, &Error{tree.SI, fmt.Sprintf("unexpected: %s", tree.Type)}
+		return nil, &Error{tree.SourceInfo(), fmt.Sprintf("unexpected: %s", tree.Type)}
 
 	case *Lambda:
-		return nil, &Error{tree.SI, fmt.Sprintf("unexpected: %s", tree.Type)}
+		return nil, &Error{tree.SourceInfo(), fmt.Sprintf("unexpected: %s", tree.Type)}
 
 	case *Prefix:
 		left, err := TreeToType(tree.Left)
