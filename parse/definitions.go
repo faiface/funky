@@ -42,6 +42,13 @@ func TreeToDefinitions(tree Tree) ([]Definition, error) {
 			}
 			definitions = append(definitions, Definition{name, record})
 
+		case "enum":
+			name, enum, err := treeToEnum(definition)
+			if err != nil {
+				return nil, err
+			}
+			definitions = append(definitions, Definition{name, enum})
+
 		case "func":
 			name, body, err := treeToFunc(definition)
 			if err != nil {
@@ -54,10 +61,8 @@ func TreeToDefinitions(tree Tree) ([]Definition, error) {
 	return definitions, nil
 }
 
-func treeToRecord(tree Tree) (name string, record *types.Record, err error) {
-	headerTree, _, fieldsTree := FindNextSpecial(tree, "=")
-
-	header := Flatten(headerTree)
+func treeToTypeHeader(tree Tree) (name string, args []string, err error) {
+	header := Flatten(tree)
 	if len(header) == 0 {
 		return "", nil, &Error{tree.SourceInfo(), "missing type name"}
 	}
@@ -69,7 +74,6 @@ func treeToRecord(tree Tree) (name string, record *types.Record, err error) {
 	if !IsTypeName(name) {
 		return "", nil, &Error{nameLit.SourceInfo(), "invalid type name (must start with an upper-case letter)"}
 	}
-	var args []string
 	for _, argTree := range header[1:] {
 		argLit, ok := argTree.(*Literal)
 		if !ok {
@@ -80,6 +84,16 @@ func treeToRecord(tree Tree) (name string, record *types.Record, err error) {
 			return "", nil, &Error{argLit.SourceInfo(), "invalid type variable (must start with a lower-case letter)"}
 		}
 		args = append(args, argName)
+	}
+	return name, args, nil
+}
+
+func treeToRecord(tree Tree) (name string, record *types.Record, err error) {
+	headerTree, _, fieldsTree := FindNextSpecial(tree, "=")
+
+	name, args, err := treeToTypeHeader(headerTree)
+	if err != nil {
+		return "", nil, err
 	}
 
 	var fields []types.Field
@@ -98,7 +112,7 @@ func treeToRecord(tree Tree) (name string, record *types.Record, err error) {
 		}
 		fieldVar, ok := field.(*expr.Var)
 		if !ok {
-			return "", nil, &Error{field.SourceInfo(), "record field must be a simple variable"}
+			return "", nil, &Error{field.SourceInfo(), "record field must be simple variable"}
 		}
 		if fieldVar.TypeInfo() == nil {
 			return "", nil, &Error{field.SourceInfo(), "missing record field type"}
@@ -118,7 +132,60 @@ func treeToRecord(tree Tree) (name string, record *types.Record, err error) {
 	}, nil
 }
 
-func treeToFunc(tree Tree) (string, expr.Expr, error) {
+func treeToEnum(tree Tree) (name string, enum *types.Enum, err error) {
+	headerTree, _, altsTree := FindNextSpecial(tree, "=")
+
+	name, args, err := treeToTypeHeader(headerTree)
+	if err != nil {
+		return "", nil, err
+	}
+
+	var alts []types.Alternative
+
+	for altsTree != nil {
+		altTree, _, after := FindNextSpecial(altsTree, "|")
+		altsTree = after
+
+		if altTree == nil {
+			continue
+		}
+
+		fieldTrees := Flatten(altTree)
+
+		altNameLit, ok := fieldTrees[0].(*Literal)
+		if !ok {
+			return "", nil, &Error{fieldTrees[0].SourceInfo(), "enum alternative name must be simple variable"}
+		}
+		altName := altNameLit.Value
+
+		var fields []types.Type
+		for _, fieldTree := range fieldTrees[1:] {
+			field, err := TreeToType(fieldTree)
+			if err != nil {
+				return "", nil, err
+			}
+			fields = append(fields, field)
+		}
+
+		alts = append(alts, types.Alternative{
+			SI:     altTree.SourceInfo(),
+			Name:   altName,
+			Fields: fields,
+		})
+	}
+
+	for _, alt := range alts {
+		fmt.Println(alt.Name, len(alt.Fields), alt.Fields)
+	}
+
+	return name, &types.Enum{
+		SI:   tree.SourceInfo(),
+		Args: args,
+		Alts: alts,
+	}, nil
+}
+
+func treeToFunc(tree Tree) (name string, e expr.Expr, err error) {
 	signatureTree, _, bodyTree := FindNextSpecial(tree, "=")
 
 	if signatureTree == nil {
