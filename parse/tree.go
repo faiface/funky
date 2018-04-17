@@ -87,7 +87,7 @@ func (p *Paren) SourceInfo() *parseinfo.Source   { return p.SI }
 func (s *Special) SourceInfo() *parseinfo.Source { return s.SI }
 func (l *Lambda) SourceInfo() *parseinfo.Source  { return l.SI }
 func (p *Prefix) SourceInfo() *parseinfo.Source  { return p.Left.SourceInfo() }
-func (i *Infix) SourceInfo() *parseinfo.Source   { return i.Left.SourceInfo() }
+func (i *Infix) SourceInfo() *parseinfo.Source   { return i.In.SourceInfo() }
 
 func FindNextSpecial(tree Tree, special ...string) (before, at, after Tree) {
 	if tree == nil {

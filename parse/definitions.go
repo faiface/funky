@@ -122,6 +122,16 @@ func treeToFunc(tree Tree) (string, expr.Expr, error) {
 	nameTree, _, after := FindNextSpecial(tree, ":")
 	typTree, _, bodyTree := FindNextSpecial(after, "=")
 
+	if nameTree == nil {
+		return "", nil, &Error{tree.SourceInfo(), "missing function name"}
+	}
+	if typTree == nil {
+		return "", nil, &Error{tree.SourceInfo(), "missing function type"}
+	}
+	if bodyTree == nil {
+		return "", nil, &Error{tree.SourceInfo(), "missing function body"}
+	}
+
 	var name string
 
 	if lit, ok := nameTree.(*Literal); ok {
