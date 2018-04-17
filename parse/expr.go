@@ -68,6 +68,9 @@ func TreeToExpr(tree Tree) (expr.Expr, error) {
 		if err != nil {
 			return nil, err
 		}
+		if right == nil {
+			return left, nil
+		}
 		return &expr.Appl{Left: left, Right: right}, nil
 
 	case *Infix:
