@@ -138,6 +138,12 @@ func treeToDef(tree Tree) (string, expr.Expr, error) {
 			"definition name must be simple identifier",
 		}
 	}
+	if IsTypeName(name) {
+		return "", nil, &Error{
+			nameTree.SourceInfo(),
+			"definition name cannot start with an upper-case letter",
+		}
+	}
 
 	typ, err := TreeToType(typTree)
 	if err != nil {
