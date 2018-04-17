@@ -121,13 +121,13 @@ func (env *Env) TypeInfer() []error {
 			if !ok {
 				continue
 			}
-			results, err := typecheck.Infer(global, impExpr.expr)
+			results, err := typecheck.Infer(global, impExpr.Expr)
 			if err != nil {
 				errs = append(errs, err)
 			}
 			if err == nil {
 				// there's exactly one result
-				impExpr.expr = results[0].Expr
+				impExpr.Expr = results[0].Expr
 			}
 		}
 	}

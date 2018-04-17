@@ -71,7 +71,7 @@ func (env *Env) Add(d parse.Definition) error {
 				To:   constructorType,
 			}
 		}
-		err := env.addFunc(d.Name, &implUndefined{constructorType})
+		err := env.addFunc(d.Name, &implUndefined{value.SourceInfo(), constructorType})
 		if err != nil {
 			return err
 		}
@@ -79,6 +79,7 @@ func (env *Env) Add(d parse.Definition) error {
 		// add record field getters
 		for _, field := range value.Fields {
 			err := env.addFunc(field.Name, &implUndefined{
+				field.SI,
 				&types.Func{
 					From: recordType,
 					To:   field.Type,
@@ -92,6 +93,7 @@ func (env *Env) Add(d parse.Definition) error {
 		// add record fiel setters
 		for _, field := range value.Fields {
 			err := env.addFunc(field.Name, &implUndefined{
+				field.SI,
 				&types.Func{
 					From: field.Type,
 					To:   &types.Func{From: recordType, To: recordType},

@@ -12,12 +12,15 @@ type impl interface {
 }
 
 type (
-	implUndefined struct{ typ types.Type }
-	implExpr      struct{ expr expr.Expr }
+	implUndefined struct {
+		SI   *parseinfo.Source
+		Type types.Type
+	}
+	implExpr struct{ Expr expr.Expr }
 )
 
-func (iu *implUndefined) SourceInfo() *parseinfo.Source { return nil }
-func (ie *implExpr) SourceInfo() *parseinfo.Source      { return ie.expr.SourceInfo() }
+func (u *implUndefined) SourceInfo() *parseinfo.Source { return u.SI }
+func (e *implExpr) SourceInfo() *parseinfo.Source      { return e.Expr.SourceInfo() }
 
-func (iu *implUndefined) TypeInfo() types.Type { return iu.typ }
-func (ie *implExpr) TypeInfo() types.Type      { return ie.expr.TypeInfo() }
+func (u *implUndefined) TypeInfo() types.Type { return u.Type }
+func (e *implExpr) TypeInfo() types.Type      { return e.Expr.TypeInfo() }
