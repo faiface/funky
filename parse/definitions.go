@@ -119,46 +119,37 @@ func treeToRecord(tree Tree) (name string, record *types.Record, err error) {
 }
 
 func treeToFunc(tree Tree) (string, expr.Expr, error) {
-	nameTree, _, after := FindNextSpecial(tree, ":")
-	typTree, _, bodyTree := FindNextSpecial(after, "=")
+	signatureTree, _, bodyTree := FindNextSpecial(tree, "=")
 
-	if nameTree == nil {
+	if signatureTree == nil {
 		return "", nil, &Error{tree.SourceInfo(), "missing function name"}
-	}
-	if typTree == nil {
-		return "", nil, &Error{tree.SourceInfo(), "missing function type"}
 	}
 	if bodyTree == nil {
 		return "", nil, &Error{tree.SourceInfo(), "missing function body"}
 	}
 
-	var name string
-
-	if lit, ok := nameTree.(*Literal); ok {
-		name = lit.Value
-	} else if infix, ok := nameTree.(*Infix); ok && infix.Left == nil && infix.Right == nil {
-		if lit, ok := infix.In.(*Literal); ok {
-			name = lit.Value
-		}
-	}
-
-	if name == "" {
-		return "", nil, &Error{
-			nameTree.SourceInfo(),
-			"function name must be simple identifier",
-		}
-	}
-	if IsTypeName(name) {
-		return "", nil, &Error{
-			nameTree.SourceInfo(),
-			"function name cannot start with an upper-case letter",
-		}
-	}
-
-	typ, err := TreeToType(typTree)
+	sigExpr, err := TreeToExpr(signatureTree)
 	if err != nil {
 		return "", nil, err
 	}
+	signature, ok := sigExpr.(*expr.Var)
+	if !ok {
+		return "", nil, &Error{tree.SourceInfo(), "function name must be simple variable"}
+	}
+
+	if IsTypeName(signature.Name) {
+		return "", nil, &Error{
+			signature.SourceInfo(),
+			"function name cannot start with an upper-case letter",
+		}
+	}
+	if signature.TypeInfo() == nil {
+		return "", nil, &Error{
+			signature.SourceInfo(),
+			"missing function type",
+		}
+	}
+
 	body, err := TreeToExpr(bodyTree)
 	if err != nil {
 		return "", nil, err
@@ -167,9 +158,9 @@ func treeToFunc(tree Tree) (string, expr.Expr, error) {
 	if body.TypeInfo() != nil {
 		return "", nil, &Error{
 			bodyTree.SourceInfo(),
-			"body type info must only be in signature",
+			"body type must only be in signature",
 		}
 	}
 
-	return name, body.WithTypeInfo(typ), nil
+	return signature.Name, body.WithTypeInfo(signature.TypeInfo()), nil
 }
