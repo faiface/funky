@@ -89,6 +89,19 @@ func (env *Env) Add(d parse.Definition) error {
 			}
 		}
 
+		// add record fiel setters
+		for _, field := range value.Fields {
+			err := env.addFunc(field.Name, &implUndefined{
+				&types.Func{
+					From: field.Type,
+					To:   &types.Func{From: recordType, To: recordType},
+				},
+			})
+			if err != nil {
+				return err
+			}
+		}
+
 	case expr.Expr:
 		err := env.addFunc(d.Name, &implExpr{value})
 		if err != nil {
