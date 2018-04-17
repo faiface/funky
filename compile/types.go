@@ -83,6 +83,19 @@ func (env *Env) validateType(boundVars []string, typ types.Type) error {
 }
 
 func (env *Env) validateRecord(record *types.Record) error {
+	// check if all fields have distinct names
+	for i, field1 := range record.Fields {
+		for _, field2 := range record.Fields[:i] {
+			if field1.Name == field2.Name {
+				return &Error{
+					field1.SI,
+					fmt.Sprintf("another record field has the same name: %v", field2.SI),
+				}
+			}
+		}
+	}
+
+	// validate field types
 	for _, field := range record.Fields {
 		err := env.validateType(record.Args, field.Type)
 		if err != nil {
