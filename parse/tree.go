@@ -237,7 +237,7 @@ func SingleTree(tokens []Token) (t Tree, end int, err error) {
 			After: after,
 		}, len(tokens), nil
 
-	case ",", ";", ":", "|", "=", "package", "import", "record", "enum", "alias", "def", "switch", "case":
+	case ",", ";", ":", "|", "=", "package", "import", "record", "enum", "alias", "func", "switch", "case":
 		after, err := MultiTree(tokens[1:])
 		if err != nil {
 			return nil, 0, err

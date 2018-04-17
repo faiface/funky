@@ -22,7 +22,7 @@ func (err *Error) Error() string {
 type Env struct {
 	inited bool
 	names  map[string]types.Name
-	defs   map[string][]impl
+	funcs  map[string][]impl
 }
 
 func (env *Env) lazyInit() {
@@ -31,7 +31,7 @@ func (env *Env) lazyInit() {
 	}
 	env.inited = true
 	env.names = make(map[string]types.Name)
-	env.defs = make(map[string][]impl)
+	env.funcs = make(map[string][]impl)
 }
 
 func (env *Env) Add(d parse.Definition) error {
@@ -65,14 +65,14 @@ func (env *Env) Add(d parse.Definition) error {
 				To:   constructorType,
 			}
 		}
-		err := env.addDef(d.Name, &implUndefined{constructorType})
+		err := env.addFunc(d.Name, &implUndefined{constructorType})
 		if err != nil {
 			return err
 		}
 
 		// add record field getters
 		for _, field := range value.Fields {
-			err := env.addDef(field.Name, &implUndefined{
+			err := env.addFunc(field.Name, &implUndefined{
 				&types.Func{
 					From: recordType,
 					To:   field.Type,
@@ -84,7 +84,7 @@ func (env *Env) Add(d parse.Definition) error {
 		}
 
 	case expr.Expr:
-		err := env.addDef(d.Name, &implExpr{value})
+		err := env.addFunc(d.Name, &implExpr{value})
 		if err != nil {
 			return err
 		}
@@ -93,10 +93,10 @@ func (env *Env) Add(d parse.Definition) error {
 	return nil
 }
 
-func (env *Env) addDef(name string, imp impl) error {
+func (env *Env) addFunc(name string, imp impl) error {
 	env.lazyInit()
 
-	for _, alreadyDefined := range env.defs[name] {
+	for _, alreadyDefined := range env.funcs[name] {
 		if _, ok := typecheck.Unify(imp.TypeInfo(), alreadyDefined.TypeInfo()); ok {
 			return &Error{
 				imp.SourceInfo(),
@@ -109,20 +109,20 @@ func (env *Env) addDef(name string, imp impl) error {
 		}
 	}
 
-	env.defs[name] = append(env.defs[name], imp)
+	env.funcs[name] = append(env.funcs[name], imp)
 
 	return nil
 }
 
 func (env *Env) TypeInfer() error {
-	global := make(typecheck.Defs)
-	for name, impls := range env.defs {
+	global := make(typecheck.Funcs)
+	for name, impls := range env.funcs {
 		for _, imp := range impls {
-			global.Define(name, imp.TypeInfo())
+			global.Add(name, imp.TypeInfo())
 		}
 	}
 
-	for _, impls := range env.defs {
+	for _, impls := range env.funcs {
 		for _, imp := range impls {
 			impExpr, ok := imp.(*implExpr)
 			if !ok {

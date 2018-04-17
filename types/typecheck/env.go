@@ -13,8 +13,8 @@ func (vars Vars) Assume(v string, t types.Type) Vars {
 	return newVars
 }
 
-type Defs map[string][]types.Type
+type Funcs map[string][]types.Type
 
-func (defs Defs) Define(name string, t types.Type) {
-	defs[name] = append(defs[name], t)
+func (fns Funcs) Add(name string, t types.Type) {
+	fns[name] = append(fns[name], t)
 }

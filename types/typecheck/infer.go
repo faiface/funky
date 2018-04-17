@@ -142,7 +142,7 @@ type InferResult struct {
 	Expr  expr.Expr
 }
 
-func Infer(global Defs, e expr.Expr) ([]InferResult, error) {
+func Infer(global Funcs, e expr.Expr) ([]InferResult, error) {
 	varIndex := 0
 	e = instExpr(&varIndex, e)
 	results, err := infer(&varIndex, global, make(Vars), e)
@@ -155,7 +155,7 @@ func Infer(global Defs, e expr.Expr) ([]InferResult, error) {
 	return results, nil
 }
 
-func infer(varIndex *int, global Defs, local Vars, e expr.Expr) (results []InferResult, err error) {
+func infer(varIndex *int, global Funcs, local Vars, e expr.Expr) (results []InferResult, err error) {
 	defer func() {
 		if err != nil || e.TypeInfo() == nil {
 			return

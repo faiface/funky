@@ -24,14 +24,14 @@ func TreeToDefinitions(tree Tree) ([]Definition, error) {
 	var definitions []Definition
 
 	for tree != nil {
-		before, at, after := FindNextSpecial(tree, "record", "enum", "alias", "def")
+		before, at, after := FindNextSpecial(tree, "record", "enum", "alias", "func")
 		if before != nil {
 			return nil, &Error{
 				tree.SourceInfo(),
-				fmt.Sprintf("expected record, enum, alias or def"),
+				fmt.Sprintf("expected record, enum, alias or func"),
 			}
 		}
-		definition, next, _ := FindNextSpecial(after, "record", "enum", "alias", "def")
+		definition, next, _ := FindNextSpecial(after, "record", "enum", "alias", "func")
 		tree = next
 
 		switch at.(*Special).Type {
@@ -42,8 +42,8 @@ func TreeToDefinitions(tree Tree) ([]Definition, error) {
 			}
 			definitions = append(definitions, Definition{name, record})
 
-		case "def":
-			name, body, err := treeToDef(definition)
+		case "func":
+			name, body, err := treeToFunc(definition)
 			if err != nil {
 				return nil, err
 			}
@@ -118,7 +118,7 @@ func treeToRecord(tree Tree) (name string, record *types.Record, err error) {
 	}, nil
 }
 
-func treeToDef(tree Tree) (string, expr.Expr, error) {
+func treeToFunc(tree Tree) (string, expr.Expr, error) {
 	nameTree, _, after := FindNextSpecial(tree, ":")
 	typTree, _, bodyTree := FindNextSpecial(after, "=")
 
@@ -135,13 +135,13 @@ func treeToDef(tree Tree) (string, expr.Expr, error) {
 	if name == "" {
 		return "", nil, &Error{
 			nameTree.SourceInfo(),
-			"definition name must be simple identifier",
+			"function name must be simple identifier",
 		}
 	}
 	if IsTypeName(name) {
 		return "", nil, &Error{
 			nameTree.SourceInfo(),
-			"definition name cannot start with an upper-case letter",
+			"function name cannot start with an upper-case letter",
 		}
 	}
 
@@ -157,7 +157,7 @@ func treeToDef(tree Tree) (string, expr.Expr, error) {
 	if body.TypeInfo() != nil {
 		return "", nil, &Error{
 			bodyTree.SourceInfo(),
-			"body type info must only be in definition",
+			"body type info must only be in signature",
 		}
 	}
 
