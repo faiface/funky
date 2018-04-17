@@ -174,10 +174,6 @@ func treeToEnum(tree Tree) (name string, enum *types.Enum, err error) {
 		})
 	}
 
-	for _, alt := range alts {
-		fmt.Println(alt.Name, len(alt.Fields), alt.Fields)
-	}
-
 	return name, &types.Enum{
 		SI:   tree.SourceInfo(),
 		Args: args,
