@@ -122,7 +122,7 @@ func (env *Env) addFunc(name string, imp impl) error {
 			return &Error{
 				imp.SourceInfo(),
 				fmt.Sprintf(
-					"definition of %s with colliding signature exists: %v",
+					"function %s with colliding signature exists: %v",
 					name,
 					alreadyDefined.SourceInfo(),
 				),
