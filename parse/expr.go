@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/faiface/funky/expr"
+	"github.com/faiface/funky/parse/parseinfo"
 )
 
 func Expr(tokens []Token) (expr.Expr, error) {
@@ -93,7 +94,7 @@ func TreeToExpr(tree Tree) (expr.Expr, error) {
 			return &expr.Appl{Left: in, Right: left}, nil
 		case left == nil: // (+ 2)
 			return &expr.Appl{
-				Left:  &expr.Appl{Left: flipExpr, Right: in},
+				Left:  &expr.Appl{Left: newFlipExpr(in.SourceInfo()), Right: in},
 				Right: right,
 			}, nil
 		default: // (1 + 2)
@@ -107,19 +108,21 @@ func TreeToExpr(tree Tree) (expr.Expr, error) {
 	panic("unreachable")
 }
 
-var flipExpr = &expr.Abst{
-	Bound: &expr.Var{Name: "f"},
-	Body: &expr.Abst{
-		Bound: &expr.Var{Name: "x"},
+func newFlipExpr(si *parseinfo.Source) expr.Expr {
+	return &expr.Abst{
+		Bound: &expr.Var{SI: si, Name: "f"},
 		Body: &expr.Abst{
-			Bound: &expr.Var{Name: "y"},
-			Body: &expr.Appl{
-				Left: &expr.Appl{
-					Left:  &expr.Var{Name: "f"},
-					Right: &expr.Var{Name: "y"},
+			Bound: &expr.Var{Name: "x"},
+			Body: &expr.Abst{
+				Bound: &expr.Var{Name: "y"},
+				Body: &expr.Appl{
+					Left: &expr.Appl{
+						Left:  &expr.Var{Name: "f"},
+						Right: &expr.Var{Name: "y"},
+					},
+					Right: &expr.Var{Name: "x"},
 				},
-				Right: &expr.Var{Name: "x"},
 			},
 		},
-	},
+	}
 }
