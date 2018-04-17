@@ -174,8 +174,8 @@ func flattenHelper(ch chan<- Tree, tree Tree) {
 		flattenHelper(ch, tree.Left)
 		flattenHelper(ch, tree.Right)
 	case *Infix:
-		flattenHelper(ch, tree.Left)
 		ch <- &Infix{Left: nil, In: tree.In, Right: nil}
+		flattenHelper(ch, tree.Left)
 		flattenHelper(ch, tree.Right)
 	}
 }
