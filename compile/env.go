@@ -30,7 +30,13 @@ func (env *Env) lazyInit() {
 		return
 	}
 	env.inited = true
-	env.names = make(map[string]types.Name)
+	env.names = map[string]types.Name{
+		"Bool":   &types.Builtin{NumArgs: 0},
+		"Int":    &types.Builtin{NumArgs: 0},
+		"Float":  &types.Builtin{NumArgs: 0},
+		"String": &types.Builtin{NumArgs: 0},
+		"List":   &types.Builtin{NumArgs: 1},
+	}
 	env.funcs = make(map[string][]impl)
 }
 
@@ -110,32 +116,6 @@ func (env *Env) addFunc(name string, imp impl) error {
 	}
 
 	env.funcs[name] = append(env.funcs[name], imp)
-
-	return nil
-}
-
-func (env *Env) TypeInfer() error {
-	global := make(typecheck.Funcs)
-	for name, impls := range env.funcs {
-		for _, imp := range impls {
-			global.Add(name, imp.TypeInfo())
-		}
-	}
-
-	for _, impls := range env.funcs {
-		for _, imp := range impls {
-			impExpr, ok := imp.(*implExpr)
-			if !ok {
-				continue
-			}
-			results, err := typecheck.Infer(global, impExpr.expr)
-			if err != nil {
-				return err
-			}
-			// there's exactly one result
-			impExpr.expr = results[0].Expr
-		}
-	}
 
 	return nil
 }
