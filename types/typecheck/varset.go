@@ -33,7 +33,15 @@ func (vs VarSet) InOrder() []string {
 	for v := range vs {
 		vars = append(vars, v)
 	}
-	sort.Strings(vars)
+	sort.Slice(vars, func(i, j int) bool {
+		if len(vars[i]) < len(vars[j]) {
+			return true
+		}
+		if len(vars[i]) > len(vars[j]) {
+			return false
+		}
+		return vars[i] < vars[j]
+	})
 	return vars
 }
 
