@@ -7,7 +7,9 @@ import (
 	"github.com/faiface/funky/types/typecheck"
 )
 
-func (env *Env) Validate() error {
+func (env *Env) Validate() []error {
+	var errs []error
+
 	for _, definition := range env.names {
 		switch definition := definition.(type) {
 		case *types.Builtin:
@@ -15,7 +17,7 @@ func (env *Env) Validate() error {
 		case *types.Record:
 			err := env.validateRecord(definition)
 			if err != nil {
-				return err
+				errs = append(errs, err)
 			}
 		default:
 			panic("unreachable")
@@ -27,12 +29,12 @@ func (env *Env) Validate() error {
 			freeVars := typecheck.FreeVars(imp.TypeInfo()).InOrder()
 			err := env.validateType(freeVars, imp.TypeInfo())
 			if err != nil {
-				return err
+				errs = append(errs, err)
 			}
 		}
 	}
 
-	return nil
+	return errs
 }
 
 func (env *Env) validateType(boundVars []string, typ types.Type) error {
@@ -90,7 +92,9 @@ func (env *Env) validateRecord(record *types.Record) error {
 	return nil
 }
 
-func (env *Env) TypeInfer() error {
+func (env *Env) TypeInfer() []error {
+	var errs []error
+
 	global := make(typecheck.Funcs)
 	for name, impls := range env.funcs {
 		for _, imp := range impls {
@@ -106,12 +110,14 @@ func (env *Env) TypeInfer() error {
 			}
 			results, err := typecheck.Infer(global, impExpr.expr)
 			if err != nil {
-				return err
+				errs = append(errs, err)
 			}
-			// there's exactly one result
-			impExpr.expr = results[0].Expr
+			if err == nil {
+				// there's exactly one result
+				impExpr.expr = results[0].Expr
+			}
 		}
 	}
 
-	return nil
+	return errs
 }
