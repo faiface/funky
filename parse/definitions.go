@@ -181,7 +181,7 @@ func treeToEnum(tree Tree) (name string, enum *types.Enum, err error) {
 	}, nil
 }
 
-func treeToFunc(tree Tree) (name string, e expr.Expr, err error) {
+func treeToFunc(tree Tree) (name string, body expr.Expr, err error) {
 	signatureTree, _, bodyTree := FindNextSpecial(tree, "=")
 
 	if signatureTree == nil {
@@ -213,7 +213,7 @@ func treeToFunc(tree Tree) (name string, e expr.Expr, err error) {
 		}
 	}
 
-	body, err := TreeToExpr(bodyTree)
+	body, err = TreeToExpr(bodyTree)
 	if err != nil {
 		return "", nil, err
 	}
