@@ -45,67 +45,109 @@ func (env *Env) Add(d parse.Definition) error {
 
 	switch value := d.Value.(type) {
 	case *types.Record:
-		if env.names[d.Name] != nil {
-			return &Error{
-				value.SourceInfo(),
-				fmt.Sprintf("type name %s already defined: %v", d.Name, env.names[d.Name].SourceInfo()),
-			}
-		}
-		env.names[d.Name] = value
+		return env.addRecord(d.Name, value)
+	case *types.Union:
+		return env.addUnion(d.Name, value)
+	case expr.Expr:
+		return env.addFunc(d.Name, &implExpr{value})
+	}
 
-		var args []types.Type
-		for _, arg := range value.Args {
-			args = append(args, &types.Var{Name: arg})
-		}
-		recordType := &types.Appl{
-			SI:   value.SourceInfo(),
-			Name: d.Name,
-			Args: args,
-		}
+	panic("unreachable")
+}
 
-		// add record constructor
-		var constructorType types.Type = recordType
-		for i := len(value.Fields) - 1; i >= 0; i-- {
-			constructorType = &types.Func{
-				From: value.Fields[i].Type,
-				To:   constructorType,
-			}
+func (env *Env) addRecord(name string, record *types.Record) error {
+	if env.names[name] != nil {
+		return &Error{
+			record.SourceInfo(),
+			fmt.Sprintf("type name %s already defined: %v", name, env.names[name].SourceInfo()),
 		}
-		err := env.addFunc(d.Name, &implUndefined{value.SourceInfo(), constructorType})
+	}
+	env.names[name] = record
+
+	var args []types.Type
+	for _, arg := range record.Args {
+		args = append(args, &types.Var{Name: arg})
+	}
+	recordType := &types.Appl{
+		SI:   record.SourceInfo(),
+		Name: name,
+		Args: args,
+	}
+
+	// add record constructor
+	var constructorType types.Type = recordType
+	for i := len(record.Fields) - 1; i >= 0; i-- {
+		constructorType = &types.Func{
+			From: record.Fields[i].Type,
+			To:   constructorType,
+		}
+	}
+	err := env.addFunc(name, &implUndefined{record.SourceInfo(), constructorType})
+	if err != nil {
+		return err
+	}
+
+	// add record field getters
+	for _, field := range record.Fields {
+		err := env.addFunc(field.Name, &implUndefined{
+			field.SI,
+			&types.Func{
+				From: recordType,
+				To:   field.Type,
+			},
+		})
 		if err != nil {
 			return err
 		}
+	}
 
-		// add record field getters
-		for _, field := range value.Fields {
-			err := env.addFunc(field.Name, &implUndefined{
-				field.SI,
-				&types.Func{
-					From: recordType,
-					To:   field.Type,
-				},
-			})
-			if err != nil {
-				return err
+	// add record fiel setters
+	for _, field := range record.Fields {
+		err := env.addFunc(field.Name, &implUndefined{
+			field.SI,
+			&types.Func{
+				From: field.Type,
+				To:   &types.Func{From: recordType, To: recordType},
+			},
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (env *Env) addUnion(name string, union *types.Union) error {
+	if env.names[name] != nil {
+		return &Error{
+			union.SourceInfo(),
+			fmt.Sprintf("type name %s already defined: %v", name, env.names[name].SourceInfo()),
+		}
+	}
+	env.names[name] = union
+
+	var args []types.Type
+	for _, arg := range union.Args {
+		args = append(args, &types.Var{Name: arg})
+	}
+	unionType := &types.Appl{
+		SI:   union.SourceInfo(),
+		Name: name,
+		Args: args,
+	}
+
+	// add union alternative constructors
+	for _, alt := range union.Alts {
+		fmt.Println(len(alt.Fields), alt.Fields)
+		var altType types.Type = unionType
+		for i := len(alt.Fields) - 1; i >= 0; i-- {
+			altType = &types.Func{
+				From: alt.Fields[i],
+				To:   altType,
 			}
 		}
-
-		// add record fiel setters
-		for _, field := range value.Fields {
-			err := env.addFunc(field.Name, &implUndefined{
-				field.SI,
-				&types.Func{
-					From: field.Type,
-					To:   &types.Func{From: recordType, To: recordType},
-				},
-			})
-			if err != nil {
-				return err
-			}
-		}
-
-	case expr.Expr:
-		err := env.addFunc(d.Name, &implExpr{value})
+		err := env.addFunc(alt.Name, &implUndefined{alt.SI, altType})
 		if err != nil {
 			return err
 		}
@@ -115,8 +157,6 @@ func (env *Env) Add(d parse.Definition) error {
 }
 
 func (env *Env) addFunc(name string, imp impl) error {
-	env.lazyInit()
-
 	for _, alreadyDefined := range env.funcs[name] {
 		if _, ok := typecheck.Unify(imp.TypeInfo(), alreadyDefined.TypeInfo()); ok {
 			return &Error{

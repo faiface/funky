@@ -11,16 +11,18 @@ func (env *Env) Validate() []error {
 	var errs []error
 
 	for _, definition := range env.names {
+		var err error
 		switch definition := definition.(type) {
 		case *types.Builtin:
-			continue
 		case *types.Record:
-			err := env.validateRecord(definition)
-			if err != nil {
-				errs = append(errs, err)
-			}
+			err = env.validateRecord(definition)
+		case *types.Union:
+			err = env.validateUnion(definition)
 		default:
 			panic("unreachable")
+		}
+		if err != nil {
+			errs = append(errs, err)
 		}
 	}
 
@@ -102,6 +104,33 @@ func (env *Env) validateRecord(record *types.Record) error {
 			return err
 		}
 	}
+
+	return nil
+}
+
+func (env *Env) validateUnion(union *types.Union) error {
+	// check if all alternatives have distinct names
+	for i, alt1 := range union.Alts {
+		for _, alt2 := range union.Alts[:i] {
+			if alt1.Name == alt2.Name {
+				return &Error{
+					alt1.SI,
+					fmt.Sprintf("another union alternative has the same name: %v", alt2.SI),
+				}
+			}
+		}
+	}
+
+	// validate alternative types
+	for _, alt := range union.Alts {
+		for _, field := range alt.Fields {
+			err := env.validateType(union.Args, field)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	return nil
 }
 
