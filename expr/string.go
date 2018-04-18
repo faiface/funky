@@ -20,7 +20,7 @@ func (a *Abst) String() string { return fmt.Sprintf("λ%v %v", a.Bound, a.Body) 
 func (s *Switch) String() string {
 	str := fmt.Sprintf("switch %v", s.Expr.String())
 	for _, cas := range s.Cases {
-		str += fmt.Sprintf(" case %v %v", cas.Alt.String(), cas.Body.String())
+		str += fmt.Sprintf(" case %s %v", cas.Alt, cas.Body.String())
 	}
 	return str
 }

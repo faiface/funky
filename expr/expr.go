@@ -42,7 +42,8 @@ type (
 		SI    *parseinfo.Source
 		Expr  Expr
 		Cases []struct {
-			Alt  *Var
+			SI   *parseinfo.Source
+			Alt  string
 			Body Expr
 		}
 	}
@@ -70,11 +71,13 @@ func (a *Abst) Map(f func(Expr) Expr) Expr {
 }
 func (s *Switch) Map(f func(Expr) Expr) Expr {
 	newCases := make([]struct {
-		Alt  *Var
+		SI   *parseinfo.Source
+		Alt  string
 		Body Expr
 	}, len(s.Cases))
 	for i := range newCases {
-		newCases[i].Alt = s.Cases[i].Alt.Map(f).(*Var)
+		newCases[i].SI = s.Cases[i].SI
+		newCases[i].Alt = s.Cases[i].Alt
 		newCases[i].Body = s.Cases[i].Body.Map(f)
 	}
 	return f(&Switch{s.TI, s.SI, s.Expr.Map(f), newCases})
