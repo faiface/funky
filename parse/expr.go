@@ -46,8 +46,7 @@ func TreeToExpr(tree Tree) (expr.Expr, error) {
 			}
 			sw := &expr.Switch{SI: tree.SourceInfo(), Expr: exp}
 			for caseBindingTree != nil {
-				caseBodyTree, nextCaseBindingTree, _ := FindNextSpecialOrBinding(nextCasesTree, "case")
-				caseBindingTree = nextCaseBindingTree
+				caseBodyTree, newCaseBindingTree, newNextCasesTree := FindNextSpecialOrBinding(nextCasesTree, "case")
 
 				caseBinding := caseBindingTree.(*Binding)
 				altExpr, err := TreeToExpr(caseBinding.Bound)
@@ -71,7 +70,10 @@ func TreeToExpr(tree Tree) (expr.Expr, error) {
 					SI   *parseinfo.Source
 					Alt  string
 					Body expr.Expr
-				}{alt.SI, alt.Name, body})
+				}{caseBindingTree.SourceInfo(), alt.Name, body})
+
+				caseBindingTree = newCaseBindingTree
+				nextCasesTree = newNextCasesTree
 			}
 			return sw, nil
 		}
