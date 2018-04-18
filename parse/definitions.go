@@ -34,7 +34,7 @@ func TreeToDefinitions(tree Tree) ([]Definition, error) {
 		definition, next, _ := FindNextSpecial(after, "record", "union", "alias", "func")
 		tree = next
 
-		switch at.(*Special).Type {
+		switch at.(*Special).Kind {
 		case "record":
 			name, record, err := treeToRecord(definition)
 			if err != nil {

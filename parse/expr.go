@@ -25,20 +25,20 @@ func TreeToExpr(tree Tree) (expr.Expr, error) {
 		return &expr.Var{SI: tree.SourceInfo(), Name: tree.Value}, nil
 
 	case *Paren:
-		switch tree.Type {
+		switch tree.Kind {
 		case "(":
 			return TreeToExpr(tree.Inside)
 		}
-		return nil, &Error{tree.SourceInfo(), fmt.Sprintf("unexpected: %s", tree.Type)}
+		return nil, &Error{tree.SourceInfo(), fmt.Sprintf("unexpected: %s", tree.Kind)}
 
 	case *Special:
-		switch tree.Type {
+		switch tree.Kind {
 		case ";":
 			return TreeToExpr(tree.After)
 		}
-		return nil, &Error{tree.SourceInfo(), fmt.Sprintf("unexpected: %s", tree.Type)}
+		return nil, &Error{tree.SourceInfo(), fmt.Sprintf("unexpected: %s", tree.Kind)}
 
-	case *Lambda:
+	case *Binding:
 		bound, err := TreeToExpr(tree.Bound)
 		if err != nil {
 			return nil, err
@@ -58,7 +58,7 @@ func TreeToExpr(tree Tree) (expr.Expr, error) {
 		if err != nil {
 			return nil, err
 		}
-		if special, ok := tree.Right.(*Special); ok && special.Type == ":" { // type info after :
+		if special, ok := tree.Right.(*Special); ok && special.Kind == ":" { // type info after :
 			typ, err := TreeToType(special.After)
 			if err != nil {
 				return nil, err

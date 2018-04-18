@@ -42,17 +42,17 @@ func TreeToType(tree Tree) (types.Type, error) {
 		return nil, &Error{tree.SourceInfo(), fmt.Sprintf("invalid type identifier: %s", tree.Value)}
 
 	case *Paren:
-		switch tree.Type {
+		switch tree.Kind {
 		case "(":
 			return TreeToType(tree.Inside)
 		}
-		return nil, &Error{tree.SourceInfo(), fmt.Sprintf("unexpected: %s", tree.Type)}
+		return nil, &Error{tree.SourceInfo(), fmt.Sprintf("unexpected: %s", tree.Kind)}
 
 	case *Special:
-		return nil, &Error{tree.SourceInfo(), fmt.Sprintf("unexpected: %s", tree.Type)}
+		return nil, &Error{tree.SourceInfo(), fmt.Sprintf("unexpected: %s", tree.Kind)}
 
-	case *Lambda:
-		return nil, &Error{tree.SourceInfo(), fmt.Sprintf("unexpected: %s", tree.Type)}
+	case *Binding:
+		return nil, &Error{tree.SourceInfo(), fmt.Sprintf("unexpected: %s", tree.Kind)}
 
 	case *Prefix:
 		left, err := TreeToType(tree.Left)

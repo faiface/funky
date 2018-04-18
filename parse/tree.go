@@ -29,19 +29,19 @@ type (
 
 	Paren struct {
 		SI     *parseinfo.Source
-		Type   string
+		Kind   string
 		Inside Tree
 	}
 
 	Special struct {
 		SI    *parseinfo.Source
-		Type  string
+		Kind  string
 		After Tree
 	}
 
-	Lambda struct {
+	Binding struct {
 		SI           *parseinfo.Source
-		Type         string
+		Kind         string
 		Bound, After Tree
 	}
 
@@ -56,7 +56,7 @@ type (
 
 func (l *Literal) String() string { return l.Value }
 func (p *Paren) String() string {
-	switch p.Type {
+	switch p.Kind {
 	case "(":
 		return "(" + p.Inside.String() + ")"
 	case "[":
@@ -66,8 +66,8 @@ func (p *Paren) String() string {
 	}
 	panic("unreachable")
 }
-func (s *Special) String() string { return s.Type + " " + s.After.String() }
-func (l *Lambda) String() string  { return l.Type + l.Bound.String() + " " + l.After.String() }
+func (s *Special) String() string { return s.Kind + " " + s.After.String() }
+func (l *Binding) String() string { return l.Kind + l.Bound.String() + " " + l.After.String() }
 func (p *Prefix) String() string  { return p.Left.String() + " " + p.Right.String() }
 func (i *Infix) String() string {
 	switch {
@@ -85,7 +85,7 @@ func (i *Infix) String() string {
 func (l *Literal) SourceInfo() *parseinfo.Source { return l.SI }
 func (p *Paren) SourceInfo() *parseinfo.Source   { return p.SI }
 func (s *Special) SourceInfo() *parseinfo.Source { return s.SI }
-func (l *Lambda) SourceInfo() *parseinfo.Source  { return l.SI }
+func (l *Binding) SourceInfo() *parseinfo.Source { return l.SI }
 func (p *Prefix) SourceInfo() *parseinfo.Source  { return p.Left.SourceInfo() }
 func (i *Infix) SourceInfo() *parseinfo.Source   { return i.In.SourceInfo() }
 
@@ -101,7 +101,7 @@ func FindNextSpecial(tree Tree, special ...string) (before, at, after Tree) {
 	case *Special:
 		matches := false
 		for _, s := range special {
-			if tree.Type == s {
+			if tree.Kind == s {
 				matches = true
 				break
 			}
@@ -112,15 +112,15 @@ func FindNextSpecial(tree Tree, special ...string) (before, at, after Tree) {
 		afterBefore, afterAt, afterAfter := FindNextSpecial(tree.After, special...)
 		return &Special{
 			SI:    tree.SI,
-			Type:  tree.Type,
+			Kind:  tree.Kind,
 			After: afterBefore,
 		}, afterAt, afterAfter
 
-	case *Lambda:
+	case *Binding:
 		afterBefore, afterAt, afterAfter := FindNextSpecial(tree.After, special...)
-		return &Lambda{
+		return &Binding{
 			SI:    tree.SI,
-			Type:  tree.Type,
+			Kind:  tree.Kind,
 			Bound: tree.Bound,
 			After: afterBefore,
 		}, afterAt, afterAfter
@@ -168,7 +168,7 @@ func flatten(tree Tree) <-chan Tree {
 
 func flattenHelper(ch chan<- Tree, tree Tree) {
 	switch tree := tree.(type) {
-	case *Literal, *Paren, *Special, *Lambda:
+	case *Literal, *Paren, *Special, *Binding:
 		ch <- tree
 	case *Prefix:
 		flattenHelper(ch, tree.Left)
@@ -206,10 +206,10 @@ func SingleTree(tokens []Token) (t Tree, end int, err error) {
 				"nothing inside parentheses",
 			}
 		}
-		paren := &Paren{SI: tokens[0].SourceInfo, Type: tokens[0].Value, Inside: inside}
+		paren := &Paren{SI: tokens[0].SourceInfo, Kind: tokens[0].Value, Inside: inside}
 		return paren, closing + 1, nil
 
-	case "\\", "λ":
+	case "\\", "λ", "case":
 		if len(tokens) < 2 {
 			return nil, 0, &Error{
 				tokens[0].SourceInfo,
@@ -227,24 +227,24 @@ func SingleTree(tokens []Token) (t Tree, end int, err error) {
 		if after == nil {
 			return nil, 0, &Error{
 				tokens[0].SourceInfo,
-				"nothing after lambda binding",
+				"nothing after binding",
 			}
 		}
-		return &Lambda{
+		return &Binding{
 			SI:    tokens[0].SourceInfo,
-			Type:  tokens[0].Value,
+			Kind:  tokens[0].Value,
 			Bound: bound,
 			After: after,
 		}, len(tokens), nil
 
-	case ",", ";", ":", "|", "=", "package", "import", "record", "union", "alias", "func", "switch", "case":
+	case ",", ";", ":", "|", "=", "package", "import", "record", "union", "alias", "func", "switch":
 		after, err := MultiTree(tokens[1:])
 		if err != nil {
 			return nil, 0, err
 		}
 		return &Special{
 			SI:    tokens[0].SourceInfo,
-			Type:  tokens[0].Value,
+			Kind:  tokens[0].Value,
 			After: after,
 		}, len(tokens), nil
 
