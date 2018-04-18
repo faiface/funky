@@ -8,7 +8,7 @@ func (a *Abst) leftString() string   { return "(" + a.String() + ")" }
 func (s *Switch) leftString() string { return "(" + s.String() + ")" }
 
 func (v *Var) rightString() string    { return v.Name }
-func (a *Appl) rightString() string   { return "(" + a.String() + "}" }
+func (a *Appl) rightString() string   { return "(" + a.String() + ")" }
 func (a *Abst) rightString() string   { return "(" + a.String() + ")" }
 func (s *Switch) rightString() string { return s.String() }
 
