@@ -39,19 +39,23 @@ func TreeToExpr(tree Tree) (expr.Expr, error) {
 		return nil, &Error{tree.SourceInfo(), fmt.Sprintf("unexpected: %s", tree.Kind)}
 
 	case *Binding:
-		bound, err := TreeToExpr(tree.Bound)
-		if err != nil {
-			return nil, err
+		switch tree.Kind {
+		case "\\", "λ":
+			bound, err := TreeToExpr(tree.Bound)
+			if err != nil {
+				return nil, err
+			}
+			boundVar, ok := bound.(*expr.Var)
+			if !ok {
+				return nil, &Error{tree.SourceInfo(), "bound expression not a variable"}
+			}
+			body, err := TreeToExpr(tree.After)
+			if err != nil {
+				return nil, err
+			}
+			return &expr.Abst{SI: tree.SourceInfo(), Bound: boundVar, Body: body}, nil
 		}
-		boundVar, ok := bound.(*expr.Var)
-		if !ok {
-			return nil, &Error{tree.SourceInfo(), "bound expression not a variable"}
-		}
-		body, err := TreeToExpr(tree.After)
-		if err != nil {
-			return nil, err
-		}
-		return &expr.Abst{Bound: boundVar, Body: body}, nil
+		return nil, &Error{tree.SourceInfo(), fmt.Sprintf("unexpected: %s", tree.Kind)}
 
 	case *Prefix:
 		left, err := TreeToExpr(tree.Left)

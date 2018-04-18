@@ -32,6 +32,7 @@ type (
 
 	Abst struct {
 		TI    types.Type
+		SI    *parseinfo.Source
 		Bound *Var
 		Body  Expr
 	}
@@ -51,10 +52,10 @@ func (a *Abst) WithTypeInfo(t types.Type) Expr { return &Abst{TI: t, Bound: a.Bo
 
 func (v *Var) SourceInfo() *parseinfo.Source  { return v.SI }
 func (a *Appl) SourceInfo() *parseinfo.Source { return a.Left.SourceInfo() }
-func (a *Abst) SourceInfo() *parseinfo.Source { return a.Bound.SourceInfo() }
+func (a *Abst) SourceInfo() *parseinfo.Source { return a.SI }
 
 func (v *Var) Map(f func(Expr) Expr) Expr  { return f(v) }
 func (a *Appl) Map(f func(Expr) Expr) Expr { return f(&Appl{a.TI, a.Left.Map(f), a.Right.Map(f)}) }
 func (a *Abst) Map(f func(Expr) Expr) Expr {
-	return f(&Abst{a.TI, a.Bound.Map(f).(*Var), a.Body.Map(f)})
+	return f(&Abst{a.TI, a.SI, a.Bound.Map(f).(*Var), a.Body.Map(f)})
 }
