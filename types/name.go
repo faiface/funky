@@ -18,7 +18,7 @@ type (
 		Fields []Field
 	}
 
-	Enum struct {
+	Union struct {
 		SI   *parseinfo.Source
 		Args []string
 		Alts []Alternative
@@ -45,10 +45,10 @@ type Alternative struct {
 
 func (b *Builtin) SourceInfo() *parseinfo.Source { return nil }
 func (r *Record) SourceInfo() *parseinfo.Source  { return r.SI }
-func (e *Enum) SourceInfo() *parseinfo.Source    { return e.SI }
+func (e *Union) SourceInfo() *parseinfo.Source   { return e.SI }
 func (a *Alias) SourceInfo() *parseinfo.Source   { return a.SI }
 
 func (b *Builtin) Arity() int { return b.NumArgs }
 func (r *Record) Arity() int  { return len(r.Args) }
-func (e *Enum) Arity() int    { return len(e.Args) }
+func (e *Union) Arity() int   { return len(e.Args) }
 func (a *Alias) Arity() int   { return len(a.Args) }

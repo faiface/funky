@@ -9,7 +9,7 @@ import (
 
 type Definition struct {
 	Name  string
-	Value interface{} // expr.Expr, *types.Record, *types.Enum, *types.Alias
+	Value interface{} // expr.Expr, *types.Record, *types.Union, *types.Alias
 }
 
 func Definitions(tokens []Token) ([]Definition, error) {
@@ -24,14 +24,14 @@ func TreeToDefinitions(tree Tree) ([]Definition, error) {
 	var definitions []Definition
 
 	for tree != nil {
-		before, at, after := FindNextSpecial(tree, "record", "enum", "alias", "func")
+		before, at, after := FindNextSpecial(tree, "record", "union", "alias", "func")
 		if before != nil {
 			return nil, &Error{
 				tree.SourceInfo(),
-				fmt.Sprintf("expected record, enum, alias or func"),
+				fmt.Sprintf("expected record, union, alias or func"),
 			}
 		}
-		definition, next, _ := FindNextSpecial(after, "record", "enum", "alias", "func")
+		definition, next, _ := FindNextSpecial(after, "record", "union", "alias", "func")
 		tree = next
 
 		switch at.(*Special).Type {
@@ -42,12 +42,12 @@ func TreeToDefinitions(tree Tree) ([]Definition, error) {
 			}
 			definitions = append(definitions, Definition{name, record})
 
-		case "enum":
-			name, enum, err := treeToEnum(definition)
+		case "union":
+			name, union, err := treeToUnion(definition)
 			if err != nil {
 				return nil, err
 			}
-			definitions = append(definitions, Definition{name, enum})
+			definitions = append(definitions, Definition{name, union})
 
 		case "func":
 			name, body, err := treeToFunc(definition)
@@ -132,7 +132,7 @@ func treeToRecord(tree Tree) (name string, record *types.Record, err error) {
 	}, nil
 }
 
-func treeToEnum(tree Tree) (name string, enum *types.Enum, err error) {
+func treeToUnion(tree Tree) (name string, union *types.Union, err error) {
 	headerTree, _, altsTree := FindNextSpecial(tree, "=")
 
 	name, args, err := treeToTypeHeader(headerTree)
@@ -157,11 +157,11 @@ func treeToEnum(tree Tree) (name string, enum *types.Enum, err error) {
 			return "", nil, err
 		}
 		if altNameExpr.TypeInfo() != nil {
-			return "", nil, &Error{altNameExpr.SourceInfo(), "enum alternative name cannot have type"}
+			return "", nil, &Error{altNameExpr.SourceInfo(), "union alternative name cannot have type"}
 		}
 		altNameVar, ok := altNameExpr.(*expr.Var)
 		if !ok {
-			return "", nil, &Error{altNameExpr.SourceInfo(), "enum alternative name must be simple variable"}
+			return "", nil, &Error{altNameExpr.SourceInfo(), "union alternative name must be simple variable"}
 		}
 		altName := altNameVar.Name
 
@@ -181,7 +181,7 @@ func treeToEnum(tree Tree) (name string, enum *types.Enum, err error) {
 		})
 	}
 
-	return name, &types.Enum{
+	return name, &types.Union{
 		SI:   tree.SourceInfo(),
 		Args: args,
 		Alts: alts,
