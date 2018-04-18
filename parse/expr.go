@@ -35,6 +35,45 @@ func TreeToExpr(tree Tree) (expr.Expr, error) {
 		switch tree.Kind {
 		case ";":
 			return TreeToExpr(tree.After)
+		case "switch":
+			expTree, caseBindingTree, nextCasesTree := FindNextSpecialOrBinding(tree.After, "case")
+			if expTree == nil {
+				return nil, &Error{tree.SourceInfo(), "no expression to switch"}
+			}
+			exp, err := TreeToExpr(expTree)
+			if err != nil {
+				return nil, err
+			}
+			sw := &expr.Switch{SI: tree.SourceInfo(), Expr: exp}
+			for caseBindingTree != nil {
+				caseBodyTree, nextCaseBindingTree, _ := FindNextSpecialOrBinding(nextCasesTree, "case")
+				caseBindingTree = nextCaseBindingTree
+
+				caseBinding := caseBindingTree.(*Binding)
+				altExpr, err := TreeToExpr(caseBinding.Bound)
+				if err != nil {
+					return nil, err
+				}
+				alt, ok := altExpr.(*expr.Var)
+				if !ok {
+					return nil, &Error{altExpr.SourceInfo(), "union alternative must be a simple variable"}
+				}
+				if alt.TypeInfo() != nil {
+					return nil, &Error{altExpr.SourceInfo(), "union alternative name cannot have type"}
+				}
+
+				body, err := TreeToExpr(caseBodyTree)
+				if err != nil {
+					return nil, err
+				}
+
+				sw.Cases = append(sw.Cases, struct {
+					SI   *parseinfo.Source
+					Alt  string
+					Body expr.Expr
+				}{alt.SI, alt.Name, body})
+			}
+			return sw, nil
 		}
 		return nil, &Error{tree.SourceInfo(), fmt.Sprintf("unexpected: %s", tree.Kind)}
 
@@ -47,7 +86,7 @@ func TreeToExpr(tree Tree) (expr.Expr, error) {
 			}
 			boundVar, ok := bound.(*expr.Var)
 			if !ok {
-				return nil, &Error{tree.SourceInfo(), "bound expression not a variable"}
+				return nil, &Error{tree.SourceInfo(), "bound expression must be a simple variable"}
 			}
 			body, err := TreeToExpr(tree.After)
 			if err != nil {

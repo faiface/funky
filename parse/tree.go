@@ -89,7 +89,7 @@ func (l *Binding) SourceInfo() *parseinfo.Source { return l.SI }
 func (p *Prefix) SourceInfo() *parseinfo.Source  { return p.Left.SourceInfo() }
 func (i *Infix) SourceInfo() *parseinfo.Source   { return i.In.SourceInfo() }
 
-func FindNextSpecial(tree Tree, special ...string) (before, at, after Tree) {
+func FindNextSpecialOrBinding(tree Tree, words ...string) (before, at, after Tree) {
 	if tree == nil {
 		return nil, nil, nil
 	}
@@ -100,7 +100,7 @@ func FindNextSpecial(tree Tree, special ...string) (before, at, after Tree) {
 
 	case *Special:
 		matches := false
-		for _, s := range special {
+		for _, s := range words {
 			if tree.Kind == s {
 				matches = true
 				break
@@ -109,7 +109,7 @@ func FindNextSpecial(tree Tree, special ...string) (before, at, after Tree) {
 		if matches {
 			return nil, tree, tree.After
 		}
-		afterBefore, afterAt, afterAfter := FindNextSpecial(tree.After, special...)
+		afterBefore, afterAt, afterAfter := FindNextSpecialOrBinding(tree.After, words...)
 		return &Special{
 			SI:    tree.SI,
 			Kind:  tree.Kind,
@@ -117,7 +117,17 @@ func FindNextSpecial(tree Tree, special ...string) (before, at, after Tree) {
 		}, afterAt, afterAfter
 
 	case *Binding:
-		afterBefore, afterAt, afterAfter := FindNextSpecial(tree.After, special...)
+		matches := false
+		for _, s := range words {
+			if tree.Kind == s {
+				matches = true
+				break
+			}
+		}
+		if matches {
+			return nil, tree, tree.After
+		}
+		afterBefore, afterAt, afterAfter := FindNextSpecialOrBinding(tree.After, words...)
 		return &Binding{
 			SI:    tree.SI,
 			Kind:  tree.Kind,
@@ -127,7 +137,7 @@ func FindNextSpecial(tree Tree, special ...string) (before, at, after Tree) {
 
 	case *Prefix:
 		// special can't be in the left
-		rightBefore, rightAt, rightAfter := FindNextSpecial(tree.Right, special...)
+		rightBefore, rightAt, rightAfter := FindNextSpecialOrBinding(tree.Right, words...)
 		if rightBefore == nil {
 			return tree.Left, rightAt, rightAfter
 		}
@@ -138,7 +148,7 @@ func FindNextSpecial(tree Tree, special ...string) (before, at, after Tree) {
 
 	case *Infix:
 		// special can't be in the left or in
-		rightBefore, rightAt, rightAfter := FindNextSpecial(tree.Right, special...)
+		rightBefore, rightAt, rightAfter := FindNextSpecialOrBinding(tree.Right, words...)
 		return &Infix{
 			Left:  tree.Left,
 			In:    tree.In,
