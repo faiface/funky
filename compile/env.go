@@ -139,7 +139,6 @@ func (env *Env) addUnion(name string, union *types.Union) error {
 
 	// add union alternative constructors
 	for _, alt := range union.Alts {
-		fmt.Println(len(alt.Fields), alt.Fields)
 		var altType types.Type = unionType
 		for i := len(alt.Fields) - 1; i >= 0; i-- {
 			altType = &types.Func{
