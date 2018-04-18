@@ -142,10 +142,10 @@ type InferResult struct {
 	Expr  expr.Expr
 }
 
-func Infer(global Funcs, e expr.Expr) ([]InferResult, error) {
+func Infer(names map[string]types.Name, global map[string][]types.Type, e expr.Expr) ([]InferResult, error) {
 	varIndex := 0
 	e = instExpr(&varIndex, e)
-	results, err := infer(&varIndex, global, make(Vars), e)
+	results, err := infer(&varIndex, names, global, make(map[string]types.Type), e)
 	if err != nil {
 		return nil, err
 	}
@@ -155,7 +155,7 @@ func Infer(global Funcs, e expr.Expr) ([]InferResult, error) {
 	return results, nil
 }
 
-func infer(varIndex *int, global Funcs, local Vars, e expr.Expr) (results []InferResult, err error) {
+func infer(varIndex *int, names map[string]types.Name, global map[string][]types.Type, local map[string]types.Type, e expr.Expr) (results []InferResult, err error) {
 	defer func() {
 		if err != nil || e.TypeInfo() == nil {
 			return
@@ -207,12 +207,12 @@ func infer(varIndex *int, global Funcs, local Vars, e expr.Expr) (results []Infe
 		return nil, &NotBoundError{e.SourceInfo(), e.Name}
 
 	case *expr.Appl:
-		results1, err := infer(varIndex, global, local, e.Left)
+		results1, err := infer(varIndex, names, global, local, e.Left)
 		if err != nil {
 			return nil, err
 		}
 		// if the right side is wrong in itself, return a simple error from there
-		_, err = infer(varIndex, global, local, e.Right)
+		_, err = infer(varIndex, names, global, local, e.Right)
 		if err != nil {
 			return nil, err
 		}
@@ -224,6 +224,7 @@ func infer(varIndex *int, global Funcs, local Vars, e expr.Expr) (results []Infe
 		for _, r1 := range results1 {
 			results2, err := infer(
 				varIndex,
+				names,
 				global,
 				r1.Subst.ApplyToVars(local),
 				e.Right,
@@ -284,8 +285,8 @@ func infer(varIndex *int, global Funcs, local Vars, e expr.Expr) (results []Infe
 		} else if bindType == nil {
 			bindType = newVar(varIndex)
 		}
-		newLocal := local.Assume(e.Bound.Name, bindType)
-		bodyResults, err := infer(varIndex, global, newLocal, e.Body.WithTypeInfo(bodyType))
+		newLocal := assume(local, e.Bound.Name, bindType)
+		bodyResults, err := infer(varIndex, names, global, newLocal, e.Body.WithTypeInfo(bodyType))
 		if err != nil {
 			return nil, err
 		}
@@ -322,6 +323,15 @@ func newVar(varIndex *int) *types.Var {
 	v := &types.Var{Name: name}
 	*varIndex++
 	return v
+}
+
+func assume(vars map[string]types.Type, v string, t types.Type) map[string]types.Type {
+	newVars := make(map[string]types.Type)
+	for v, t := range vars {
+		newVars[v] = t
+	}
+	newVars[v] = t
+	return newVars
 }
 
 func instTypeHelper(varIndex *int, renames map[string]string, t types.Type) types.Type {

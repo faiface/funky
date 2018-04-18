@@ -137,10 +137,10 @@ func (env *Env) validateUnion(union *types.Union) error {
 func (env *Env) TypeInfer() []error {
 	var errs []error
 
-	global := make(typecheck.Funcs)
+	global := make(map[string][]types.Type)
 	for name, impls := range env.funcs {
 		for _, imp := range impls {
-			global.Add(name, imp.TypeInfo())
+			global[name] = append(global[name], imp.TypeInfo())
 		}
 	}
 
@@ -150,7 +150,7 @@ func (env *Env) TypeInfer() []error {
 			if !ok {
 				continue
 			}
-			results, err := typecheck.Infer(global, impExpr.Expr)
+			results, err := typecheck.Infer(env.names, global, impExpr.Expr)
 			if err != nil {
 				errs = append(errs, err)
 			}
