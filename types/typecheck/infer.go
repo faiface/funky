@@ -364,12 +364,18 @@ func infer(
 		for _, exprResult := range exprResults {
 			appl, ok := exprResult.Type.(*types.Appl)
 			if !ok {
-				cannotSwitchError.AddCase(exprResult.Type, fmt.Errorf("not a union"))
+				cannotSwitchError.AddCase(
+					exprResult.Type,
+					fmt.Errorf("not a union or too general type; fix your code or add a type annotation"),
+				)
 				continue
 			}
 			union, ok := names[appl.Name].(*types.Union)
 			if !ok {
-				cannotSwitchError.AddCase(exprResult.Type, fmt.Errorf("not a union"))
+				cannotSwitchError.AddCase(
+					exprResult.Type,
+					fmt.Errorf("not a union or too general type; fix your code or add a type annotation"),
+				)
 				continue
 			}
 
