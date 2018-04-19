@@ -54,10 +54,18 @@ func (a *Appl) TypeInfo() types.Type   { return a.TI }
 func (a *Abst) TypeInfo() types.Type   { return a.TI }
 func (s *Switch) TypeInfo() types.Type { return s.TI }
 
-func (v *Var) WithTypeInfo(t types.Type) Expr    { return &Var{t, v.SI, v.Name} }
-func (a *Appl) WithTypeInfo(t types.Type) Expr   { return &Appl{t, a.Left, a.Right} }
-func (a *Abst) WithTypeInfo(t types.Type) Expr   { return &Abst{t, a.SI, a.Bound, a.Body} }
-func (s *Switch) WithTypeInfo(t types.Type) Expr { return &Switch{t, s.SI, s.Expr, s.Cases} }
+func (v *Var) WithTypeInfo(t types.Type) Expr  { return &Var{t, v.SI, v.Name} }
+func (a *Appl) WithTypeInfo(t types.Type) Expr { return &Appl{t, a.Left, a.Right} }
+func (a *Abst) WithTypeInfo(t types.Type) Expr { return &Abst{t, a.SI, a.Bound, a.Body} }
+func (s *Switch) WithTypeInfo(t types.Type) Expr {
+	newCases := make([]struct {
+		SI   *parseinfo.Source
+		Alt  string
+		Body Expr
+	}, len(s.Cases))
+	copy(newCases, s.Cases)
+	return &Switch{t, s.SI, s.Expr, newCases}
+}
 
 func (v *Var) SourceInfo() *parseinfo.Source    { return v.SI }
 func (a *Appl) SourceInfo() *parseinfo.Source   { return a.Left.SourceInfo() }
