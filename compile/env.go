@@ -31,12 +31,9 @@ func (env *Env) lazyInit() {
 	}
 	env.inited = true
 	env.names = map[string]types.Name{
-		"Bool":   &types.Builtin{NumArgs: 0},
-		"Rune":   &types.Builtin{NumArgs: 0},
-		"Int":    &types.Builtin{NumArgs: 0},
-		"Float":  &types.Builtin{NumArgs: 0},
-		"String": &types.Builtin{NumArgs: 0},
-		"List":   &types.Builtin{NumArgs: 1},
+		"Char":  &types.Builtin{NumArgs: 0},
+		"Int":   &types.Builtin{NumArgs: 0},
+		"Float": &types.Builtin{NumArgs: 0},
 	}
 	env.funcs = make(map[string][]impl)
 }
