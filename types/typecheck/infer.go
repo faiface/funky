@@ -19,9 +19,8 @@ type (
 		LeftSourceInfo  *parseinfo.Source
 		RightSourceInfo *parseinfo.Source
 		Cases           []struct {
-			Left  types.Type
-			Right types.Type
-			Err   error
+			Left types.Type
+			Err  error
 		}
 	}
 
@@ -36,7 +35,29 @@ type (
 		TypeInfo   types.Type
 		Results    []InferResult
 	}
+
+	CannotSwitchError struct {
+		ExprSourceInfo *parseinfo.Source
+		Cases          []struct {
+			Expr types.Type
+			Err  error
+		}
+	}
 )
+
+func (err *CannotApplyError) AddCase(left types.Type, er error) {
+	err.Cases = append(err.Cases, struct {
+		Left types.Type
+		Err  error
+	}{left, er})
+}
+
+func (err *CannotSwitchError) AddCase(exp types.Type, er error) {
+	err.Cases = append(err.Cases, struct {
+		Expr types.Type
+		Err  error
+	}{exp, er})
+}
 
 func (err *NotBoundError) Error() string {
 	return fmt.Sprintf("%v: variable not bound: %s", err.SourceInfo, err.Name)
@@ -46,11 +67,7 @@ func (err *CannotApplyError) Error() string {
 	s := fmt.Sprintf("%v: cannot apply; in case function has type:", err.LeftSourceInfo)
 	for _, cas := range err.Cases {
 		s += "\n" + cas.Left.String()
-		if cas.Err != nil {
-			s += "\n" + indent(cas.Err.Error())
-			continue
-		}
-		s += "\n  " + fmt.Sprintf("%v: argument does not match: %v", err.RightSourceInfo, cas.Right)
+		s += "\n" + indent(cas.Err.Error())
 	}
 	return s
 }
@@ -114,6 +131,15 @@ func (err *AmbiguousError) Error() string {
 	}
 }
 
+func (err *CannotSwitchError) Error() string {
+	s := fmt.Sprintf("%v: cannot switch; in case switched expression has type:", err.ExprSourceInfo)
+	for _, cas := range err.Cases {
+		s += "\n" + cas.Expr.String()
+		s += "\n" + indent(cas.Err.Error())
+	}
+	return s
+}
+
 func traverse(e expr.Expr) <-chan expr.Expr {
 	ch := make(chan expr.Expr)
 	go func() {
@@ -133,6 +159,11 @@ func traverseHelper(ch chan<- expr.Expr, e expr.Expr) {
 	case *expr.Abst:
 		ch <- e.Bound
 		traverseHelper(ch, e.Body)
+	case *expr.Switch:
+		traverseHelper(ch, e.Expr)
+		for i := len(e.Cases) - 1; i >= 0; i-- {
+			traverseHelper(ch, e.Cases[i].Body)
+		}
 	}
 }
 
@@ -155,7 +186,13 @@ func Infer(names map[string]types.Name, global map[string][]types.Type, e expr.E
 	return results, nil
 }
 
-func infer(varIndex *int, names map[string]types.Name, global map[string][]types.Type, local map[string]types.Type, e expr.Expr) (results []InferResult, err error) {
+func infer(
+	varIndex *int,
+	names map[string]types.Name,
+	global map[string][]types.Type,
+	local map[string]types.Type,
+	e expr.Expr,
+) (results []InferResult, err error) {
 	defer func() {
 		if err != nil || e.TypeInfo() == nil {
 			return
@@ -230,11 +267,7 @@ func infer(varIndex *int, names map[string]types.Name, global map[string][]types
 				e.Right,
 			)
 			if err != nil {
-				cannotApplyErr.Cases = append(cannotApplyErr.Cases, struct {
-					Left  types.Type
-					Right types.Type
-					Err   error
-				}{r1.Type, nil, err})
+				cannotApplyErr.AddCase(r1.Type, err)
 			}
 			resultType := newVar(varIndex)
 			for _, r2 := range results2 {
@@ -246,11 +279,10 @@ func infer(varIndex *int, names map[string]types.Name, global map[string][]types
 					},
 				)
 				if !ok {
-					cannotApplyErr.Cases = append(cannotApplyErr.Cases, struct {
-						Left  types.Type
-						Right types.Type
-						Err   error
-					}{r1.Type, r2.Type, nil})
+					cannotApplyErr.AddCase(
+						r1.Type,
+						fmt.Errorf("%v: argument does not match: %v", e.Right.SourceInfo(), r2.Type),
+					)
 					continue
 				}
 				t := s.ApplyToType(resultType)
@@ -306,6 +338,157 @@ func infer(varIndex *int, names map[string]types.Name, global map[string][]types
 					Body:  r.Expr,
 				},
 			})
+		}
+		return results, nil
+
+	case *expr.Switch:
+		exprResults, err := infer(varIndex, names, global, local, e.Expr)
+		if err != nil {
+			return nil, err
+		}
+
+		// check if cases don't produce errors on their own, if so, report simple error
+		for i := range e.Cases {
+			_, err := infer(varIndex, names, global, local, e.Cases[i].Body)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		results = nil
+		cannotSwitchError := &CannotSwitchError{
+			ExprSourceInfo: e.Expr.SourceInfo(),
+		}
+
+	exprResultsLoop:
+		for _, exprResult := range exprResults {
+			appl, ok := exprResult.Type.(*types.Appl)
+			if !ok {
+				cannotSwitchError.AddCase(exprResult.Type, fmt.Errorf("not a union"))
+				continue
+			}
+			union, ok := names[appl.Name].(*types.Union)
+			if !ok {
+				cannotSwitchError.AddCase(exprResult.Type, fmt.Errorf("not a union"))
+				continue
+			}
+
+			if len(union.Alts) != len(e.Cases) {
+				cannotSwitchError.AddCase(
+					exprResult.Type,
+					fmt.Errorf(
+						"wrong number of cases; %d required, %d given",
+						len(union.Alts), len(e.Cases),
+					),
+				)
+				continue
+			}
+			for i := range union.Alts {
+				if union.Alts[i].Name != e.Cases[i].Alt {
+					cannotSwitchError.AddCase(
+						exprResult.Type,
+						fmt.Errorf(
+							"wrong case alternative; should be %s, is %s",
+							union.Alts[i].Name, e.Cases[i].Alt,
+						),
+					)
+					continue exprResultsLoop
+				}
+			}
+
+			// build a substitution for the union type arguments
+			unionSubst := Subst(nil)
+			for i := range union.Args {
+				unionSubst = unionSubst.Compose(Subst{union.Args[i]: appl.Args[i]})
+			}
+
+			var resultType types.Type
+			if e.TypeInfo() != nil {
+				resultType = e.TypeInfo()
+			} else {
+				resultType = newVar(varIndex)
+			}
+
+			s := exprResult.Subst
+
+			tmpResults := []InferResult{{ // results for this specific inference of Switch.Expr
+				Type:  resultType,
+				Subst: s,
+				Expr: (&expr.Switch{
+					TI:    e.TI,
+					SI:    e.SI,
+					Expr:  exprResult.Expr,
+					Cases: e.Cases,
+				}).WithTypeInfo(resultType),
+			}}
+
+			for i := range e.Cases {
+				var newTmpResults []InferResult
+				tmpCannotSwitchError := &CannotSwitchError{}
+
+				for _, tmpResult := range tmpResults {
+					s := s.Compose(tmpResult.Subst)
+
+					caseType := tmpResult.Type
+					for j := len(union.Alts[i].Fields) - 1; j >= 0; j-- {
+						caseType = &types.Func{
+							From: unionSubst.Compose(s).ApplyToType(union.Alts[i].Fields[j]),
+							To:   caseType,
+						}
+					}
+
+					bodyResults, err := infer(
+						varIndex,
+						names,
+						global,
+						s.ApplyToVars(local),
+						e.Cases[i].Body,
+					)
+					if err != nil {
+						tmpCannotSwitchError.AddCase(s.ApplyToType(exprResult.Type), err)
+						continue
+					}
+
+					for _, bodyResult := range bodyResults {
+						s := s.Compose(bodyResult.Subst)
+
+						s1, ok := Unify(bodyResult.Type, s.ApplyToType(caseType))
+						if !ok {
+							tmpCannotSwitchError.AddCase(
+								s.ApplyToType(exprResult.Type),
+								fmt.Errorf(
+									"%v: case body type: %v; does not match: %v",
+									e.Cases[i].SI,
+									bodyResult.Type,
+									s.ApplyToType(caseType),
+								),
+							)
+							continue
+						}
+
+						s = s.Compose(s1)
+						result := InferResult{
+							Type:  s.ApplyToType(tmpResult.Type),
+							Subst: s,
+						}
+						result.Expr = tmpResult.Expr.WithTypeInfo(result.Type)
+						result.Expr.(*expr.Switch).Cases[i].Body = bodyResult.Expr
+
+						newTmpResults = append(newTmpResults, result)
+					}
+				}
+
+				if len(newTmpResults) == 0 {
+					cannotSwitchError.Cases = append(cannotSwitchError.Cases, tmpCannotSwitchError.Cases...)
+				}
+				tmpResults = newTmpResults
+			}
+
+			results = append(results, tmpResults...)
+		}
+
+		if len(results) == 0 {
+			return nil, cannotSwitchError
 		}
 		return results, nil
 	}
