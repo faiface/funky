@@ -2,10 +2,37 @@ package parse
 
 import (
 	"fmt"
+	"math/big"
+	"strconv"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/faiface/funky/expr"
 	"github.com/faiface/funky/parse/parseinfo"
 )
+
+type LiteralKind int
+
+const (
+	LiteralIdentifier LiteralKind = iota
+	LiteralNumber
+	LiteralChar
+	LiteralString
+)
+
+func LiteralKindOf(s string) LiteralKind {
+	r, _ := utf8.DecodeRuneInString(s)
+	switch {
+	case unicode.IsDigit(r):
+		return LiteralNumber
+	case r == '\'':
+		return LiteralChar
+	case r == '"':
+		return LiteralString
+	default:
+		return LiteralIdentifier
+	}
+}
 
 func Expr(tokens []Token) (expr.Expr, error) {
 	tree, err := MultiTree(tokens)
@@ -22,7 +49,46 @@ func TreeToExpr(tree Tree) (expr.Expr, error) {
 
 	switch tree := tree.(type) {
 	case *Literal:
-		return &expr.Var{SI: tree.SourceInfo(), Name: tree.Value}, nil
+		switch LiteralKindOf(tree.Value) {
+		case LiteralIdentifier:
+			return &expr.Var{SI: tree.SourceInfo(), Name: tree.Value}, nil
+		case LiteralNumber:
+			i := big.NewInt(0)
+			_, ok := i.SetString(tree.Value, 10)
+			if ok {
+				return &expr.Int{SI: tree.SourceInfo(), Value: i}, nil
+			}
+			f, err := strconv.ParseFloat(tree.Value, 64)
+			if err != nil {
+				return nil, &Error{tree.SourceInfo(), err.Error()}
+			}
+			return &expr.Float{SI: tree.SourceInfo(), Value: f}, nil
+		case LiteralChar:
+			s, err := strconv.Unquote(tree.Value)
+			if err != nil {
+				return nil, &Error{tree.SourceInfo(), err.Error()}
+			}
+			r := []rune(s)[0] // has only one rune, no need to check
+			return &expr.Char{SI: tree.SourceInfo(), Value: r}, nil
+		case LiteralString:
+			s, err := strconv.Unquote(tree.Value)
+			if err != nil {
+				return nil, &Error{tree.SourceInfo(), err.Error()}
+			}
+			// string literal syntactic sugar unfold
+			runes := []rune(s)
+			var stringExpr expr.Expr = &expr.Var{SI: tree.SourceInfo(), Name: "empty"}
+			for i := len(runes) - 1; i >= 0; i-- {
+				stringExpr = &expr.Appl{
+					Left: &expr.Appl{
+						Left:  &expr.Var{Name: "::"},
+						Right: &expr.Char{SI: tree.SourceInfo(), Value: runes[i]},
+					},
+					Right: stringExpr,
+				}
+			}
+			return stringExpr, nil
+		}
 
 	case *Paren:
 		switch tree.Kind {
@@ -32,7 +98,7 @@ func TreeToExpr(tree Tree) (expr.Expr, error) {
 			}
 			return TreeToExpr(tree.Inside)
 		case "[":
-			// list literal syntactic sugar
+			// list literal syntactic sugar undolf
 			var elems []expr.Expr
 			inside := tree.Inside
 			for inside != nil {

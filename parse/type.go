@@ -33,6 +33,12 @@ func TreeToType(tree Tree) (types.Type, error) {
 
 	switch tree := tree.(type) {
 	case *Literal:
+		switch LiteralKindOf(tree.Value) {
+		case LiteralIdentifier:
+			// OK
+		default:
+			return nil, &Error{tree.SourceInfo(), fmt.Sprintf("unexpected: %s", tree.Value)}
+		}
 		if IsTypeName(tree.Value) || tree.Value == "->" {
 			return &types.Appl{SI: tree.SourceInfo(), Name: tree.Value}, nil
 		}

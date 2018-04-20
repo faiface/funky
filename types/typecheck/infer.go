@@ -221,6 +221,13 @@ func infer(
 	}()
 
 	switch e := e.(type) {
+	case *expr.Char, *expr.Int, *expr.Float:
+		return []InferResult{{
+			Type:  e.TypeInfo(),
+			Subst: nil,
+			Expr:  e,
+		}}, nil
+
 	case *expr.Var:
 		if t, ok := local[e.Name]; ok {
 			return []InferResult{{
