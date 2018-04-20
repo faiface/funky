@@ -248,7 +248,8 @@ func TreeToExpr(tree Tree) (expr.Expr, error) {
 
 func newFlipExpr(si *parseinfo.Source) expr.Expr {
 	return &expr.Abst{
-		Bound: &expr.Var{SI: si, Name: "f"},
+		SI:    si,
+		Bound: &expr.Var{Name: "f"},
 		Body: &expr.Abst{
 			Bound: &expr.Var{Name: "x"},
 			Body: &expr.Abst{
