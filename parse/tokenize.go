@@ -72,12 +72,13 @@ func Tokenize(filename, s string) ([]Token, error) {
 
 		// handle chars and strings
 		if r == '\'' || r == '"' {
+			var builder strings.Builder
+
 			quote := byte(r)
 			quoteSI := copySI(si)
-			s = s[1:]
-			updateSIInPlace(si, r)
 
-			var builder strings.Builder
+			s = s[1:] // opening quote
+			updateSIInPlace(si, r)
 			builder.WriteByte(quote)
 
 			for len(s) > 0 && s[0] != quote {
