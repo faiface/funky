@@ -1,0 +1,123 @@
+func error : a = error
+
+func id : a -> a = \x x
+
+func flip : (a -> b -> c) -> b -> a -> c = \f \x \y f y x
+
+func (.) : (b -> c) -> (a -> b) -> a -> c = \f \g \x f (g x)
+
+func (.) : (b -> b -> c) -> (a -> b) -> a -> a -> c = \f \g \x \y f (g x) (g y)
+func (.) : (c -> d) -> (a -> b -> c) -> a -> b -> d = \f \g \x \y f (g x y)
+
+func (.) : (b -> b -> b -> c) -> (a -> b) -> a -> a -> a -> c = \f \g \x \y \z f (g x) (g y) (g z)
+func (.) : (d -> e) -> (a -> b -> c -> d) -> a -> b -> c -> e = \f \g \x \y \z f (g x y z)
+
+#-------------------------------
+
+union Bool = true | false
+
+func if : Bool -> a -> a -> a =
+    \cond \then \else
+    switch cond
+    case true  then
+    case false else
+
+func not : Bool -> Bool =
+    \bool
+    switch bool
+    case true  false
+    case false true
+
+func (&&) : Bool -> Bool -> Bool = \b \c if b c false
+func (||) : Bool -> Bool -> Bool = \b \c if b true c
+
+func (&&) : (a -> Bool) -> (a -> Bool) -> a -> Bool =
+    \f \g \x
+    f x && g x
+
+func (||) : (a -> Bool) -> (a -> Bool) -> a -> Bool =
+    \f \g \x
+    f x || g x
+
+#-------------------------------
+
+union List a = empty | a :: (List a)
+
+func empty? : List a -> Bool =
+    \list
+    switch list
+    case empty true
+    case (::)  \_ \_ false
+
+func first : List a -> a =
+    \list
+    switch list
+    case empty error
+    case (::)  \x \_ x
+
+func rest : List a -> List a =
+    \list
+    switch list
+    case empty error
+    case (::)  \_ \xs xs
+
+func map : (a -> b) -> List a -> List b =
+    \f \list
+    fold< ((::) . f) list empty
+
+func filter : (a -> Bool) -> List a -> List a =
+    \p \list
+    if (empty? list)
+        empty;
+    if (p (first list))
+        (first list :: filter p (rest list));
+    filter p (rest list)
+
+func fold< : (a -> b -> b) -> List a -> b -> b =
+    \f \list \zero
+    if (empty? list)
+        zero;
+    f (first list) (fold< f (rest list) zero)
+
+func fold> : (b -> a -> b) -> b -> List a -> b =
+    \f \zero \list
+    if (empty? list)
+        zero;
+    fold> f (f zero (first list)) (rest list)
+
+#-------------------------------
+
+union Maybe a = nothing | just a
+
+func nothing? : Maybe a -> Bool =
+    \maybe
+    switch maybe
+    case nothing true
+    case just    \_ false
+
+func extract : Maybe a -> a =
+    \maybe
+    switch maybe
+    case nothing error
+    case just    id
+
+func map : (a -> b) -> Maybe a -> Maybe b =
+    \f \maybe
+    switch maybe
+    case nothing
+        nothing
+    case just \x
+        just (f x)
+
+func (?) : Maybe a -> a -> a =
+    \maybe \default
+    switch maybe
+    case nothing
+        default
+    case just \x
+        x
+
+#---------------------------------------
+
+func main : List Bool =
+    map nothing? [just true, nothing, just false]
