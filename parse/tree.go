@@ -210,12 +210,6 @@ func SingleTree(tokens []Token) (t Tree, end int, err error) {
 		if err != nil {
 			return nil, 0, err
 		}
-		if inside == nil {
-			return nil, 0, &Error{
-				tokens[0].SourceInfo,
-				"nothing inside parentheses",
-			}
-		}
 		paren := &Paren{SI: tokens[0].SourceInfo, Kind: tokens[0].Value, Inside: inside}
 		return paren, closing + 1, nil
 

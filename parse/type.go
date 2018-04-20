@@ -44,6 +44,9 @@ func TreeToType(tree Tree) (types.Type, error) {
 	case *Paren:
 		switch tree.Kind {
 		case "(":
+			if tree.Inside == nil {
+				return nil, &Error{tree.SourceInfo(), "nothing inside parentheses"}
+			}
 			return TreeToType(tree.Inside)
 		}
 		return nil, &Error{tree.SourceInfo(), fmt.Sprintf("unexpected: %s", tree.Kind)}

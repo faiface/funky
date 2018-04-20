@@ -27,6 +27,9 @@ func TreeToExpr(tree Tree) (expr.Expr, error) {
 	case *Paren:
 		switch tree.Kind {
 		case "(":
+			if tree.Inside == nil {
+				return nil, &Error{tree.SourceInfo(), "nothing inside parentheses"}
+			}
 			return TreeToExpr(tree.Inside)
 		}
 		return nil, &Error{tree.SourceInfo(), fmt.Sprintf("unexpected: %s", tree.Kind)}
