@@ -2,18 +2,18 @@ package typecheck
 
 import "github.com/faiface/funky/types"
 
-func CheckIfUnify(t, u types.Type) bool {
+func CheckIfUnify(names map[string]types.Name, t, u types.Type) bool {
 	varIndex := 0
 	t = instType(&varIndex, t)
 	u = instType(&varIndex, u)
-	_, ok := Unify(t, u)
+	_, ok := Unify(names, t, u)
 	return ok
 }
 
-func Unify(t, u types.Type) (Subst, bool) {
+func Unify(names map[string]types.Name, t, u types.Type) (Subst, bool) {
 	if v2, ok := u.(*types.Var); ok {
 		if v1, ok := t.(*types.Var); !ok || lesserName(v1.Name, v2.Name) {
-			return Unify(u, t)
+			return Unify(names, u, t)
 		}
 	}
 
@@ -28,7 +28,15 @@ func Unify(t, u types.Type) (Subst, bool) {
 		return Subst{t.Name: u}, true
 
 	case *types.Appl:
+		if alias, ok := names[t.Name].(*types.Alias); ok {
+			return Unify(names, revealAlias(alias, t.Args), u)
+		}
 		applU, ok := u.(*types.Appl)
+		if ok {
+			if alias, ok := names[applU.Name].(*types.Alias); ok {
+				return Unify(names, t, revealAlias(alias, applU.Args))
+			}
+		}
 		if !ok || t.Name != applU.Name || len(t.Args) != len(applU.Args) {
 			// t and u are applications of different constructors
 			return nil, false
@@ -37,7 +45,7 @@ func Unify(t, u types.Type) (Subst, bool) {
 		for i := range t.Args {
 			// unify application arguments one by one
 			// while composing the final substitution
-			s1, ok := Unify(s.ApplyToType(t.Args[i]), s.ApplyToType(applU.Args[i]))
+			s1, ok := Unify(names, s.ApplyToType(t.Args[i]), s.ApplyToType(applU.Args[i]))
 			if !ok {
 				return nil, false
 			}
@@ -50,11 +58,11 @@ func Unify(t, u types.Type) (Subst, bool) {
 		if !ok {
 			return nil, false
 		}
-		s1, ok := Unify(t.From, funcU.From)
+		s1, ok := Unify(names, t.From, funcU.From)
 		if !ok {
 			return nil, false
 		}
-		s2, ok := Unify(s1.ApplyToType(t.To), s1.ApplyToType(funcU.To))
+		s2, ok := Unify(names, s1.ApplyToType(t.To), s1.ApplyToType(funcU.To))
 		if !ok {
 			return nil, false
 		}
@@ -72,4 +80,12 @@ func lesserName(s, t string) bool {
 		return false
 	}
 	return s < t
+}
+
+func revealAlias(alias *types.Alias, args []types.Type) types.Type {
+	s := make(Subst)
+	for i := range alias.Args {
+		s[alias.Args[i]] = args[i]
+	}
+	return s.ApplyToType(alias.Type)
 }

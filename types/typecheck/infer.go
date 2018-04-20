@@ -202,8 +202,8 @@ func infer(
 		// filter infer results by the type info
 		var filtered []InferResult
 		for _, r := range results {
-			if IsSpec(r.Type, e.TypeInfo()) {
-				s, _ := Unify(r.Type, e.TypeInfo())
+			if IsSpec(names, r.Type, e.TypeInfo()) {
+				s, _ := Unify(names, r.Type, e.TypeInfo())
 				r.Type = s.ApplyToType(r.Type)
 				r.Subst = r.Subst.Compose(s)
 				filtered = append(filtered, r)
@@ -281,6 +281,7 @@ func infer(
 			resultType := newVar(varIndex)
 			for _, rL := range resultsL {
 				s, ok := Unify(
+					names,
 					rL.Type,
 					&types.Func{
 						From: rL.Subst.ApplyToType(rR.Type),
@@ -470,7 +471,7 @@ func infer(
 					for _, bodyResult := range bodyResults {
 						s := s.Compose(bodyResult.Subst)
 
-						s1, ok := Unify(bodyResult.Type, s.ApplyToType(caseType))
+						s1, ok := Unify(names, bodyResult.Type, s.ApplyToType(caseType))
 						if !ok {
 							tmpCannotSwitchError.AddCase(
 								s.ApplyToType(exprResult.Type),

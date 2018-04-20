@@ -16,7 +16,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		return
 	}
-	tokens := parse.Tokenize(filename, string(b))
+	tokens, err := parse.Tokenize(filename, string(b))
 	defs, err := parse.Definitions(tokens)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)

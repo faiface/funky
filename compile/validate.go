@@ -19,6 +19,8 @@ func (env *Env) Validate() []error {
 			err = env.validateRecord(definition)
 		case *types.Union:
 			err = env.validateUnion(definition)
+		case *types.Alias:
+			err = env.validateAlias(definition)
 		default:
 			panic("unreachable")
 		}
@@ -43,7 +45,7 @@ func (env *Env) Validate() []error {
 				if i == j {
 					continue
 				}
-				if typecheck.CheckIfUnify(imp.TypeInfo(), another.TypeInfo()) {
+				if typecheck.CheckIfUnify(env.names, imp.TypeInfo(), another.TypeInfo()) {
 					errs = append(errs, &Error{
 						imp.SourceInfo(),
 						fmt.Sprintf(
@@ -163,6 +165,18 @@ func (env *Env) validateUnion(union *types.Union) error {
 		}
 	}
 
+	return nil
+}
+
+func (env *Env) validateAlias(alias *types.Alias) error {
+	err := validateArgs(alias.SourceInfo(), alias.Args)
+	if err != nil {
+		return err
+	}
+	err = env.validateType(alias.Args, alias.Type)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

@@ -49,6 +49,13 @@ func TreeToDefinitions(tree Tree) ([]Definition, error) {
 			}
 			definitions = append(definitions, Definition{name, union})
 
+		case "alias":
+			name, alias, err := treeToAlias(definition)
+			if err != nil {
+				return nil, err
+			}
+			definitions = append(definitions, Definition{name, alias})
+
 		case "func":
 			name, body, err := treeToFunc(definition)
 			if err != nil {
@@ -185,6 +192,26 @@ func treeToUnion(tree Tree) (name string, union *types.Union, err error) {
 		SI:   tree.SourceInfo(),
 		Args: args,
 		Alts: alts,
+	}, nil
+}
+
+func treeToAlias(tree Tree) (name string, alias *types.Alias, err error) {
+	headerTree, _, typeTree := FindNextSpecialOrBinding(tree, "=")
+
+	name, args, err := treeToTypeHeader(headerTree)
+	if err != nil {
+		return "", nil, err
+	}
+
+	typ, err := TreeToType(typeTree)
+	if err != nil {
+		return "", nil, err
+	}
+
+	return name, &types.Alias{
+		SI:   tree.SourceInfo(),
+		Args: args,
+		Type: typ,
 	}, nil
 }
 

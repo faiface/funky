@@ -6,11 +6,11 @@ func flip : (a -> b -> c) -> b -> a -> c = \f \x \y f y x
 
 func (.) : (b -> c) -> (a -> b) -> a -> c = \f \g \x f (g x)
 
-func (.) : (b -> b -> c) -> (a -> b) -> a -> a -> c = \f \g \x \y f (g x) (g y)
-func (.) : (c -> d) -> (a -> b -> c) -> a -> b -> d = \f \g \x \y f (g x y)
+func (..) : (b -> b -> c) -> (a -> b) -> a -> a -> c = \f \g \x \y f (g x) (g y)
+func (.)  : (c -> d) -> (a -> b -> c) -> a -> b -> d = \f \g \x \y f (g x y)
 
-func (.) : (b -> b -> b -> c) -> (a -> b) -> a -> a -> a -> c = \f \g \x \y \z f (g x) (g y) (g z)
-func (.) : (d -> e) -> (a -> b -> c -> d) -> a -> b -> c -> e = \f \g \x \y \z f (g x y z)
+func (...) : (b -> b -> b -> c) -> (a -> b) -> a -> a -> a -> c = \f \g \x \y \z f (g x) (g y) (g z)
+func (.)   : (d -> e) -> (a -> b -> c -> d) -> a -> b -> c -> e = \f \g \x \y \z f (g x y z)
 
 #-------------------------------
 
@@ -42,6 +42,8 @@ func (||) : (a -> Bool) -> (a -> Bool) -> a -> Bool =
 #-------------------------------
 
 union List a = empty | a :: (List a)
+
+alias String = List Char
 
 func empty? : List a -> Bool =
     \list
@@ -119,5 +121,8 @@ func (?) : Maybe a -> a -> a =
 
 #---------------------------------------
 
-func main : List Bool =
-    map nothing? [just true, nothing, just false]
+union IO = done | putc Char IO | getc (Char -> IO)
+
+alias Seq a = List a
+
+func print : String -> IO -> IO = fold< putc

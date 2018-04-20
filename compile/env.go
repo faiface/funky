@@ -45,6 +45,8 @@ func (env *Env) Add(d parse.Definition) error {
 		return env.addRecord(d.Name, value)
 	case *types.Union:
 		return env.addUnion(d.Name, value)
+	case *types.Alias:
+		return env.addAlias(d.Name, value)
 	case expr.Expr:
 		return env.addFunc(d.Name, &implExpr{value})
 	}
@@ -149,6 +151,17 @@ func (env *Env) addUnion(name string, union *types.Union) error {
 		}
 	}
 
+	return nil
+}
+
+func (env *Env) addAlias(name string, alias *types.Alias) error {
+	if env.names[name] != nil {
+		return &Error{
+			alias.SourceInfo(),
+			fmt.Sprintf("type name %s already defined: %v", name, env.names[name].SourceInfo()),
+		}
+	}
+	env.names[name] = alias
 	return nil
 }
 

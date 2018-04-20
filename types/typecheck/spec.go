@@ -2,11 +2,11 @@ package typecheck
 
 import "github.com/faiface/funky/types"
 
-func IsSpec(t, u types.Type) bool {
-	return isSpec(make(map[string]types.Type), t, u)
+func IsSpec(names map[string]types.Name, t, u types.Type) bool {
+	return isSpec(names, make(map[string]types.Type), t, u)
 }
 
-func isSpec(bind map[string]types.Type, t, u types.Type) bool {
+func isSpec(names map[string]types.Name, bind map[string]types.Type, t, u types.Type) bool {
 	switch t := t.(type) {
 	case *types.Var:
 		if bind[t.Name] == nil {
@@ -14,12 +14,20 @@ func isSpec(bind map[string]types.Type, t, u types.Type) bool {
 		}
 		return bind[t.Name].Equal(u)
 	case *types.Appl:
+		if alias, ok := names[t.Name].(*types.Alias); ok {
+			return isSpec(names, bind, revealAlias(alias, t.Args), u)
+		}
 		ua, ok := u.(*types.Appl)
+		if ok {
+			if alias, ok := names[ua.Name].(*types.Alias); ok {
+				return isSpec(names, bind, t, revealAlias(alias, ua.Args))
+			}
+		}
 		if !ok || t.Name != ua.Name || len(t.Args) != len(ua.Args) {
 			return false
 		}
 		for i := range t.Args {
-			if !isSpec(bind, t.Args[i], ua.Args[i]) {
+			if !isSpec(names, bind, t.Args[i], ua.Args[i]) {
 				return false
 			}
 		}
@@ -29,7 +37,7 @@ func isSpec(bind map[string]types.Type, t, u types.Type) bool {
 		if !ok {
 			return false
 		}
-		return isSpec(bind, t.From, uf.From) && isSpec(bind, t.To, uf.To)
+		return isSpec(names, bind, t.From, uf.From) && isSpec(names, bind, t.To, uf.To)
 	}
 	panic("unreachable")
 }
