@@ -186,6 +186,8 @@ func Infer(names map[string]types.Name, global map[string][]types.Type, e expr.E
 	return results, nil
 }
 
+var counter = 0
+
 func infer(
 	varIndex *int,
 	names map[string]types.Name,
@@ -251,12 +253,12 @@ func infer(
 		return nil, &NotBoundError{e.SourceInfo(), e.Name}
 
 	case *expr.Appl:
-		results1, err := infer(varIndex, names, global, local, e.Left)
+		resultsR, err := infer(varIndex, names, global, local, e.Right)
 		if err != nil {
 			return nil, err
 		}
-		// if the right side is wrong in itself, return a simple error from there
-		_, err = infer(varIndex, names, global, local, e.Right)
+		// if the left side is wrong in itself, return a simple error from there
+		_, err = infer(varIndex, names, global, local, e.Left)
 		if err != nil {
 			return nil, err
 		}
@@ -265,41 +267,44 @@ func infer(
 			LeftSourceInfo:  e.Left.SourceInfo(),
 			RightSourceInfo: e.Right.SourceInfo(),
 		}
-		for _, r1 := range results1 {
-			results2, err := infer(
+		for _, rR := range resultsR {
+			resultsL, err := infer(
 				varIndex,
 				names,
 				global,
-				r1.Subst.ApplyToVars(local),
-				e.Right,
+				rR.Subst.ApplyToVars(local),
+				e.Left,
 			)
 			if err != nil {
-				cannotApplyErr.AddCase(r1.Type, err)
+				cannotApplyErr.AddCase(rR.Type, err)
 			}
 			resultType := newVar(varIndex)
-			for _, r2 := range results2 {
+			for _, rL := range resultsL {
 				s, ok := Unify(
-					r2.Subst.ApplyToType(r1.Type),
+					rL.Type,
 					&types.Func{
-						From: r2.Type,
+						From: rL.Subst.ApplyToType(rR.Type),
 						To:   resultType,
 					},
 				)
 				if !ok {
 					cannotApplyErr.AddCase(
-						r1.Type,
-						fmt.Errorf("%v: argument does not match: %v", e.Right.SourceInfo(), r2.Type),
+						rL.Type,
+						fmt.Errorf(
+							"%v: argument does not match: %v",
+							e.Right.SourceInfo(), rL.Subst.ApplyToType(rR.Type),
+						),
 					)
 					continue
 				}
 				t := s.ApplyToType(resultType)
 				results = append(results, InferResult{
 					Type:  t,
-					Subst: r1.Subst.Compose(r2.Subst).Compose(s),
+					Subst: rR.Subst.Compose(rL.Subst).Compose(s),
 					Expr: &expr.Appl{
 						TI:    t,
-						Left:  r1.Expr,
-						Right: r2.Expr,
+						Left:  rL.Expr,
+						Right: rR.Expr,
 					},
 				})
 			}
