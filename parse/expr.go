@@ -81,7 +81,7 @@ func TreeToExpr(tree Tree) (expr.Expr, error) {
 			for i := len(runes) - 1; i >= 0; i-- {
 				stringExpr = &expr.Appl{
 					Left: &expr.Appl{
-						Left:  &expr.Var{Name: "::"},
+						Left:  &expr.Var{SI: tree.SourceInfo(), Name: "::"},
 						Right: &expr.Char{SI: tree.SourceInfo(), Value: runes[i]},
 					},
 					Right: stringExpr,
