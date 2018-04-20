@@ -31,6 +31,30 @@ func TreeToExpr(tree Tree) (expr.Expr, error) {
 				return nil, &Error{tree.SourceInfo(), "nothing inside parentheses"}
 			}
 			return TreeToExpr(tree.Inside)
+		case "[":
+			// list literal syntactic sugar
+			var elems []expr.Expr
+			inside := tree.Inside
+			for inside != nil {
+				elemTree, _, after := FindNextSpecialOrBinding(inside, ",")
+				inside = after
+				elem, err := TreeToExpr(elemTree)
+				if err != nil {
+					return nil, err
+				}
+				elems = append(elems, elem)
+			}
+			var listExpr expr.Expr = &expr.Var{SI: tree.SI, Name: "empty"}
+			for i := len(elems) - 1; i >= 0; i-- {
+				listExpr = &expr.Appl{
+					Left: &expr.Appl{
+						Left:  &expr.Var{SI: elems[i].SourceInfo(), Name: "::"},
+						Right: elems[i],
+					},
+					Right: listExpr,
+				}
+			}
+			return listExpr, nil
 		}
 		return nil, &Error{tree.SourceInfo(), fmt.Sprintf("unexpected: %s", tree.Kind)}
 
