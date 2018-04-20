@@ -26,12 +26,33 @@ func (env *Env) Validate() []error {
 		}
 	}
 
-	for _, impls := range env.funcs {
-		for _, imp := range impls {
+	for name, impls := range env.funcs {
+	implsLoop:
+		for i, imp := range impls {
+			// check function type
 			freeVars := typecheck.FreeVars(imp.TypeInfo()).InOrder()
 			err := env.validateType(freeVars, imp.TypeInfo())
 			if err != nil {
 				errs = append(errs, err)
+				continue
+			}
+
+			// check other functions for type collisions
+			for j, another := range impls {
+				if i == j {
+					continue
+				}
+				if typecheck.CheckIfUnify(imp.TypeInfo(), another.TypeInfo()) {
+					errs = append(errs, &Error{
+						imp.SourceInfo(),
+						fmt.Sprintf(
+							"function %s with colliding type exists: %v",
+							name,
+							another.SourceInfo(),
+						),
+					})
+					continue implsLoop
+				}
 			}
 		}
 	}
@@ -132,34 +153,4 @@ func (env *Env) validateUnion(union *types.Union) error {
 	}
 
 	return nil
-}
-
-func (env *Env) TypeInfer() []error {
-	var errs []error
-
-	global := make(map[string][]types.Type)
-	for name, impls := range env.funcs {
-		for _, imp := range impls {
-			global[name] = append(global[name], imp.TypeInfo())
-		}
-	}
-
-	for _, impls := range env.funcs {
-		for _, imp := range impls {
-			impExpr, ok := imp.(*implExpr)
-			if !ok {
-				continue
-			}
-			results, err := typecheck.Infer(env.names, global, impExpr.Expr)
-			if err != nil {
-				errs = append(errs, err)
-			}
-			if err == nil {
-				// there's exactly one result
-				impExpr.Expr = results[0].Expr
-			}
-		}
-	}
-
-	return errs
 }

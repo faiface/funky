@@ -2,6 +2,14 @@ package typecheck
 
 import "github.com/faiface/funky/types"
 
+func CheckIfUnify(t, u types.Type) bool {
+	varIndex := 0
+	t = instType(&varIndex, t)
+	u = instType(&varIndex, u)
+	_, ok := Unify(t, u)
+	return ok
+}
+
 func Unify(t, u types.Type) (Subst, bool) {
 	if v2, ok := u.(*types.Var); ok {
 		if v1, ok := t.(*types.Var); !ok || lesserName(v1.Name, v2.Name) {

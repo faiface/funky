@@ -7,7 +7,6 @@ import (
 	"github.com/faiface/funky/parse"
 	"github.com/faiface/funky/parse/parseinfo"
 	"github.com/faiface/funky/types"
-	"github.com/faiface/funky/types/typecheck"
 )
 
 type Error struct {
@@ -154,20 +153,6 @@ func (env *Env) addUnion(name string, union *types.Union) error {
 }
 
 func (env *Env) addFunc(name string, imp impl) error {
-	for _, alreadyDefined := range env.funcs[name] {
-		if _, ok := typecheck.Unify(imp.TypeInfo(), alreadyDefined.TypeInfo()); ok {
-			return &Error{
-				imp.SourceInfo(),
-				fmt.Sprintf(
-					"function %s with colliding signature exists: %v",
-					name,
-					alreadyDefined.SourceInfo(),
-				),
-			}
-		}
-	}
-
 	env.funcs[name] = append(env.funcs[name], imp)
-
 	return nil
 }
