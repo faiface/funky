@@ -3,6 +3,7 @@ package compile
 import (
 	"fmt"
 
+	"github.com/faiface/funky/parse/parseinfo"
 	"github.com/faiface/funky/types"
 	"github.com/faiface/funky/types/typecheck"
 )
@@ -106,6 +107,11 @@ func (env *Env) validateType(boundVars []string, typ types.Type) error {
 }
 
 func (env *Env) validateRecord(record *types.Record) error {
+	err := validateArgs(record.SourceInfo(), record.Args)
+	if err != nil {
+		return err
+	}
+
 	// check if all fields have distinct names
 	for i, field1 := range record.Fields {
 		for _, field2 := range record.Fields[:i] {
@@ -130,6 +136,11 @@ func (env *Env) validateRecord(record *types.Record) error {
 }
 
 func (env *Env) validateUnion(union *types.Union) error {
+	err := validateArgs(union.SourceInfo(), union.Args)
+	if err != nil {
+		return err
+	}
+
 	// check if all alternatives have distinct names
 	for i, alt1 := range union.Alts {
 		for _, alt2 := range union.Alts[:i] {
@@ -152,5 +163,19 @@ func (env *Env) validateUnion(union *types.Union) error {
 		}
 	}
 
+	return nil
+}
+
+func validateArgs(si *parseinfo.Source, args []string) error {
+	for i := range args {
+		for j := range args[:i] {
+			if args[i] == args[j] {
+				return &Error{
+					si,
+					fmt.Sprintf("duplicate type argument: %v", args[i]),
+				}
+			}
+		}
+	}
 	return nil
 }
