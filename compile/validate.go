@@ -41,10 +41,7 @@ func (env *Env) Validate() []error {
 			}
 
 			// check other functions for type collisions
-			for j, another := range impls {
-				if i == j {
-					continue
-				}
+			for _, another := range impls[:i] {
 				if typecheck.CheckIfUnify(env.names, imp.TypeInfo(), another.TypeInfo()) {
 					errs = append(errs, &Error{
 						imp.SourceInfo(),
