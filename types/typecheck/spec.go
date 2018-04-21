@@ -14,16 +14,16 @@ func isSpec(names map[string]types.Name, bind map[string]types.Type, t, u types.
 		}
 		return bind[t.Name].Equal(u)
 	case *types.Appl:
-		if alias, ok := names[t.Name].(*types.Alias); ok {
-			return isSpec(names, bind, revealAlias(alias, t.Args), u)
-		}
 		ua, ok := u.(*types.Appl)
-		if ok {
-			if alias, ok := names[ua.Name].(*types.Alias); ok {
-				return isSpec(names, bind, t, revealAlias(alias, ua.Args))
-			}
-		}
 		if !ok || t.Name != ua.Name || len(t.Args) != len(ua.Args) {
+			if alias, ok := names[t.Name].(*types.Alias); ok {
+				return isSpec(names, bind, revealAlias(alias, t.Args), u)
+			}
+			if ok {
+				if alias, ok := names[ua.Name].(*types.Alias); ok {
+					return isSpec(names, bind, t, revealAlias(alias, ua.Args))
+				}
+			}
 			return false
 		}
 		for i := range t.Args {

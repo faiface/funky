@@ -1,6 +1,8 @@
 package typecheck
 
-import "github.com/faiface/funky/types"
+import (
+	"github.com/faiface/funky/types"
+)
 
 func CheckIfUnify(names map[string]types.Name, t, u types.Type) bool {
 	varIndex := 0
@@ -28,17 +30,16 @@ func Unify(names map[string]types.Name, t, u types.Type) (Subst, bool) {
 		return Subst{t.Name: u}, true
 
 	case *types.Appl:
-		if alias, ok := names[t.Name].(*types.Alias); ok {
-			return Unify(names, revealAlias(alias, t.Args), u)
-		}
 		applU, ok := u.(*types.Appl)
-		if ok {
-			if alias, ok := names[applU.Name].(*types.Alias); ok {
-				return Unify(names, t, revealAlias(alias, applU.Args))
-			}
-		}
 		if !ok || t.Name != applU.Name || len(t.Args) != len(applU.Args) {
-			// t and u are applications of different constructors
+			if alias, ok := names[t.Name].(*types.Alias); ok {
+				return Unify(names, revealAlias(alias, t.Args), u)
+			}
+			if ok {
+				if alias, ok := names[applU.Name].(*types.Alias); ok {
+					return Unify(names, t, revealAlias(alias, applU.Args))
+				}
+			}
 			return nil, false
 		}
 		s := Subst(nil)

@@ -383,6 +383,18 @@ func infer(
 				)
 				continue
 			}
+			for {
+				alias, ok := names[appl.Name].(*types.Alias)
+				if !ok {
+					break
+				}
+				revealed := revealAlias(alias, appl.Args)
+				revealedAppl, ok := revealed.(*types.Appl)
+				if !ok {
+					break
+				}
+				appl = revealedAppl
+			}
 			union, ok := names[appl.Name].(*types.Union)
 			if !ok {
 				cannotSwitchError.AddCase(
