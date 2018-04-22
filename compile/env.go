@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"strconv"
 
 	"github.com/faiface/funky/expr"
 	"github.com/faiface/funky/parse"
@@ -195,9 +196,123 @@ func (env *Env) lazyInit() {
 	env.addFunc("string", &implInternal{
 		Type: parseType("Int -> String"),
 		Expr: makeGoFunc(1, func(args ...runtime.Expr) runtime.Expr {
-			return runtime.MkStringExpr((*big.Int)(args[0].Reduce().(*runtime.Int)).Text(10))
+			x := (*big.Int)(args[0].Reduce().(*runtime.Int))
+			return runtime.MkStringExpr(x.Text(10))
 		}),
 	})
+
+	// Float
+	env.addFunc("neg", &implInternal{
+		Type: parseType("Float -> Float"),
+		Expr: makeGoFunc(1, func(args ...runtime.Expr) runtime.Expr {
+			x := float64(args[0].Reduce().(runtime.Float))
+			return runtime.Float(-x)
+		}),
+	})
+	env.addFunc("inv", &implInternal{
+		Type: parseType("Float -> Float"),
+		Expr: makeGoFunc(1, func(args ...runtime.Expr) runtime.Expr {
+			x := float64(args[0].Reduce().(runtime.Float))
+			return runtime.Float(1 / x)
+		}),
+	})
+	env.addFunc("+", &implInternal{
+		Type: parseType("Float -> Float -> Float"),
+		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
+			x := float64(args[0].Reduce().(runtime.Float))
+			y := float64(args[1].Reduce().(runtime.Float))
+			return runtime.Float(x + y)
+		}),
+	})
+	env.addFunc("-", &implInternal{
+		Type: parseType("Float -> Float -> Float"),
+		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
+			x := float64(args[0].Reduce().(runtime.Float))
+			y := float64(args[1].Reduce().(runtime.Float))
+			return runtime.Float(x - y)
+		}),
+	})
+	env.addFunc("*", &implInternal{
+		Type: parseType("Float -> Float -> Float"),
+		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
+			x := float64(args[0].Reduce().(runtime.Float))
+			y := float64(args[1].Reduce().(runtime.Float))
+			return runtime.Float(x * y)
+		}),
+	})
+	env.addFunc("/", &implInternal{
+		Type: parseType("Float -> Float -> Float"),
+		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
+			x := float64(args[0].Reduce().(runtime.Float))
+			y := float64(args[1].Reduce().(runtime.Float))
+			return runtime.Float(x / y)
+		}),
+	})
+	env.addFunc("^", &implInternal{
+		Type: parseType("Float -> Float -> Float"),
+		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
+			x := float64(args[0].Reduce().(runtime.Float))
+			y := float64(args[1].Reduce().(runtime.Float))
+			return runtime.Float(math.Pow(x, y))
+		}),
+	})
+	env.addFunc("==", &implInternal{
+		Type: parseType("Float -> Float -> Bool"),
+		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
+			x := float64(args[0].Reduce().(runtime.Float))
+			y := float64(args[1].Reduce().(runtime.Float))
+			return runtime.MkBoolExpr(x == y)
+		}),
+	})
+	env.addFunc("!=", &implInternal{
+		Type: parseType("Float -> Float -> Bool"),
+		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
+			x := float64(args[0].Reduce().(runtime.Float))
+			y := float64(args[1].Reduce().(runtime.Float))
+			return runtime.MkBoolExpr(x != y)
+		}),
+	})
+	env.addFunc("<", &implInternal{
+		Type: parseType("Float -> Float -> Bool"),
+		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
+			x := float64(args[0].Reduce().(runtime.Float))
+			y := float64(args[1].Reduce().(runtime.Float))
+			return runtime.MkBoolExpr(x < y)
+		}),
+	})
+	env.addFunc("<=", &implInternal{
+		Type: parseType("Float -> Float -> Bool"),
+		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
+			x := float64(args[0].Reduce().(runtime.Float))
+			y := float64(args[1].Reduce().(runtime.Float))
+			return runtime.MkBoolExpr(x <= y)
+		}),
+	})
+	env.addFunc(">", &implInternal{
+		Type: parseType("Float -> Float -> Bool"),
+		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
+			x := float64(args[0].Reduce().(runtime.Float))
+			y := float64(args[1].Reduce().(runtime.Float))
+			return runtime.MkBoolExpr(x > y)
+		}),
+	})
+	env.addFunc(">=", &implInternal{
+		Type: parseType("Float -> Float -> Bool"),
+		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
+			x := float64(args[0].Reduce().(runtime.Float))
+			y := float64(args[1].Reduce().(runtime.Float))
+			return runtime.MkBoolExpr(x >= y)
+		}),
+	})
+	env.addFunc("string", &implInternal{
+		Type: parseType("Float -> String"),
+		Expr: makeGoFunc(1, func(args ...runtime.Expr) runtime.Expr {
+			x := float64(args[0].Reduce().(runtime.Float))
+			return runtime.MkStringExpr(strconv.FormatFloat(x, 'f', -1, 64))
+		}),
+	})
+
+	//TODO: useful math functions for Float (sin, cos, sqrt, ...)
 }
 
 func parseType(s string) types.Type {
