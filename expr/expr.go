@@ -16,6 +16,7 @@ type Expr interface {
 	WithTypeInfo(types.Type) Expr
 	SourceInfo() *parseinfo.Source
 
+	HasFree(string) bool
 	Map(func(Expr) Expr) Expr
 }
 
@@ -97,6 +98,24 @@ func (s *Switch) SourceInfo() *parseinfo.Source { return s.SI }
 func (c *Char) SourceInfo() *parseinfo.Source   { return c.SI }
 func (i *Int) SourceInfo() *parseinfo.Source    { return i.SI }
 func (f *Float) SourceInfo() *parseinfo.Source  { return f.SI }
+
+func (v *Var) HasFree(name string) bool  { return v.Name == name }
+func (a *Appl) HasFree(name string) bool { return a.Left.HasFree(name) || a.Right.HasFree(name) }
+func (a *Abst) HasFree(name string) bool { return a.Bound.Name != name && a.Body.HasFree(name) }
+func (s *Switch) HasFree(name string) bool {
+	if s.Expr.HasFree(name) {
+		return true
+	}
+	for i := range s.Cases {
+		if s.Cases[i].Body.HasFree(name) {
+			return true
+		}
+	}
+	return false
+}
+func (c *Char) HasFree(name string) bool  { return false }
+func (i *Int) HasFree(name string) bool   { return false }
+func (f *Float) HasFree(name string) bool { return false }
 
 func (v *Var) Map(f func(Expr) Expr) Expr  { return f(v) }
 func (a *Appl) Map(f func(Expr) Expr) Expr { return f(&Appl{a.TI, a.Left.Map(f), a.Right.Map(f)}) }
