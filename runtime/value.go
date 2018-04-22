@@ -9,7 +9,7 @@ type Value struct {
 	expr Expr
 }
 
-func (v *Value) reduce() { v.expr = v.expr.reduce() }
+func (v *Value) reduce() { v.expr = v.expr.Reduce() }
 
 func (v *Value) Char() rune     { v.reduce(); return rune(v.expr.(Char)) }
 func (v *Value) Int() *big.Int  { v.reduce(); return (*big.Int)(v.expr.(*Int)) }
@@ -26,7 +26,7 @@ func (v *Value) Field(i int) *Value {
 	}
 }
 func (v *Value) Alternative() int        { v.reduce(); return v.expr.(Union).Alternative }
-func (v *Value) Apply(arg *Value) *Value { v.reduce(); return &Value{v.expr.apply(arg.expr)} }
+func (v *Value) Apply(arg *Value) *Value { v.reduce(); return &Value{v.expr.Apply(arg.expr)} }
 
 func (v *Value) Bool() bool {
 	return v.Alternative() == 0 // true | false

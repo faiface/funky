@@ -23,9 +23,9 @@ func drop(n int, ctx *ctx) *ctx {
 }
 
 type Expr interface {
-	reduce() Expr
-	withCtx(*ctx) Expr
-	apply(Expr) Expr
+	Reduce() Expr
+	WithCtx(*ctx) Expr
+	Apply(Expr) Expr
 }
 
 type (
@@ -63,45 +63,45 @@ type (
 	GoFunc func(Expr) Expr
 )
 
-func (c Char) reduce() Expr   { return c }
-func (i *Int) reduce() Expr   { return i }
-func (f Float) reduce() Expr  { return f }
-func (r Record) reduce() Expr { return r }
-func (u Union) reduce() Expr  { return u }
-func (v Var) reduce() Expr    { return drop(v.Index, v.ctx).Arg }
-func (t *Appl) reduce() Expr {
+func (c Char) Reduce() Expr   { return c }
+func (i *Int) Reduce() Expr   { return i }
+func (f Float) Reduce() Expr  { return f }
+func (r Record) Reduce() Expr { return r }
+func (u Union) Reduce() Expr  { return u }
+func (v Var) Reduce() Expr    { return drop(v.Index, v.ctx).Arg }
+func (t *Appl) Reduce() Expr {
 	if t.reduced {
 		return t.Left
 	}
-	t.Left = t.Left.withCtx(drop(t.LDrop, t.ctx)).reduce()
-	t.Left = t.Left.apply(t.Right.withCtx(drop(t.RDrop, t.ctx))).reduce()
+	t.Left = t.Left.WithCtx(drop(t.LDrop, t.ctx)).Reduce()
+	t.Left = t.Left.Apply(t.Right.WithCtx(drop(t.RDrop, t.ctx))).Reduce()
 	t.Right = nil
 	t.reduced = true
 	return t.Left
 }
-func (a *Abst) reduce() Expr  { return a }
-func (r Ref) reduce() Expr    { return (*r.Expr).reduce() }
-func (g GoFunc) reduce() Expr { return g }
+func (a *Abst) Reduce() Expr  { return a }
+func (r Ref) reduce() Expr    { return (*r.Expr).Reduce() }
+func (g GoFunc) Reduce() Expr { return g }
 
-func (c Char) withCtx(*ctx) Expr  { return c }
-func (i *Int) withCtx(*ctx) Expr  { return i }
-func (f Float) withCtx(*ctx) Expr { return f }
-func (r Record) withCtx(ctx *ctx) Expr {
+func (c Char) WithCtx(*ctx) Expr  { return c }
+func (i *Int) WithCtx(*ctx) Expr  { return i }
+func (f Float) WithCtx(*ctx) Expr { return f }
+func (r Record) WithCtx(ctx *ctx) Expr {
 	fields := make([]Expr, len(r.Fields))
 	for i := range fields {
-		fields[i] = r.Fields[i].withCtx(ctx)
+		fields[i] = r.Fields[i].WithCtx(ctx)
 	}
 	return Record{Fields: fields}
 }
-func (u Union) withCtx(ctx *ctx) Expr {
+func (u Union) WithCtx(ctx *ctx) Expr {
 	fields := make([]Expr, len(u.Fields))
 	for i := range fields {
-		fields[i] = u.Fields[i].withCtx(ctx)
+		fields[i] = u.Fields[i].WithCtx(ctx)
 	}
 	return Union{Alternative: u.Alternative, Fields: fields}
 }
-func (v Var) withCtx(ctx *ctx) Expr { return Var{ctx: ctx, Index: v.Index} }
-func (t *Appl) withCtx(ctx *ctx) Expr {
+func (v Var) WithCtx(ctx *ctx) Expr { return Var{ctx: ctx, Index: v.Index} }
+func (t *Appl) WithCtx(ctx *ctx) Expr {
 	return &Appl{
 		reduced: t.reduced,
 		ctx:     ctx,
@@ -111,17 +111,17 @@ func (t *Appl) withCtx(ctx *ctx) Expr {
 		Right:   t.Right,
 	}
 }
-func (a *Abst) withCtx(ctx *ctx) Expr { return &Abst{ctx: ctx, Body: a.Body} }
-func (r Ref) withCtx(ctx *ctx) Expr   { return (*r.Expr).withCtx(ctx) }
-func (g GoFunc) withCtx(*ctx) Expr    { return g }
+func (a *Abst) WithCtx(ctx *ctx) Expr { return &Abst{ctx: ctx, Body: a.Body} }
+func (r Ref) withCtx(ctx *ctx) Expr   { return (*r.Expr).WithCtx(ctx) }
+func (g GoFunc) WithCtx(*ctx) Expr    { return g }
 
-func (c Char) apply(Expr) Expr       { panic("not applicable") }
-func (i *Int) apply(Expr) Expr       { panic("not applicable") }
-func (f Float) apply(Expr) Expr      { panic("not applicable") }
-func (r Record) apply(Expr) Expr     { panic("not applicable") }
-func (u Union) apply(Expr) Expr      { panic("not applicable") }
-func (v Var) apply(Expr) Expr        { panic("not applicable") }
-func (t *Appl) apply(Expr) Expr      { panic("not applicable") }
-func (a *Abst) apply(arg Expr) Expr  { return a.Body.withCtx(cons(arg, a.ctx)) }
-func (r Ref) apply(arg Expr) Expr    { return (*r.Expr).apply(arg) }
-func (g GoFunc) apply(arg Expr) Expr { return g(arg) }
+func (c Char) Apply(Expr) Expr       { panic("not applicable") }
+func (i *Int) Apply(Expr) Expr       { panic("not applicable") }
+func (f Float) Apply(Expr) Expr      { panic("not applicable") }
+func (r Record) Apply(Expr) Expr     { panic("not applicable") }
+func (u Union) Apply(Expr) Expr      { panic("not applicable") }
+func (v Var) Apply(Expr) Expr        { panic("not applicable") }
+func (t *Appl) Apply(Expr) Expr      { panic("not applicable") }
+func (a *Abst) Apply(arg Expr) Expr  { return a.Body.WithCtx(cons(arg, a.ctx)) }
+func (r Ref) apply(arg Expr) Expr    { return (*r.Expr).Apply(arg) }
+func (g GoFunc) Apply(arg Expr) Expr { return g(arg) }
