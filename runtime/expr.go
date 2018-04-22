@@ -73,7 +73,7 @@ func (i *Int) Reduce() Expr   { return i }
 func (f Float) Reduce() Expr  { return f }
 func (r Record) Reduce() Expr { return r }
 func (u Union) Reduce() Expr  { return u }
-func (v Var) Reduce() Expr    { return drop(v.Index, v.ctx).Arg }
+func (v Var) Reduce() Expr    { return drop(v.Index, v.ctx).Arg.Reduce() }
 func (t *Appl) Reduce() Expr {
 	if t.reduced {
 		return t.Left
@@ -87,15 +87,11 @@ func (t *Appl) Reduce() Expr {
 func (a *Abst) Reduce() Expr { return a }
 func (s Switch) Reduce() Expr {
 	union := s.Expr.WithCtx(s.ctx).Reduce().(Union)
-	caseExpr := s.Cases[union.Alternative]
+	caseExpr := s.Cases[union.Alternative].WithCtx(s.ctx)
 	for _, field := range union.Fields {
-		caseExpr = &Appl{
-			ctx:   s.ctx,
-			Left:  caseExpr,
-			Right: field,
-		}
+		caseExpr = caseExpr.Apply(field)
 	}
-	return caseExpr
+	return caseExpr.Reduce()
 }
 func (r Ref) Reduce() Expr    { return (*r.Expr).Reduce() }
 func (g GoFunc) Reduce() Expr { return g }
