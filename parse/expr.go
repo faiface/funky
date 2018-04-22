@@ -21,13 +21,17 @@ const (
 )
 
 func LiteralKindOf(s string) LiteralKind {
-	r, _ := utf8.DecodeRuneInString(s)
+	r0, size := utf8.DecodeRuneInString(s)
+	r1 := rune(0)
+	if len(s) > size {
+		r1, _ = utf8.DecodeRuneInString(s[size:])
+	}
 	switch {
-	case unicode.IsDigit(r):
+	case unicode.IsDigit(r0) || (r0 == '-' && unicode.IsDigit(r1)):
 		return LiteralNumber
-	case r == '\'':
+	case r0 == '\'':
 		return LiteralChar
-	case r == '"':
+	case r0 == '"':
 		return LiteralString
 	default:
 		return LiteralIdentifier
