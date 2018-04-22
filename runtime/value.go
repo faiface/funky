@@ -53,5 +53,38 @@ func (v *Value) String() string {
 func MkChar(c rune) *Value     { return &Value{Char(c)} }
 func MkInt(i *big.Int) *Value  { return &Value{(*Int)(i)} }
 func MkFloat(f float64) *Value { return &Value{Float(f)} }
-
-//TODO: other constructors
+func MkRecord(fields []*Value) *Value {
+	record := Record{Fields: make([]Expr, len(fields))}
+	for i := range record.Fields {
+		record.Fields[i] = fields[i].Expr
+	}
+	return &Value{record}
+}
+func MkUnion(alternative int, fields []*Value) *Value {
+	union := Union{Alternative: alternative, Fields: make([]Expr, len(fields))}
+	for i := range union.Fields {
+		union.Fields[i] = fields[i].Expr
+	}
+	return &Value{union}
+}
+func MkBool(b bool) *Value {
+	if b {
+		return MkUnion(0, nil)
+	}
+	return MkUnion(1, nil)
+}
+func MkList(elems ...*Value) *Value {
+	list := Union{Alternative: 0}
+	for i := len(elems) - 1; i >= 0; i-- {
+		list = Union{Alternative: 1, Fields: []Expr{elems[i].Expr, list}}
+	}
+	return &Value{list}
+}
+func MkString(s string) *Value {
+	str := Union{Alternative: 0}
+	runes := []rune(s)
+	for i := len(runes) - 1; i >= 0; i-- {
+		str = Union{Alternative: 1, Fields: []Expr{Char(runes[i]), str}}
+	}
+	return &Value{str}
+}
