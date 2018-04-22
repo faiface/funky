@@ -1,15 +1,14 @@
 func error : a = error
 
-func id : a -> a = \x x
+func id  : a -> a             = \x x
+func let : a -> (a -> b) -> b = \x \f f x
 
 func flip : (a -> b -> c) -> b -> a -> c = \f \x \y f y x
 
 func (.) : (b -> c) -> (a -> b) -> a -> c = \f \g \x f (g x)
 
-func (..) : (b -> b -> c) -> (a -> b) -> a -> a -> c = \f \g \x \y f (g x) (g y)
 func (.)  : (c -> d) -> (a -> b -> c) -> a -> b -> d = \f \g \x \y f (g x y)
 
-func (...) : (b -> b -> b -> c) -> (a -> b) -> a -> a -> a -> c = \f \g \x \y \z f (g x) (g y) (g z)
 func (.)   : (d -> e) -> (a -> b -> c -> d) -> a -> b -> c -> e = \f \g \x \y \z f (g x y z)
 
 #-------------------------------
@@ -87,6 +86,8 @@ func fold> : (b -> a -> b) -> b -> List a -> b =
         zero;
     fold> f (f zero (first list)) (rest list)
 
+func (++) : List a -> List a -> List a = fold< (::)
+
 #-------------------------------
 
 union Maybe a = nothing | just a
@@ -119,10 +120,34 @@ func (?) : Maybe a -> a -> a =
     case just \x
         x
 
-#---------------------------------------
+#-------------------------------
+
+union InfList a = a :: (InfList a)
+
+func first : InfList a -> a = \inf
+    switch inf
+    case (::) \x \xs x
+
+func rest : InfList a -> InfList a = \inf
+    switch inf
+    case (::) \x \xs xs
+
+func list : InfList a -> List a = \inf
+    switch inf
+    case (::) \x \xs
+        x :: list xs
+
+#-------------------------------
 
 union IO = done | putc Char IO | getc (Char -> IO)
 
-alias Seq a = List a
+func print   : String -> IO -> IO = fold< putc
+func println : String -> IO -> IO = print . (++ "\n")
 
-func print : String -> IO -> IO = fold< putc
+record Person = first-name : String, last-name : String, age : Int
+
+func main : IO =
+    let (Person "Michal" "Štrba" 22) \me
+    println (first-name me);
+    println (last-name me);
+    done
