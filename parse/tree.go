@@ -253,15 +253,18 @@ func SingleTree(tokens []Token) (t Tree, end int, err error) {
 		}, len(tokens), nil
 
 	default:
-		if !hasLetterOrDigit(tokens[0].Value) {
-			after, err := MultiTree(tokens[1:])
-			if err != nil {
-				return nil, 0, err
+		switch LiteralKindOf(tokens[0].Value) {
+		case LiteralIdentifier:
+			if !hasLetterOrDigit(tokens[0].Value) {
+				after, err := MultiTree(tokens[1:])
+				if err != nil {
+					return nil, 0, err
+				}
+				return &Infix{
+					In:    &Literal{SI: tokens[0].SourceInfo, Value: tokens[0].Value},
+					Right: after,
+				}, len(tokens), nil
 			}
-			return &Infix{
-				In:    &Literal{SI: tokens[0].SourceInfo, Value: tokens[0].Value},
-				Right: after,
-			}, len(tokens), nil
 		}
 		return &Literal{
 			SI:    tokens[0].SourceInfo,
