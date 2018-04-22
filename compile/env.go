@@ -2,6 +2,7 @@ package compile
 
 import (
 	"fmt"
+	"math"
 	"math/big"
 
 	"github.com/faiface/funky/expr"
@@ -43,7 +44,7 @@ func (env *Env) lazyInit() {
 
 	// built-in functions
 
-	// Char
+	// conversions
 	env.addFunc("int", &implInternal{
 		Type: parseType("Char -> Int"),
 		Expr: makeGoFunc(1, func(args ...runtime.Expr) runtime.Expr {
@@ -54,6 +55,22 @@ func (env *Env) lazyInit() {
 		Type: parseType("Int -> Char"),
 		Expr: makeGoFunc(1, func(args ...runtime.Expr) runtime.Expr {
 			return runtime.Char((*big.Int)(args[0].Reduce().(*runtime.Int)).Int64())
+		}),
+	})
+	env.addFunc("int", &implInternal{
+		Type: parseType("Float -> Int"),
+		Expr: makeGoFunc(1, func(args ...runtime.Expr) runtime.Expr {
+			x := math.Floor(float64(args[0].Reduce().(runtime.Float)))
+			z, _ := big.NewFloat(x).Int(nil)
+			return (*runtime.Int)(z)
+		}),
+	})
+	env.addFunc("float", &implInternal{
+		Type: parseType("Int -> Float"),
+		Expr: makeGoFunc(1, func(args ...runtime.Expr) runtime.Expr {
+			x := (*big.Int)(args[0].Reduce().(*runtime.Int))
+			z, _ := big.NewFloat(0).SetInt(x).Float64()
+			return runtime.Float(z)
 		}),
 	})
 
