@@ -55,6 +55,11 @@ type (
 		ctx  *ctx
 		Body Expr
 	}
+	Switch struct {
+		ctx   *ctx
+		Expr  Expr
+		Cases []Expr
+	}
 
 	Ref struct {
 		Expr *Expr
@@ -79,7 +84,19 @@ func (t *Appl) Reduce() Expr {
 	t.reduced = true
 	return t.Left
 }
-func (a *Abst) Reduce() Expr  { return a }
+func (a *Abst) Reduce() Expr { return a }
+func (s Switch) Reduce() Expr {
+	union := s.Expr.WithCtx(s.ctx).Reduce().(Union)
+	caseExpr := s.Cases[union.Alternative]
+	for _, field := range union.Fields {
+		caseExpr = &Appl{
+			ctx:   s.ctx,
+			Left:  caseExpr,
+			Right: field,
+		}
+	}
+	return caseExpr
+}
 func (r Ref) reduce() Expr    { return (*r.Expr).Reduce() }
 func (g GoFunc) Reduce() Expr { return g }
 
@@ -98,9 +115,9 @@ func (u Union) WithCtx(ctx *ctx) Expr {
 	for i := range fields {
 		fields[i] = u.Fields[i].WithCtx(ctx)
 	}
-	return Union{Alternative: u.Alternative, Fields: fields}
+	return Union{u.Alternative, fields}
 }
-func (v Var) WithCtx(ctx *ctx) Expr { return Var{ctx: ctx, Index: v.Index} }
+func (v Var) WithCtx(ctx *ctx) Expr { return Var{ctx, v.Index} }
 func (t *Appl) WithCtx(ctx *ctx) Expr {
 	return &Appl{
 		reduced: t.reduced,
@@ -111,9 +128,10 @@ func (t *Appl) WithCtx(ctx *ctx) Expr {
 		Right:   t.Right,
 	}
 }
-func (a *Abst) WithCtx(ctx *ctx) Expr { return &Abst{ctx: ctx, Body: a.Body} }
-func (r Ref) withCtx(ctx *ctx) Expr   { return (*r.Expr).WithCtx(ctx) }
-func (g GoFunc) WithCtx(*ctx) Expr    { return g }
+func (a *Abst) WithCtx(ctx *ctx) Expr  { return &Abst{ctx, a.Body} }
+func (s Switch) WithCtx(ctx *ctx) Expr { return Switch{ctx, s.Expr, s.Cases} }
+func (r Ref) withCtx(ctx *ctx) Expr    { return (*r.Expr).WithCtx(ctx) }
+func (g GoFunc) WithCtx(*ctx) Expr     { return g }
 
 func (c Char) Apply(Expr) Expr       { panic("not applicable") }
 func (i *Int) Apply(Expr) Expr       { panic("not applicable") }
@@ -123,5 +141,6 @@ func (u Union) Apply(Expr) Expr      { panic("not applicable") }
 func (v Var) Apply(Expr) Expr        { panic("not applicable") }
 func (t *Appl) Apply(Expr) Expr      { panic("not applicable") }
 func (a *Abst) Apply(arg Expr) Expr  { return a.Body.WithCtx(cons(arg, a.ctx)) }
+func (s Switch) Apply(arg Expr) Expr { panic("not applicable") }
 func (r Ref) apply(arg Expr) Expr    { return (*r.Expr).Apply(arg) }
 func (g GoFunc) Apply(arg Expr) Expr { return g(arg) }
