@@ -49,3 +49,9 @@ func (v *Value) String() string {
 	}
 	return builder.String()
 }
+
+func MkChar(c rune) *Value     { return &Value{Char(c)} }
+func MkInt(i *big.Int) *Value  { return &Value{(*Int)(i)} }
+func MkFloat(f float64) *Value { return &Value{Float(f)} }
+
+//TODO: other constructors
