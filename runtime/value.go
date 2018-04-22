@@ -43,7 +43,6 @@ func (v *Value) List() []*Value {
 
 func (v *Value) String() string {
 	var builder strings.Builder
-	v = v.Field(0)             // chars
 	for v.Alternative() != 0 { // empty | (::)
 		builder.WriteRune(v.Field(0).Char()) // first
 		v = v.Field(1)                       // rest
