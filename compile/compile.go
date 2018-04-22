@@ -69,9 +69,7 @@ func compile(
 	case *expr.Var:
 		for i, arg := range args {
 			if arg == e.Name {
-				return runtime.Var{
-					Index: i,
-				}
+				return runtime.Var{Index: i}
 			}
 		}
 		for i, typ := range global[e.Name] {
@@ -112,7 +110,7 @@ func compile(
 
 	case *expr.Abst:
 		return &runtime.Abst{
-			Body: compile(names, offsets, exprs, global, args, e.Body),
+			Body: compile(names, offsets, exprs, global, append([]string{e.Bound.Name}, args...), e.Body),
 		}
 
 	case *expr.Switch:

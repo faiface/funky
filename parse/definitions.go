@@ -252,10 +252,10 @@ func treeToFunc(tree Tree) (name string, body expr.Expr, err error) {
 		return "", nil, err
 	}
 
-	if body.TypeInfo() != nil {
+	if body.TypeInfo() != nil && !body.TypeInfo().Equal(signature.TypeInfo()) {
 		return "", nil, &Error{
 			bodyTree.SourceInfo(),
-			"body type must only be in signature",
+			"required body type differs from type in signature",
 		}
 	}
 
