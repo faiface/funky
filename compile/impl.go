@@ -3,6 +3,7 @@ package compile
 import (
 	"github.com/faiface/funky/expr"
 	"github.com/faiface/funky/parse/parseinfo"
+	"github.com/faiface/funky/runtime"
 	"github.com/faiface/funky/types"
 )
 
@@ -12,15 +13,18 @@ type impl interface {
 }
 
 type (
-	implUndefined struct {
+	implInternal struct {
 		SI   *parseinfo.Source
 		Type types.Type
+		Expr runtime.Expr
 	}
-	implExpr struct{ Expr expr.Expr }
+	implExpr struct {
+		Expr expr.Expr
+	}
 )
 
-func (u *implUndefined) SourceInfo() *parseinfo.Source { return u.SI }
-func (e *implExpr) SourceInfo() *parseinfo.Source      { return e.Expr.SourceInfo() }
+func (u *implInternal) SourceInfo() *parseinfo.Source { return u.SI }
+func (e *implExpr) SourceInfo() *parseinfo.Source     { return e.Expr.SourceInfo() }
 
-func (u *implUndefined) TypeInfo() types.Type { return u.Type }
-func (e *implExpr) TypeInfo() types.Type      { return e.Expr.TypeInfo() }
+func (u *implInternal) TypeInfo() types.Type { return u.Type }
+func (e *implExpr) TypeInfo() types.Type     { return e.Expr.TypeInfo() }

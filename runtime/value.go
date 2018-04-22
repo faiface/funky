@@ -6,17 +6,17 @@ import (
 )
 
 type Value struct {
-	expr Expr
+	Expr Expr
 }
 
-func (v *Value) reduce() { v.expr = v.expr.Reduce() }
+func (v *Value) reduce() { v.Expr = v.Expr.Reduce() }
 
-func (v *Value) Char() rune     { v.reduce(); return rune(v.expr.(Char)) }
-func (v *Value) Int() *big.Int  { v.reduce(); return (*big.Int)(v.expr.(*Int)) }
-func (v *Value) Float() float64 { v.reduce(); return float64(v.expr.(Float)) }
+func (v *Value) Char() rune     { v.reduce(); return rune(v.Expr.(Char)) }
+func (v *Value) Int() *big.Int  { v.reduce(); return (*big.Int)(v.Expr.(*Int)) }
+func (v *Value) Float() float64 { v.reduce(); return float64(v.Expr.(Float)) }
 func (v *Value) Field(i int) *Value {
 	v.reduce()
-	switch v := v.expr.(type) {
+	switch v := v.Expr.(type) {
 	case Record:
 		return &Value{v.Fields[i]}
 	case Union:
@@ -25,8 +25,8 @@ func (v *Value) Field(i int) *Value {
 		panic("not a record or a union")
 	}
 }
-func (v *Value) Alternative() int        { v.reduce(); return v.expr.(Union).Alternative }
-func (v *Value) Apply(arg *Value) *Value { v.reduce(); return &Value{v.expr.Apply(arg.expr)} }
+func (v *Value) Alternative() int        { v.reduce(); return v.Expr.(Union).Alternative }
+func (v *Value) Apply(arg *Value) *Value { v.reduce(); return &Value{v.Expr.Apply(arg.Expr)} }
 
 func (v *Value) Bool() bool {
 	return v.Alternative() == 0 // true | false

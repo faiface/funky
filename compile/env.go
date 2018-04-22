@@ -6,6 +6,7 @@ import (
 	"github.com/faiface/funky/expr"
 	"github.com/faiface/funky/parse"
 	"github.com/faiface/funky/parse/parseinfo"
+	"github.com/faiface/funky/runtime"
 	"github.com/faiface/funky/types"
 )
 
@@ -81,19 +82,32 @@ func (env *Env) addRecord(name string, record *types.Record) error {
 			To:   constructorType,
 		}
 	}
-	err := env.addFunc(name, &implUndefined{record.SourceInfo(), constructorType})
+	err := env.addFunc(
+		name,
+		&implInternal{
+			record.SourceInfo(),
+			constructorType,
+			makeGoFunc(len(record.Fields), func(args ...runtime.Expr) runtime.Expr {
+				return runtime.Record{Fields: args}
+			}),
+		},
+	)
 	if err != nil {
 		return err
 	}
 
 	// add record field getters
-	for _, field := range record.Fields {
-		err := env.addFunc(field.Name, &implUndefined{
+	for i, field := range record.Fields {
+		index := i
+		err := env.addFunc(field.Name, &implInternal{
 			field.SI,
 			&types.Func{
 				From: recordType,
 				To:   field.Type,
 			},
+			makeGoFunc(1, func(args ...runtime.Expr) runtime.Expr {
+				return args[0].Reduce().(runtime.Record).Fields[index]
+			}),
 		})
 		if err != nil {
 			return err
@@ -101,13 +115,20 @@ func (env *Env) addRecord(name string, record *types.Record) error {
 	}
 
 	// add record fiel setters
-	for _, field := range record.Fields {
-		err := env.addFunc(field.Name, &implUndefined{
+	for i, field := range record.Fields {
+		index := i
+		err := env.addFunc(field.Name, &implInternal{
 			field.SI,
 			&types.Func{
 				From: field.Type,
 				To:   &types.Func{From: recordType, To: recordType},
 			},
+			makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
+				newFields := make([]runtime.Expr, len(record.Fields))
+				copy(newFields, args[1].Reduce().(runtime.Record).Fields)
+				newFields[index] = args[0]
+				return runtime.Record{Fields: newFields}
+			}),
 		})
 		if err != nil {
 			return err
@@ -137,7 +158,7 @@ func (env *Env) addUnion(name string, union *types.Union) error {
 	}
 
 	// add union alternative constructors
-	for _, alt := range union.Alts {
+	for i, alt := range union.Alts {
 		var altType types.Type = unionType
 		for i := len(alt.Fields) - 1; i >= 0; i-- {
 			altType = &types.Func{
@@ -145,7 +166,17 @@ func (env *Env) addUnion(name string, union *types.Union) error {
 				To:   altType,
 			}
 		}
-		err := env.addFunc(alt.Name, &implUndefined{alt.SI, altType})
+		alternative := i
+		err := env.addFunc(
+			alt.Name,
+			&implInternal{
+				alt.SI,
+				altType,
+				makeGoFunc(len(alt.Fields), func(args ...runtime.Expr) runtime.Expr {
+					return runtime.Union{Alternative: alternative, Fields: args}
+				}),
+			},
+		)
 		if err != nil {
 			return err
 		}
@@ -168,4 +199,37 @@ func (env *Env) addAlias(name string, alias *types.Alias) error {
 func (env *Env) addFunc(name string, imp impl) error {
 	env.funcs[name] = append(env.funcs[name], imp)
 	return nil
+}
+
+type argList struct {
+	Value runtime.Expr
+	Next  *argList
+}
+
+func cons(value runtime.Expr, next *argList) *argList {
+	return &argList{
+		Value: value,
+		Next:  next,
+	}
+}
+
+func makeGoFunc(arity int, fn func(...runtime.Expr) runtime.Expr) runtime.Expr {
+	return makeGoFuncHelper(arity, nil, fn)
+}
+
+func makeGoFuncHelper(left int, al *argList, fn func(...runtime.Expr) runtime.Expr) runtime.Expr {
+	if left == 0 {
+		var args []runtime.Expr
+		for al != nil {
+			args = append(args, al.Value)
+			al = al.Next
+		}
+		for i, j := 0, len(args)-1; i < j; i, j = i+1, j-1 {
+			args[i], args[j] = args[j], args[i]
+		}
+		return fn(args...)
+	}
+	return runtime.GoFunc(func(e runtime.Expr) runtime.Expr {
+		return makeGoFuncHelper(left-1, cons(e, al), fn)
+	})
 }

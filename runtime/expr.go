@@ -97,7 +97,7 @@ func (s Switch) Reduce() Expr {
 	}
 	return caseExpr
 }
-func (r Ref) reduce() Expr    { return (*r.Expr).Reduce() }
+func (r Ref) Reduce() Expr    { return (*r.Expr).Reduce() }
 func (g GoFunc) Reduce() Expr { return g }
 
 func (c Char) WithCtx(*ctx) Expr  { return c }
@@ -130,7 +130,7 @@ func (t *Appl) WithCtx(ctx *ctx) Expr {
 }
 func (a *Abst) WithCtx(ctx *ctx) Expr  { return &Abst{ctx, a.Body} }
 func (s Switch) WithCtx(ctx *ctx) Expr { return Switch{ctx, s.Expr, s.Cases} }
-func (r Ref) withCtx(ctx *ctx) Expr    { return (*r.Expr).WithCtx(ctx) }
+func (r Ref) WithCtx(ctx *ctx) Expr    { return (*r.Expr).WithCtx(ctx) }
 func (g GoFunc) WithCtx(*ctx) Expr     { return g }
 
 func (c Char) Apply(Expr) Expr       { panic("not applicable") }
@@ -142,5 +142,5 @@ func (v Var) Apply(Expr) Expr        { panic("not applicable") }
 func (t *Appl) Apply(Expr) Expr      { panic("not applicable") }
 func (a *Abst) Apply(arg Expr) Expr  { return a.Body.WithCtx(cons(arg, a.ctx)) }
 func (s Switch) Apply(arg Expr) Expr { panic("not applicable") }
-func (r Ref) apply(arg Expr) Expr    { return (*r.Expr).Apply(arg) }
+func (r Ref) Apply(arg Expr) Expr    { return (*r.Expr).Apply(arg) }
 func (g GoFunc) Apply(arg Expr) Expr { return g(arg) }
