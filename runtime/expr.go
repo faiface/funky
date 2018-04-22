@@ -56,8 +56,10 @@ type (
 	}
 
 	Ref struct {
-		Ref *Expr
+		Expr *Expr
 	}
+
+	GoFunc func(Expr) Expr
 )
 
 func (c Char) Reduce() Expr   { return c }
@@ -75,8 +77,9 @@ func (t *Appl) Reduce() Expr {
 	t.Right = nil
 	return t.Left
 }
-func (a *Abst) Reduce() Expr { return a }
-func (r Ref) Reduce() Expr   { return (*r.Ref).Reduce() }
+func (a *Abst) Reduce() Expr  { return a }
+func (r Ref) Reduce() Expr    { return (*r.Expr).Reduce() }
+func (g GoFunc) Reduce() Expr { return g }
 
 func (c Char) WithCtx(*ctx) Expr  { return c }
 func (i *Int) WithCtx(*ctx) Expr  { return i }
@@ -107,14 +110,16 @@ func (t *Appl) WithCtx(ctx *ctx) Expr {
 	}
 }
 func (a *Abst) WithCtx(ctx *ctx) Expr { return &Abst{ctx: ctx, Body: a.Body} }
-func (r Ref) WithCtx(ctx *ctx) Expr   { return (*r.Ref).WithCtx(ctx) }
+func (r Ref) WithCtx(ctx *ctx) Expr   { return (*r.Expr).WithCtx(ctx) }
+func (g GoFunc) WithCtx(*ctx) Expr    { return g }
 
-func (c Char) Apply(Expr) Expr      { panic("not applicable") }
-func (i *Int) Apply(Expr) Expr      { panic("not applicable") }
-func (f Float) Apply(Expr) Expr     { panic("not applicable") }
-func (r Record) Apply(Expr) Expr    { panic("not applicable") }
-func (u Union) Apply(Expr) Expr     { panic("not applicable") }
-func (v Var) Apply(Expr) Expr       { panic("not applicable") }
-func (t *Appl) Apply(Expr) Expr     { panic("not applicable") }
-func (a *Abst) Apply(arg Expr) Expr { return a.Body.WithCtx(cons(arg, a.ctx)) }
-func (r Ref) Apply(arg Expr) Expr   { return (*r.Ref).Apply(arg) }
+func (c Char) Apply(Expr) Expr       { panic("not applicable") }
+func (i *Int) Apply(Expr) Expr       { panic("not applicable") }
+func (f Float) Apply(Expr) Expr      { panic("not applicable") }
+func (r Record) Apply(Expr) Expr     { panic("not applicable") }
+func (u Union) Apply(Expr) Expr      { panic("not applicable") }
+func (v Var) Apply(Expr) Expr        { panic("not applicable") }
+func (t *Appl) Apply(Expr) Expr      { panic("not applicable") }
+func (a *Abst) Apply(arg Expr) Expr  { return a.Body.WithCtx(cons(arg, a.ctx)) }
+func (r Ref) Apply(arg Expr) Expr    { return (*r.Expr).Apply(arg) }
+func (g GoFunc) Apply(arg Expr) Expr { return g(arg) }
