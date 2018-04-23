@@ -16,3 +16,5 @@ func (.) : (c -> d) -> (a -> b -> c) -> a -> b -> d =
 func (.) : (d -> e) -> (a -> b -> c -> d) -> a -> b -> c -> e =
     \f \g \x \y \z
     f (g x y z)
+
+func dumpln : String -> a -> a = dump . (++ "\n")
