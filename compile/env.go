@@ -70,7 +70,7 @@ func (env *Env) lazyInit() {
 	})
 	env.addFunc("error", &implInternal{
 		Type: parseType("String -> a"),
-		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
+		Expr: makeGoFunc(1, func(args ...runtime.Expr) runtime.Expr {
 			var builder strings.Builder
 			union := args[0].Reduce().(runtime.Union)
 			for union.Alternative != 0 {
