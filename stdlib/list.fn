@@ -79,3 +79,5 @@ func any : (a -> Bool) -> List a -> Bool =
 func all : (a -> Bool) -> List a -> Bool =
     \p \list
     fold< ((&&) . p) list true
+
+func repeat : a -> List a = \x x :: repeat x
