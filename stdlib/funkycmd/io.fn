@@ -32,7 +32,7 @@ func unscan : String -> IO -> IO =
 
 func whitespace? : Char -> Bool =
     \c
-    any (== c) [' ', '\t', '\n', '\r']
+    any (c ==) [' ', '\t', '\n', '\r']
 
 func skip-whitespace : IO -> IO =
     \io
