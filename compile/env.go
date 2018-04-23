@@ -117,11 +117,33 @@ func (env *Env) lazyInit() {
 			return runtime.MkStringExpr(x.Text(10))
 		}),
 	})
+	env.addFunc("int", &implInternal{
+		Type: parseType("String -> Maybe Int"),
+		Expr: makeGoFunc(1, func(args ...runtime.Expr) runtime.Expr {
+			s := runtimeExprToString(args[0])
+			i, ok := big.NewInt(0).SetString(s, 10)
+			if !ok {
+				return runtime.Union{Alternative: 0}
+			}
+			return runtime.Union{Alternative: 1, Fields: []runtime.Expr{(*runtime.Int)(i)}}
+		}),
+	})
 	env.addFunc("string", &implInternal{
 		Type: parseType("Float -> String"),
 		Expr: makeGoFunc(1, func(args ...runtime.Expr) runtime.Expr {
 			x := float64(args[0].Reduce().(runtime.Float))
 			return runtime.MkStringExpr(strconv.FormatFloat(x, 'f', -1, 64))
+		}),
+	})
+	env.addFunc("float", &implInternal{
+		Type: parseType("String -> Maybe Float"),
+		Expr: makeGoFunc(1, func(args ...runtime.Expr) runtime.Expr {
+			s := runtimeExprToString(args[0])
+			f, err := strconv.ParseFloat(s, 64)
+			if err != nil {
+				return runtime.Union{Alternative: 0}
+			}
+			return runtime.Union{Alternative: 1, Fields: []runtime.Expr{runtime.Float(f)}}
 		}),
 	})
 
