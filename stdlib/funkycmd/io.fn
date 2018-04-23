@@ -1,0 +1,4 @@
+union IO = done | putc Char IO | getc (Char -> IO)
+
+func print   : String -> IO -> IO = fold< putc
+func println : String -> IO -> IO = print . (++ "\n")

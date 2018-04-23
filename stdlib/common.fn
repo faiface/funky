@@ -1,0 +1,15 @@
+func id  : a -> a             = \x x
+func let : a -> (a -> b) -> b = \x \f f x
+func fix : (a -> a) -> a      = \f f (fix f)
+
+func (.) : (b -> c) -> (a -> b) -> a -> c =
+    \f \g \x
+    f (g x)
+
+func (.) : (c -> d) -> (a -> b -> c) -> a -> b -> d =
+    \f \g \x \y
+    f (g x y)
+
+func (.) : (d -> e) -> (a -> b -> c -> d) -> a -> b -> c -> e =
+    \f \g \x \y \z
+    f (g x y z)

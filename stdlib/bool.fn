@@ -1,0 +1,32 @@
+union Bool = true | false
+
+func if : Bool -> a -> a -> a =
+    \bool \then \else
+    switch bool
+    case true  then
+    case false else
+
+func not : Bool -> Bool =
+    \bool
+    switch bool
+    case true  false
+    case false true
+
+func (&&) : Bool -> Bool -> Bool = \p \q if p q false
+func (||) : Bool -> Bool -> Bool = \p \q if p true q
+func (==) : Bool -> Bool -> Bool = \p \q if p q (not q)
+func (!=) : Bool -> Bool -> Bool = \p \q if p (not q) q
+
+func (&&) : (a -> Bool) -> (a -> Bool) -> a -> Bool =
+    \f \g \x
+    f x && g x
+func (||) : (a -> Bool) -> (a -> Bool) -> a -> Bool =
+    \f \g \x
+    f x || g x
+
+func (&&) : (a -> b -> Bool) -> (a -> b -> Bool) -> a -> b -> Bool =
+    \f \g \x \y
+    f x y && g x y
+func (||) : (a -> b -> Bool) -> (a -> b -> Bool) -> a -> b -> Bool =
+    \f \g \x \y
+    f x y || g x y

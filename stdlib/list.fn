@@ -1,0 +1,81 @@
+union List a = empty | a :: (List a)
+
+alias String = List Char
+
+func empty? : List a -> Bool =
+    \list
+    switch list
+    case empty true
+    case (::)  \_ \_ false
+
+func first : List a -> a =
+    \list
+    switch list
+    case empty error "first: empty list"
+    case (::)  \x \xs x
+
+func rest : List a -> List a =
+    \list
+    switch list
+    case empty error "rest: empty list"
+    case (::)  \x \xs xs
+
+func take : Int -> List a -> List a =
+    \n \list
+    if (n == 0)
+        [];
+    first list :: take (n - 1) (rest list)
+
+func drop : Int -> List a -> List a =
+    \n \list
+    if (n == 0)
+        list;
+    drop (n - 1) (rest list)
+
+func fold< : (a -> b -> b) -> List a -> b -> b =
+    \f \list \zero
+    switch list
+    case empty
+        zero
+    case (::) \x \xs
+        f x (fold< f xs zero)
+
+func fold> : (b -> a -> b) -> b -> List a -> b =
+    \f \zero \list
+    switch list
+    case empty
+        zero
+    case (::) \x \xs
+        let (f zero x) \new-zero
+        eval new-zero;
+        fold> f new-zero xs
+
+func map : (a -> b) -> List a -> List b =
+    \f \list
+    fold< ((::) . f) list []
+
+func filter : (a -> Bool) -> List a -> List a =
+    \p \list
+    switch list
+    case empty
+        [];
+    case (::) \x \xs
+        if (p x)
+            (x :: filter p xs);
+        filter p xs
+
+func zip : (a -> b -> c) -> List a -> List b -> List c =
+    \f \left \right
+    if (empty? left || empty? right)
+        [];
+    f (first left) (first right) :: zip f (rest left) (rest right)
+
+func (++) : List a -> List a -> List a = fold< (::)
+
+func any : (a -> Bool) -> List a -> Bool =
+    \p \list
+    fold< ((&&) . p) list false
+
+func all : (a -> Bool) -> List a -> Bool =
+    \p \list
+    fold< ((||) . p) list true
