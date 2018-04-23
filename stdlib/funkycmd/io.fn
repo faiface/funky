@@ -2,3 +2,30 @@ union IO = done | putc Char IO | getc (Char -> IO)
 
 func print   : String -> IO -> IO = fold< putc
 func println : String -> IO -> IO = print . (++ "\n")
+
+func ungetc : Char -> IO -> IO =
+    \c \io
+    switch io
+    case done
+        done
+    case putc \d \jo
+        putc d;
+        ungetc c;
+        jo
+    case getc \f
+        f c
+
+func unscan : String -> IO -> IO =
+    \s \io
+    if (empty? s)
+        io;
+    switch io
+    case done
+        done
+    case putc \d \jo
+        putc d;
+        unscan s;
+        jo
+    case getc \f
+        unscan (rest s);
+        f (first s)
