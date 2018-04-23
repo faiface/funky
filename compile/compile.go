@@ -54,7 +54,7 @@ func (env *Env) Compile(main string) (*runtime.Value, error) {
 		}
 	}
 
-	return &runtime.Value{Expr: exprs[offsets[main]]}, nil
+	return &runtime.Value{Expr: exprs[offsets[main]].WithCtx(nil)}, nil
 }
 
 func compile(
