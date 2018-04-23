@@ -30,6 +30,16 @@ type Env struct {
 	funcs  map[string][]impl
 }
 
+func runtimeExprToString(e runtime.Expr) string {
+	var builder strings.Builder
+	union := e.Reduce().(runtime.Union)
+	for union.Alternative != 0 {
+		builder.WriteRune(rune(union.Fields[0].Reduce().(runtime.Char)))
+		union = union.Fields[1].Reduce().(runtime.Union)
+	}
+	return builder.String()
+}
+
 func (env *Env) lazyInit() {
 	if env.inited {
 		return
@@ -58,26 +68,14 @@ func (env *Env) lazyInit() {
 	env.addFunc("dump", &implInternal{
 		Type: parseType("String -> a -> a"),
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
-			var builder strings.Builder
-			union := args[0].Reduce().(runtime.Union)
-			for union.Alternative != 0 {
-				builder.WriteRune(rune(union.Fields[0].Reduce().(runtime.Char)))
-				union = union.Fields[1].Reduce().(runtime.Union)
-			}
-			fmt.Fprint(os.Stderr, builder.String())
+			fmt.Fprint(os.Stderr, runtimeExprToString(args[0]))
 			return args[1]
 		}),
 	})
 	env.addFunc("error", &implInternal{
 		Type: parseType("String -> a"),
 		Expr: makeGoFunc(1, func(args ...runtime.Expr) runtime.Expr {
-			var builder strings.Builder
-			union := args[0].Reduce().(runtime.Union)
-			for union.Alternative != 0 {
-				builder.WriteRune(rune(union.Fields[0].Reduce().(runtime.Char)))
-				union = union.Fields[1].Reduce().(runtime.Union)
-			}
-			fmt.Fprintf(os.Stderr, "ERROR: %s\n", builder.String())
+			fmt.Fprintf(os.Stderr, "ERROR: %s\n", runtimeExprToString(args[0]))
 			os.Exit(1)
 			return nil
 		}),
@@ -110,6 +108,20 @@ func (env *Env) lazyInit() {
 			x := (*big.Int)(args[0].Reduce().(*runtime.Int))
 			z, _ := big.NewFloat(0).SetInt(x).Float64()
 			return runtime.Float(z)
+		}),
+	})
+	env.addFunc("string", &implInternal{
+		Type: parseType("Int -> String"),
+		Expr: makeGoFunc(1, func(args ...runtime.Expr) runtime.Expr {
+			x := (*big.Int)(args[0].Reduce().(*runtime.Int))
+			return runtime.MkStringExpr(x.Text(10))
+		}),
+	})
+	env.addFunc("string", &implInternal{
+		Type: parseType("Float -> String"),
+		Expr: makeGoFunc(1, func(args ...runtime.Expr) runtime.Expr {
+			x := float64(args[0].Reduce().(runtime.Float))
+			return runtime.MkStringExpr(strconv.FormatFloat(x, 'f', -1, 64))
 		}),
 	})
 
@@ -249,13 +261,6 @@ func (env *Env) lazyInit() {
 			return runtime.MkBoolExpr(x.Cmp(y) >= 0)
 		}),
 	})
-	env.addFunc("string", &implInternal{
-		Type: parseType("Int -> String"),
-		Expr: makeGoFunc(1, func(args ...runtime.Expr) runtime.Expr {
-			x := (*big.Int)(args[0].Reduce().(*runtime.Int))
-			return runtime.MkStringExpr(x.Text(10))
-		}),
-	})
 
 	// Float
 	env.addFunc("neg", &implInternal{
@@ -358,13 +363,6 @@ func (env *Env) lazyInit() {
 			x := float64(args[0].Reduce().(runtime.Float))
 			y := float64(args[1].Reduce().(runtime.Float))
 			return runtime.MkBoolExpr(x >= y)
-		}),
-	})
-	env.addFunc("string", &implInternal{
-		Type: parseType("Float -> String"),
-		Expr: makeGoFunc(1, func(args ...runtime.Expr) runtime.Expr {
-			x := float64(args[0].Reduce().(runtime.Float))
-			return runtime.MkStringExpr(strconv.FormatFloat(x, 'f', -1, 64))
 		}),
 	})
 
