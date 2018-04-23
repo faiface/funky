@@ -433,14 +433,10 @@ func infer(
 				unionSubst = unionSubst.Compose(Subst{union.Args[i]: appl.Args[i]})
 			}
 
-			var resultType types.Type
-			if e.TypeInfo() != nil {
-				resultType = e.TypeInfo()
-			} else {
-				resultType = newVar(varIndex)
-			}
-
 			s := exprResult.Subst
+
+			//TODO: use type info (was causing problems, though)
+			resultType := newVar(varIndex)
 
 			tmpResults := []InferResult{{ // results for this specific inference of Switch.Expr
 				Type:  resultType,
