@@ -161,7 +161,7 @@ func (a *Appl) WithCtx(ctx *ctx) Expr {
 }
 func (a *Abst) WithCtx(ctx *ctx) Expr  { return &Abst{ctx, a.Body} }
 func (s Switch) WithCtx(ctx *ctx) Expr { return Switch{ctx, s.Expr, s.Cases} }
-func (r Ref) WithCtx(ctx *ctx) Expr    { return (*r.Expr).WithCtx(ctx) }
+func (r Ref) WithCtx(ctx *ctx) Expr    { return r }
 func (g GoFunc) WithCtx(*ctx) Expr     { return g }
 
 func (c Char) Apply(Expr) Expr       { panic("not applicable") }
