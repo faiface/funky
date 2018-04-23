@@ -74,8 +74,8 @@ func (++) : List a -> List a -> List a = fold< (::)
 
 func any : (a -> Bool) -> List a -> Bool =
     \p \list
-    fold< ((&&) . p) list false
+    fold< ((||) . p) list false
 
 func all : (a -> Bool) -> List a -> Bool =
     \p \list
-    fold< ((||) . p) list true
+    fold< ((&&) . p) list true
