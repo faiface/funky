@@ -27,7 +27,7 @@ func LiteralKindOf(s string) LiteralKind {
 		r1, _ = utf8.DecodeRuneInString(s[size:])
 	}
 	switch {
-	case unicode.IsDigit(r0) || (r0 == '-' && unicode.IsDigit(r1)):
+	case unicode.IsDigit(r0) || ((r0 == '-' || r0 == '+') && unicode.IsDigit(r1)):
 		return LiteralNumber
 	case r0 == '\'':
 		return LiteralChar
