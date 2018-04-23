@@ -22,13 +22,13 @@ func rest : List a -> List a =
 
 func take : Int -> List a -> List a =
     \n \list
-    if (n == 0)
+    if (n <= 0)
         [];
     first list :: take (n - 1) (rest list)
 
 func drop : Int -> List a -> List a =
     \n \list
-    if (n == 0)
+    if (n <= 0)
         list;
     drop (n - 1) (rest list)
 
