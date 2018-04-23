@@ -436,6 +436,12 @@ func infer(
 			s := exprResult.Subst
 
 			//TODO: use type info (was causing problems, though)
+			/*var resultType types.Type
+			if e.TypeInfo() != nil {
+				resultType = e.TypeInfo()
+			} else {
+				resultType = newVar(varIndex)
+			}*/
 			resultType := newVar(varIndex)
 
 			tmpResults := []InferResult{{ // results for this specific inference of Switch.Expr
