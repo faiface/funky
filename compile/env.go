@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"os"
 	"strconv"
+	"strings"
 
 	"github.com/faiface/funky/expr"
 	"github.com/faiface/funky/parse"
@@ -44,6 +46,42 @@ func (env *Env) lazyInit() {
 	env.funcs = make(map[string][]impl)
 
 	// built-in functions
+
+	// common
+	env.addFunc("eval", &implInternal{
+		Type: parseType("a -> b -> b"),
+		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
+			args[0].Reduce()
+			return args[1]
+		}),
+	})
+	env.addFunc("dump", &implInternal{
+		Type: parseType("String -> a -> a"),
+		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
+			var builder strings.Builder
+			union := args[0].Reduce().(runtime.Union)
+			for union.Alternative != 0 {
+				builder.WriteRune(rune(union.Fields[0].Reduce().(runtime.Char)))
+				union = union.Fields[1].Reduce().(runtime.Union)
+			}
+			fmt.Fprint(os.Stderr, builder.String())
+			return args[1]
+		}),
+	})
+	env.addFunc("error", &implInternal{
+		Type: parseType("String -> a"),
+		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
+			var builder strings.Builder
+			union := args[0].Reduce().(runtime.Union)
+			for union.Alternative != 0 {
+				builder.WriteRune(rune(union.Fields[0].Reduce().(runtime.Char)))
+				union = union.Fields[1].Reduce().(runtime.Union)
+			}
+			fmt.Fprintf(os.Stderr, "ERROR: %s\n", builder.String())
+			os.Exit(1)
+			return nil
+		}),
+	})
 
 	// conversions
 	env.addFunc("int", &implInternal{
