@@ -1,6 +1,7 @@
-func id  : a -> a             = \x x
-func let : a -> (a -> b) -> b = \x \f f x
-func fix : (a -> a) -> a      = \f f (fix f)
+func id   : a -> a             = \x x
+func let  : a -> (a -> b) -> b = \x \f f x
+func (|>) : a -> (a -> b) -> b = \x \f f x
+func fix  : (a -> a) -> a      = \f f (fix f)
 
 func flip : (a -> b -> c) -> b -> a -> c = \f \x \y f y x
 
