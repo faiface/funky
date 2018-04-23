@@ -81,3 +81,10 @@ func all : (a -> Bool) -> List a -> Bool =
     fold< ((&&) . p) list true
 
 func repeat : a -> List a = \x x :: repeat x
+
+func reverse : List a -> List a =
+    \list
+    [] |> list |> fix \loop \left \right
+        if (empty? left)
+            right;
+        loop (rest left) (first left :: right)
