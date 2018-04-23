@@ -2,6 +2,8 @@ func id  : a -> a             = \x x
 func let : a -> (a -> b) -> b = \x \f f x
 func fix : (a -> a) -> a      = \f f (fix f)
 
+func flip : (a -> b -> c) -> b -> a -> c = \f \x \y f y x
+
 func (.) : (b -> c) -> (a -> b) -> a -> c =
     \f \g \x
     f (g x)
