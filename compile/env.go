@@ -113,6 +113,24 @@ func (env *Env) lazyInit() {
 		}),
 	})
 
+	// Char
+	env.addFunc("==", &implInternal{
+		Type: parseType("Char -> Char -> Bool"),
+		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
+			c := rune(args[0].Reduce().(runtime.Char))
+			d := rune(args[1].Reduce().(runtime.Char))
+			return runtime.MkBoolExpr(c == d)
+		}),
+	})
+	env.addFunc("!=", &implInternal{
+		Type: parseType("Char -> Char -> Bool"),
+		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
+			c := rune(args[0].Reduce().(runtime.Char))
+			d := rune(args[1].Reduce().(runtime.Char))
+			return runtime.MkBoolExpr(c != d)
+		}),
+	})
+
 	// Int
 	env.addFunc("neg", &implInternal{
 		Type: parseType("Int -> Int"),
