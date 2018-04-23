@@ -24,6 +24,7 @@ func drop(n int, ctx *ctx) *ctx {
 
 type Expr interface {
 	Reduce() Expr
+	Devar() Expr
 	WithCtx(*ctx) Expr
 	Apply(Expr) Expr
 }
@@ -96,27 +97,39 @@ func (f Float) Reduce() Expr  { return f }
 func (r Record) Reduce() Expr { return r }
 func (u Union) Reduce() Expr  { return u }
 func (v Var) Reduce() Expr    { return drop(v.Index, v.ctx).Arg.Reduce() }
-func (t *Appl) Reduce() Expr {
-	if t.reduced {
-		return t.Left
+func (a *Appl) Reduce() Expr {
+	if a.reduced {
+		return a.Left
 	}
-	t.Left = t.Left.WithCtx(drop(t.LDrop, t.ctx)).Reduce()
-	t.Left = t.Left.Apply(t.Right.WithCtx(drop(t.RDrop, t.ctx))).Reduce()
-	t.Right = nil
-	t.reduced = true
-	return t.Left
+	a.Left = a.Left.WithCtx(drop(a.LDrop, a.ctx)).Reduce()
+	a.Left = a.Left.Apply(a.Right.WithCtx(drop(a.RDrop, a.ctx)).Devar()).Reduce()
+	a.Right = nil
+	a.reduced = true
+	return a.Left
 }
 func (a *Abst) Reduce() Expr { return a }
 func (s Switch) Reduce() Expr {
 	union := s.Expr.WithCtx(s.ctx).Reduce().(Union)
 	caseExpr := s.Cases[union.Alternative].WithCtx(s.ctx)
 	for _, field := range union.Fields {
-		caseExpr = caseExpr.Apply(field)
+		caseExpr = caseExpr.Reduce().Apply(field)
 	}
 	return caseExpr.Reduce()
 }
 func (r Ref) Reduce() Expr    { return (*r.Expr).Reduce() }
 func (g GoFunc) Reduce() Expr { return g }
+
+func (c Char) Devar() Expr   { return c }
+func (i *Int) Devar() Expr   { return i }
+func (f Float) Devar() Expr  { return f }
+func (r Record) Devar() Expr { return r }
+func (u Union) Devar() Expr  { return u }
+func (v Var) Devar() Expr    { return drop(v.Index, v.ctx).Arg.Devar() }
+func (a *Appl) Devar() Expr  { return a }
+func (a *Abst) Devar() Expr  { return a }
+func (s Switch) Devar() Expr { return s }
+func (r Ref) Devar() Expr    { return r }
+func (g GoFunc) Devar() Expr { return g }
 
 func (c Char) WithCtx(*ctx) Expr  { return c }
 func (i *Int) WithCtx(*ctx) Expr  { return i }
@@ -136,14 +149,14 @@ func (u Union) WithCtx(ctx *ctx) Expr {
 	return Union{u.Alternative, fields}
 }
 func (v Var) WithCtx(ctx *ctx) Expr { return Var{ctx, v.Index} }
-func (t *Appl) WithCtx(ctx *ctx) Expr {
+func (a *Appl) WithCtx(ctx *ctx) Expr {
 	return &Appl{
-		reduced: t.reduced,
+		reduced: a.reduced,
 		ctx:     ctx,
-		LDrop:   t.LDrop,
-		RDrop:   t.RDrop,
-		Left:    t.Left,
-		Right:   t.Right,
+		LDrop:   a.LDrop,
+		RDrop:   a.RDrop,
+		Left:    a.Left,
+		Right:   a.Right,
 	}
 }
 func (a *Abst) WithCtx(ctx *ctx) Expr  { return &Abst{ctx, a.Body} }
@@ -157,7 +170,7 @@ func (f Float) Apply(Expr) Expr      { panic("not applicable") }
 func (r Record) Apply(Expr) Expr     { panic("not applicable") }
 func (u Union) Apply(Expr) Expr      { panic("not applicable") }
 func (v Var) Apply(Expr) Expr        { panic("not applicable") }
-func (t *Appl) Apply(Expr) Expr      { panic("not applicable") }
+func (a *Appl) Apply(Expr) Expr      { panic("not applicable") }
 func (a *Abst) Apply(arg Expr) Expr  { return a.Body.WithCtx(cons(arg, a.ctx)) }
 func (s Switch) Apply(arg Expr) Expr { panic("not applicable") }
 func (r Ref) Apply(arg Expr) Expr    { return (*r.Expr).Apply(arg) }
