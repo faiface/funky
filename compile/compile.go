@@ -10,19 +10,6 @@ import (
 )
 
 func (env *Env) Compile(main string) (*runtime.Value, error) {
-	if len(env.funcs[main]) == 0 {
-		return nil, &Error{
-			SourceInfo: nil,
-			Msg:        fmt.Sprintf("no %s function", main),
-		}
-	}
-	if len(env.funcs[main]) > 1 {
-		return nil, &Error{
-			SourceInfo: nil,
-			Msg:        fmt.Sprintf("multiple %s functions", main),
-		}
-	}
-
 	offsets := make(map[string]int)
 	var exprs []runtime.Expr
 
@@ -51,6 +38,19 @@ func (env *Env) Compile(main string) (*runtime.Value, error) {
 			case *implExpr:
 				exprs[offsets[name]+i] = compile(env.names, offsets, exprs, global, nil, imp.Expr)
 			}
+		}
+	}
+
+	if len(env.funcs[main]) == 0 {
+		return nil, &Error{
+			SourceInfo: nil,
+			Msg:        fmt.Sprintf("no %s function", main),
+		}
+	}
+	if len(env.funcs[main]) > 1 {
+		return nil, &Error{
+			SourceInfo: nil,
+			Msg:        fmt.Sprintf("multiple %s functions", main),
 		}
 	}
 
