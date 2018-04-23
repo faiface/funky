@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/faiface/funky"
@@ -26,6 +27,9 @@ loop:
 			err := out.Flush()
 			handleErr(err)
 			r, _, err := in.ReadRune()
+			if err == io.EOF {
+				break loop
+			}
 			handleErr(err)
 			program = program.Field(0).Apply(runtime.MkChar(r))
 		}
