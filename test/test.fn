@@ -21,10 +21,15 @@ func range : Int -> Int -> List Int =
     from :: range (from + 1) to
 
 func main : IO =
-    print "Say your first name: ";
-    scan \first-name
-    println ("Hello, " ++ first-name ++ "!");
-    print "Say your last name: ";
-    scan \last-name
-    println ("Greetings, Mr " ++ last-name ++ "!");
-    done
+    100 |> 1 |> fix \loop \low \high
+        let ((low + high) / 2) \mid
+        print ("Is your number " ++ string mid ++ "? ");
+        scanln \answer
+        if (answer == "less")
+            (loop low (mid - 1));
+        if (answer == "more")
+            (loop (mid + 1) high);
+        if (answer == "yes")
+            (println "Yay!"; done);
+        println "You need to type one of less/more/yes.";
+        loop low high
