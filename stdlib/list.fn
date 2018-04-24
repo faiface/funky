@@ -1,7 +1,5 @@
 union List a = empty | a :: (List a)
 
-alias String = List Char
-
 func empty? : List a -> Bool =
     \list
     switch list
@@ -19,6 +17,8 @@ func rest : List a -> List a =
     switch list
     case empty error "rest: empty list"
     case (::)  \x \xs xs
+
+func length : List a -> Int = fold> (\n \_ n + 1) 0
 
 func take : Int -> List a -> List a =
     \n \list
