@@ -40,6 +40,22 @@ func runtimeExprToString(e runtime.Expr) string {
 	return builder.String()
 }
 
+func boolToRuntimeExpr(b bool) runtime.Expr {
+	if b {
+		return runtime.Union{Alternative: 0, Fields: nil}
+	}
+	return runtime.Union{Alternative: 1, Fields: nil}
+}
+
+func stringToRuntimeExpr(s string) runtime.Expr {
+	str := runtime.Union{Alternative: 0}
+	runes := []rune(s)
+	for i := len(runes) - 1; i >= 0; i-- {
+		str = runtime.Union{Alternative: 1, Fields: []runtime.Expr{runtime.Char(runes[i]), str}}
+	}
+	return str
+}
+
 func (env *Env) lazyInit() {
 	if env.inited {
 		return
@@ -114,7 +130,7 @@ func (env *Env) lazyInit() {
 		Type: parseType("Int -> String"),
 		Expr: makeGoFunc(1, func(args ...runtime.Expr) runtime.Expr {
 			x := (*big.Int)(args[0].Reduce().(*runtime.Int))
-			return runtime.MkStringExpr(x.Text(10))
+			return stringToRuntimeExpr(x.Text(10))
 		}),
 	})
 	env.addFunc("int", &implInternal{
@@ -132,7 +148,7 @@ func (env *Env) lazyInit() {
 		Type: parseType("Float -> String"),
 		Expr: makeGoFunc(1, func(args ...runtime.Expr) runtime.Expr {
 			x := float64(args[0].Reduce().(runtime.Float))
-			return runtime.MkStringExpr(strconv.FormatFloat(x, 'f', -1, 64))
+			return stringToRuntimeExpr(strconv.FormatFloat(x, 'f', -1, 64))
 		}),
 	})
 	env.addFunc("float", &implInternal{
@@ -153,7 +169,7 @@ func (env *Env) lazyInit() {
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
 			c := rune(args[0].Reduce().(runtime.Char))
 			d := rune(args[1].Reduce().(runtime.Char))
-			return runtime.MkBoolExpr(c == d)
+			return boolToRuntimeExpr(c == d)
 		}),
 	})
 	env.addFunc("!=", &implInternal{
@@ -161,7 +177,7 @@ func (env *Env) lazyInit() {
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
 			c := rune(args[0].Reduce().(runtime.Char))
 			d := rune(args[1].Reduce().(runtime.Char))
-			return runtime.MkBoolExpr(c != d)
+			return boolToRuntimeExpr(c != d)
 		}),
 	})
 
@@ -240,7 +256,7 @@ func (env *Env) lazyInit() {
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
 			x := (*big.Int)(args[0].Reduce().(*runtime.Int))
 			y := (*big.Int)(args[1].Reduce().(*runtime.Int))
-			return runtime.MkBoolExpr(x.Cmp(y) == 0)
+			return boolToRuntimeExpr(x.Cmp(y) == 0)
 		}),
 	})
 	env.addFunc("!=", &implInternal{
@@ -248,7 +264,7 @@ func (env *Env) lazyInit() {
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
 			x := (*big.Int)(args[0].Reduce().(*runtime.Int))
 			y := (*big.Int)(args[1].Reduce().(*runtime.Int))
-			return runtime.MkBoolExpr(x.Cmp(y) != 0)
+			return boolToRuntimeExpr(x.Cmp(y) != 0)
 		}),
 	})
 	env.addFunc("<", &implInternal{
@@ -256,7 +272,7 @@ func (env *Env) lazyInit() {
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
 			x := (*big.Int)(args[0].Reduce().(*runtime.Int))
 			y := (*big.Int)(args[1].Reduce().(*runtime.Int))
-			return runtime.MkBoolExpr(x.Cmp(y) < 0)
+			return boolToRuntimeExpr(x.Cmp(y) < 0)
 		}),
 	})
 	env.addFunc("<=", &implInternal{
@@ -264,7 +280,7 @@ func (env *Env) lazyInit() {
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
 			x := (*big.Int)(args[0].Reduce().(*runtime.Int))
 			y := (*big.Int)(args[1].Reduce().(*runtime.Int))
-			return runtime.MkBoolExpr(x.Cmp(y) <= 0)
+			return boolToRuntimeExpr(x.Cmp(y) <= 0)
 		}),
 	})
 	env.addFunc(">", &implInternal{
@@ -272,7 +288,7 @@ func (env *Env) lazyInit() {
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
 			x := (*big.Int)(args[0].Reduce().(*runtime.Int))
 			y := (*big.Int)(args[1].Reduce().(*runtime.Int))
-			return runtime.MkBoolExpr(x.Cmp(y) > 0)
+			return boolToRuntimeExpr(x.Cmp(y) > 0)
 		}),
 	})
 	env.addFunc(">=", &implInternal{
@@ -280,7 +296,7 @@ func (env *Env) lazyInit() {
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
 			x := (*big.Int)(args[0].Reduce().(*runtime.Int))
 			y := (*big.Int)(args[1].Reduce().(*runtime.Int))
-			return runtime.MkBoolExpr(x.Cmp(y) >= 0)
+			return boolToRuntimeExpr(x.Cmp(y) >= 0)
 		}),
 	})
 
@@ -344,7 +360,7 @@ func (env *Env) lazyInit() {
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
 			x := float64(args[0].Reduce().(runtime.Float))
 			y := float64(args[1].Reduce().(runtime.Float))
-			return runtime.MkBoolExpr(x == y)
+			return boolToRuntimeExpr(x == y)
 		}),
 	})
 	env.addFunc("!=", &implInternal{
@@ -352,7 +368,7 @@ func (env *Env) lazyInit() {
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
 			x := float64(args[0].Reduce().(runtime.Float))
 			y := float64(args[1].Reduce().(runtime.Float))
-			return runtime.MkBoolExpr(x != y)
+			return boolToRuntimeExpr(x != y)
 		}),
 	})
 	env.addFunc("<", &implInternal{
@@ -360,7 +376,7 @@ func (env *Env) lazyInit() {
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
 			x := float64(args[0].Reduce().(runtime.Float))
 			y := float64(args[1].Reduce().(runtime.Float))
-			return runtime.MkBoolExpr(x < y)
+			return boolToRuntimeExpr(x < y)
 		}),
 	})
 	env.addFunc("<=", &implInternal{
@@ -368,7 +384,7 @@ func (env *Env) lazyInit() {
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
 			x := float64(args[0].Reduce().(runtime.Float))
 			y := float64(args[1].Reduce().(runtime.Float))
-			return runtime.MkBoolExpr(x <= y)
+			return boolToRuntimeExpr(x <= y)
 		}),
 	})
 	env.addFunc(">", &implInternal{
@@ -376,7 +392,7 @@ func (env *Env) lazyInit() {
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
 			x := float64(args[0].Reduce().(runtime.Float))
 			y := float64(args[1].Reduce().(runtime.Float))
-			return runtime.MkBoolExpr(x > y)
+			return boolToRuntimeExpr(x > y)
 		}),
 	})
 	env.addFunc(">=", &implInternal{
@@ -384,7 +400,7 @@ func (env *Env) lazyInit() {
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
 			x := float64(args[0].Reduce().(runtime.Float))
 			y := float64(args[1].Reduce().(runtime.Float))
-			return runtime.MkBoolExpr(x >= y)
+			return boolToRuntimeExpr(x >= y)
 		}),
 	})
 

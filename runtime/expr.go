@@ -69,28 +69,6 @@ type (
 	GoFunc func(Expr) Expr
 )
 
-func MkBoolExpr(b bool) Expr {
-	if b {
-		return Union{Alternative: 0, Fields: nil}
-	}
-	return Union{Alternative: 1, Fields: nil}
-}
-func MkListExpr(elems ...Expr) Expr {
-	list := Union{Alternative: 0}
-	for i := len(elems) - 1; i >= 0; i-- {
-		list = Union{Alternative: 1, Fields: []Expr{elems[i], list}}
-	}
-	return list
-}
-func MkStringExpr(s string) Expr {
-	str := Union{Alternative: 0}
-	runes := []rune(s)
-	for i := len(runes) - 1; i >= 0; i-- {
-		str = Union{Alternative: 1, Fields: []Expr{Char(runes[i]), str}}
-	}
-	return str
-}
-
 func (c Char) Reduce() Expr   { return c }
 func (i *Int) Reduce() Expr   { return i }
 func (f Float) Reduce() Expr  { return f }
