@@ -69,12 +69,12 @@ func compile(
 	case *expr.Var:
 		for i, arg := range args {
 			if arg == e.Name {
-				return runtime.Var{Index: i}
+				return &runtime.Var{Index: i}
 			}
 		}
 		for i, typ := range global[e.Name] {
 			if typecheck.CheckIfUnify(names, e.TypeInfo(), typ) {
-				return runtime.Ref{
+				return &runtime.Ref{
 					Expr: &exprs[offsets[e.Name]+i],
 				}
 			}
@@ -118,19 +118,19 @@ func compile(
 		for i := range cases {
 			cases[i] = compile(names, offsets, exprs, global, args, e.Cases[i].Body)
 		}
-		return runtime.Switch{
+		return &runtime.Switch{
 			Expr:  compile(names, offsets, exprs, global, args, e.Expr),
 			Cases: cases,
 		}
 
 	case *expr.Char:
-		return runtime.Char(e.Value)
+		return &runtime.Char{Value: e.Value}
 
 	case *expr.Int:
-		return (*runtime.Int)(e.Value)
+		return &runtime.Int{Value: e.Value}
 
 	case *expr.Float:
-		return runtime.Float(e.Value)
+		return &runtime.Float{Value: e.Value}
 	}
 
 	panic("unreachable")

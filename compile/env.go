@@ -32,26 +32,26 @@ type Env struct {
 
 func runtimeExprToString(e runtime.Expr) string {
 	var builder strings.Builder
-	union := e.Reduce().(runtime.Union)
+	union := e.Reduce().(*runtime.Union)
 	for union.Alternative != 0 {
-		builder.WriteRune(rune(union.Fields[0].Reduce().(runtime.Char)))
-		union = union.Fields[1].Reduce().(runtime.Union)
+		builder.WriteRune(union.Fields[0].Reduce().(*runtime.Char).Value)
+		union = union.Fields[1].Reduce().(*runtime.Union)
 	}
 	return builder.String()
 }
 
 func boolToRuntimeExpr(b bool) runtime.Expr {
 	if b {
-		return runtime.Union{Alternative: 0, Fields: nil}
+		return &runtime.Union{Alternative: 0, Fields: nil}
 	}
-	return runtime.Union{Alternative: 1, Fields: nil}
+	return &runtime.Union{Alternative: 1, Fields: nil}
 }
 
 func stringToRuntimeExpr(s string) runtime.Expr {
-	str := runtime.Union{Alternative: 0}
+	str := &runtime.Union{Alternative: 0}
 	runes := []rune(s)
 	for i := len(runes) - 1; i >= 0; i-- {
-		str = runtime.Union{Alternative: 1, Fields: []runtime.Expr{runtime.Char(runes[i]), str}}
+		str = &runtime.Union{Alternative: 1, Fields: []runtime.Expr{&runtime.Char{Value: runes[i]}, str}}
 	}
 	return str
 }
@@ -101,35 +101,35 @@ func (env *Env) lazyInit() {
 	env.addFunc("int", &implInternal{
 		Type: parseType("Char -> Int"),
 		Expr: makeGoFunc(1, func(args ...runtime.Expr) runtime.Expr {
-			return (*runtime.Int)(big.NewInt(int64(args[0].Reduce().(runtime.Char))))
+			return &runtime.Int{Value: big.NewInt(int64(args[0].Reduce().(*runtime.Char).Value))}
 		}),
 	})
 	env.addFunc("char", &implInternal{
 		Type: parseType("Int -> Char"),
 		Expr: makeGoFunc(1, func(args ...runtime.Expr) runtime.Expr {
-			return runtime.Char((*big.Int)(args[0].Reduce().(*runtime.Int)).Int64())
+			return &runtime.Char{Value: rune(args[0].Reduce().(*runtime.Int).Value.Int64())}
 		}),
 	})
 	env.addFunc("int", &implInternal{
 		Type: parseType("Float -> Int"),
 		Expr: makeGoFunc(1, func(args ...runtime.Expr) runtime.Expr {
-			x := math.Floor(float64(args[0].Reduce().(runtime.Float)))
+			x := math.Floor(args[0].Reduce().(*runtime.Float).Value)
 			z, _ := big.NewFloat(x).Int(nil)
-			return (*runtime.Int)(z)
+			return &runtime.Int{Value: z}
 		}),
 	})
 	env.addFunc("float", &implInternal{
 		Type: parseType("Int -> Float"),
 		Expr: makeGoFunc(1, func(args ...runtime.Expr) runtime.Expr {
-			x := (*big.Int)(args[0].Reduce().(*runtime.Int))
+			x := args[0].Reduce().(*runtime.Int).Value
 			z, _ := big.NewFloat(0).SetInt(x).Float64()
-			return runtime.Float(z)
+			return &runtime.Float{Value: z}
 		}),
 	})
 	env.addFunc("string", &implInternal{
 		Type: parseType("Int -> String"),
 		Expr: makeGoFunc(1, func(args ...runtime.Expr) runtime.Expr {
-			x := (*big.Int)(args[0].Reduce().(*runtime.Int))
+			x := args[0].Reduce().(*runtime.Int).Value
 			return stringToRuntimeExpr(x.Text(10))
 		}),
 	})
@@ -139,15 +139,15 @@ func (env *Env) lazyInit() {
 			s := runtimeExprToString(args[0])
 			i, ok := big.NewInt(0).SetString(s, 10)
 			if !ok {
-				return runtime.Union{Alternative: 0}
+				return &runtime.Union{Alternative: 0}
 			}
-			return runtime.Union{Alternative: 1, Fields: []runtime.Expr{(*runtime.Int)(i)}}
+			return &runtime.Union{Alternative: 1, Fields: []runtime.Expr{&runtime.Int{Value: i}}}
 		}),
 	})
 	env.addFunc("string", &implInternal{
 		Type: parseType("Float -> String"),
 		Expr: makeGoFunc(1, func(args ...runtime.Expr) runtime.Expr {
-			x := float64(args[0].Reduce().(runtime.Float))
+			x := args[0].Reduce().(*runtime.Float).Value
 			return stringToRuntimeExpr(strconv.FormatFloat(x, 'f', -1, 64))
 		}),
 	})
@@ -157,9 +157,9 @@ func (env *Env) lazyInit() {
 			s := runtimeExprToString(args[0])
 			f, err := strconv.ParseFloat(s, 64)
 			if err != nil {
-				return runtime.Union{Alternative: 0}
+				return &runtime.Union{Alternative: 0}
 			}
-			return runtime.Union{Alternative: 1, Fields: []runtime.Expr{runtime.Float(f)}}
+			return &runtime.Union{Alternative: 1, Fields: []runtime.Expr{&runtime.Float{Value: f}}}
 		}),
 	})
 
@@ -167,16 +167,16 @@ func (env *Env) lazyInit() {
 	env.addFunc("==", &implInternal{
 		Type: parseType("Char -> Char -> Bool"),
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
-			c := rune(args[0].Reduce().(runtime.Char))
-			d := rune(args[1].Reduce().(runtime.Char))
+			c := args[0].Reduce().(*runtime.Char).Value
+			d := args[1].Reduce().(*runtime.Char).Value
 			return boolToRuntimeExpr(c == d)
 		}),
 	})
 	env.addFunc("!=", &implInternal{
 		Type: parseType("Char -> Char -> Bool"),
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
-			c := rune(args[0].Reduce().(runtime.Char))
-			d := rune(args[1].Reduce().(runtime.Char))
+			c := args[0].Reduce().(*runtime.Char).Value
+			d := args[1].Reduce().(*runtime.Char).Value
 			return boolToRuntimeExpr(c != d)
 		}),
 	})
@@ -185,117 +185,117 @@ func (env *Env) lazyInit() {
 	env.addFunc("neg", &implInternal{
 		Type: parseType("Int -> Int"),
 		Expr: makeGoFunc(1, func(args ...runtime.Expr) runtime.Expr {
-			x := (*big.Int)(args[0].Reduce().(*runtime.Int))
+			x := args[0].Reduce().(*runtime.Int).Value
 			z := big.NewInt(0)
 			z.Neg(x)
-			return (*runtime.Int)(z)
+			return &runtime.Int{Value: z}
 		}),
 	})
 	env.addFunc("+", &implInternal{
 		Type: parseType("Int -> Int -> Int"),
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
-			x := (*big.Int)(args[0].Reduce().(*runtime.Int))
-			y := (*big.Int)(args[1].Reduce().(*runtime.Int))
+			x := args[0].Reduce().(*runtime.Int).Value
+			y := args[1].Reduce().(*runtime.Int).Value
 			z := big.NewInt(0)
 			z.Add(x, y)
-			return (*runtime.Int)(z)
+			return &runtime.Int{Value: z}
 		}),
 	})
 	env.addFunc("-", &implInternal{
 		Type: parseType("Int -> Int -> Int"),
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
-			x := (*big.Int)(args[0].Reduce().(*runtime.Int))
-			y := (*big.Int)(args[1].Reduce().(*runtime.Int))
+			x := args[0].Reduce().(*runtime.Int).Value
+			y := args[1].Reduce().(*runtime.Int).Value
 			z := big.NewInt(0)
 			z.Sub(x, y)
-			return (*runtime.Int)(z)
+			return &runtime.Int{Value: z}
 		}),
 	})
 	env.addFunc("*", &implInternal{
 		Type: parseType("Int -> Int -> Int"),
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
-			x := (*big.Int)(args[0].Reduce().(*runtime.Int))
-			y := (*big.Int)(args[1].Reduce().(*runtime.Int))
+			x := args[0].Reduce().(*runtime.Int).Value
+			y := args[1].Reduce().(*runtime.Int).Value
 			z := big.NewInt(0)
 			z.Mul(x, y)
-			return (*runtime.Int)(z)
+			return &runtime.Int{Value: z}
 		}),
 	})
 	env.addFunc("/", &implInternal{
 		Type: parseType("Int -> Int -> Int"),
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
-			x := (*big.Int)(args[0].Reduce().(*runtime.Int))
-			y := (*big.Int)(args[1].Reduce().(*runtime.Int))
+			x := args[0].Reduce().(*runtime.Int).Value
+			y := args[1].Reduce().(*runtime.Int).Value
 			z := big.NewInt(0)
 			z.Div(x, y)
-			return (*runtime.Int)(z)
+			return &runtime.Int{Value: z}
 		}),
 	})
 	env.addFunc("%", &implInternal{
 		Type: parseType("Int -> Int -> Int"),
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
-			x := (*big.Int)(args[0].Reduce().(*runtime.Int))
-			y := (*big.Int)(args[1].Reduce().(*runtime.Int))
+			x := args[0].Reduce().(*runtime.Int).Value
+			y := args[1].Reduce().(*runtime.Int).Value
 			z := big.NewInt(0)
 			z.Mod(x, y)
-			return (*runtime.Int)(z)
+			return &runtime.Int{Value: z}
 		}),
 	})
 	env.addFunc("^", &implInternal{
 		Type: parseType("Int -> Int -> Int"),
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
-			x := (*big.Int)(args[0].Reduce().(*runtime.Int))
-			y := (*big.Int)(args[1].Reduce().(*runtime.Int))
+			x := args[0].Reduce().(*runtime.Int).Value
+			y := args[1].Reduce().(*runtime.Int).Value
 			z := big.NewInt(0)
 			z.Exp(x, y, nil)
-			return (*runtime.Int)(z)
+			return &runtime.Int{Value: z}
 		}),
 	})
 	env.addFunc("==", &implInternal{
 		Type: parseType("Int -> Int -> Bool"),
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
-			x := (*big.Int)(args[0].Reduce().(*runtime.Int))
-			y := (*big.Int)(args[1].Reduce().(*runtime.Int))
+			x := args[0].Reduce().(*runtime.Int).Value
+			y := args[1].Reduce().(*runtime.Int).Value
 			return boolToRuntimeExpr(x.Cmp(y) == 0)
 		}),
 	})
 	env.addFunc("!=", &implInternal{
 		Type: parseType("Int -> Int -> Bool"),
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
-			x := (*big.Int)(args[0].Reduce().(*runtime.Int))
-			y := (*big.Int)(args[1].Reduce().(*runtime.Int))
+			x := args[0].Reduce().(*runtime.Int).Value
+			y := args[1].Reduce().(*runtime.Int).Value
 			return boolToRuntimeExpr(x.Cmp(y) != 0)
 		}),
 	})
 	env.addFunc("<", &implInternal{
 		Type: parseType("Int -> Int -> Bool"),
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
-			x := (*big.Int)(args[0].Reduce().(*runtime.Int))
-			y := (*big.Int)(args[1].Reduce().(*runtime.Int))
+			x := args[0].Reduce().(*runtime.Int).Value
+			y := args[1].Reduce().(*runtime.Int).Value
 			return boolToRuntimeExpr(x.Cmp(y) < 0)
 		}),
 	})
 	env.addFunc("<=", &implInternal{
 		Type: parseType("Int -> Int -> Bool"),
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
-			x := (*big.Int)(args[0].Reduce().(*runtime.Int))
-			y := (*big.Int)(args[1].Reduce().(*runtime.Int))
+			x := args[0].Reduce().(*runtime.Int).Value
+			y := args[1].Reduce().(*runtime.Int).Value
 			return boolToRuntimeExpr(x.Cmp(y) <= 0)
 		}),
 	})
 	env.addFunc(">", &implInternal{
 		Type: parseType("Int -> Int -> Bool"),
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
-			x := (*big.Int)(args[0].Reduce().(*runtime.Int))
-			y := (*big.Int)(args[1].Reduce().(*runtime.Int))
+			x := args[0].Reduce().(*runtime.Int).Value
+			y := args[1].Reduce().(*runtime.Int).Value
 			return boolToRuntimeExpr(x.Cmp(y) > 0)
 		}),
 	})
 	env.addFunc(">=", &implInternal{
 		Type: parseType("Int -> Int -> Bool"),
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
-			x := (*big.Int)(args[0].Reduce().(*runtime.Int))
-			y := (*big.Int)(args[1].Reduce().(*runtime.Int))
+			x := args[0].Reduce().(*runtime.Int).Value
+			y := args[1].Reduce().(*runtime.Int).Value
 			return boolToRuntimeExpr(x.Cmp(y) >= 0)
 		}),
 	})
@@ -304,102 +304,102 @@ func (env *Env) lazyInit() {
 	env.addFunc("neg", &implInternal{
 		Type: parseType("Float -> Float"),
 		Expr: makeGoFunc(1, func(args ...runtime.Expr) runtime.Expr {
-			x := float64(args[0].Reduce().(runtime.Float))
-			return runtime.Float(-x)
+			x := args[0].Reduce().(*runtime.Float).Value
+			return &runtime.Float{Value: -x}
 		}),
 	})
 	env.addFunc("inv", &implInternal{
 		Type: parseType("Float -> Float"),
 		Expr: makeGoFunc(1, func(args ...runtime.Expr) runtime.Expr {
-			x := float64(args[0].Reduce().(runtime.Float))
-			return runtime.Float(1 / x)
+			x := args[0].Reduce().(*runtime.Float).Value
+			return &runtime.Float{Value: 1 / x}
 		}),
 	})
 	env.addFunc("+", &implInternal{
 		Type: parseType("Float -> Float -> Float"),
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
-			x := float64(args[0].Reduce().(runtime.Float))
-			y := float64(args[1].Reduce().(runtime.Float))
-			return runtime.Float(x + y)
+			x := args[0].Reduce().(*runtime.Float).Value
+			y := args[1].Reduce().(*runtime.Float).Value
+			return &runtime.Float{Value: x + y}
 		}),
 	})
 	env.addFunc("-", &implInternal{
 		Type: parseType("Float -> Float -> Float"),
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
-			x := float64(args[0].Reduce().(runtime.Float))
-			y := float64(args[1].Reduce().(runtime.Float))
-			return runtime.Float(x - y)
+			x := args[0].Reduce().(*runtime.Float).Value
+			y := args[1].Reduce().(*runtime.Float).Value
+			return &runtime.Float{Value: x - y}
 		}),
 	})
 	env.addFunc("*", &implInternal{
 		Type: parseType("Float -> Float -> Float"),
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
-			x := float64(args[0].Reduce().(runtime.Float))
-			y := float64(args[1].Reduce().(runtime.Float))
-			return runtime.Float(x * y)
+			x := args[0].Reduce().(*runtime.Float).Value
+			y := args[1].Reduce().(*runtime.Float).Value
+			return &runtime.Float{Value: x * y}
 		}),
 	})
 	env.addFunc("/", &implInternal{
 		Type: parseType("Float -> Float -> Float"),
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
-			x := float64(args[0].Reduce().(runtime.Float))
-			y := float64(args[1].Reduce().(runtime.Float))
-			return runtime.Float(x / y)
+			x := args[0].Reduce().(*runtime.Float).Value
+			y := args[1].Reduce().(*runtime.Float).Value
+			return &runtime.Float{Value: x / y}
 		}),
 	})
 	env.addFunc("^", &implInternal{
 		Type: parseType("Float -> Float -> Float"),
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
-			x := float64(args[0].Reduce().(runtime.Float))
-			y := float64(args[1].Reduce().(runtime.Float))
-			return runtime.Float(math.Pow(x, y))
+			x := args[0].Reduce().(*runtime.Float).Value
+			y := args[1].Reduce().(*runtime.Float).Value
+			return &runtime.Float{Value: math.Pow(x, y)}
 		}),
 	})
 	env.addFunc("==", &implInternal{
 		Type: parseType("Float -> Float -> Bool"),
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
-			x := float64(args[0].Reduce().(runtime.Float))
-			y := float64(args[1].Reduce().(runtime.Float))
+			x := args[0].Reduce().(*runtime.Float).Value
+			y := args[1].Reduce().(*runtime.Float).Value
 			return boolToRuntimeExpr(x == y)
 		}),
 	})
 	env.addFunc("!=", &implInternal{
 		Type: parseType("Float -> Float -> Bool"),
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
-			x := float64(args[0].Reduce().(runtime.Float))
-			y := float64(args[1].Reduce().(runtime.Float))
+			x := args[0].Reduce().(*runtime.Float).Value
+			y := args[1].Reduce().(*runtime.Float).Value
 			return boolToRuntimeExpr(x != y)
 		}),
 	})
 	env.addFunc("<", &implInternal{
 		Type: parseType("Float -> Float -> Bool"),
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
-			x := float64(args[0].Reduce().(runtime.Float))
-			y := float64(args[1].Reduce().(runtime.Float))
+			x := args[0].Reduce().(*runtime.Float).Value
+			y := args[1].Reduce().(*runtime.Float).Value
 			return boolToRuntimeExpr(x < y)
 		}),
 	})
 	env.addFunc("<=", &implInternal{
 		Type: parseType("Float -> Float -> Bool"),
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
-			x := float64(args[0].Reduce().(runtime.Float))
-			y := float64(args[1].Reduce().(runtime.Float))
+			x := args[0].Reduce().(*runtime.Float).Value
+			y := args[1].Reduce().(*runtime.Float).Value
 			return boolToRuntimeExpr(x <= y)
 		}),
 	})
 	env.addFunc(">", &implInternal{
 		Type: parseType("Float -> Float -> Bool"),
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
-			x := float64(args[0].Reduce().(runtime.Float))
-			y := float64(args[1].Reduce().(runtime.Float))
+			x := args[0].Reduce().(*runtime.Float).Value
+			y := args[1].Reduce().(*runtime.Float).Value
 			return boolToRuntimeExpr(x > y)
 		}),
 	})
 	env.addFunc(">=", &implInternal{
 		Type: parseType("Float -> Float -> Bool"),
 		Expr: makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
-			x := float64(args[0].Reduce().(runtime.Float))
-			y := float64(args[1].Reduce().(runtime.Float))
+			x := args[0].Reduce().(*runtime.Float).Value
+			y := args[1].Reduce().(*runtime.Float).Value
 			return boolToRuntimeExpr(x >= y)
 		}),
 	})
@@ -469,7 +469,7 @@ func (env *Env) addRecord(name string, record *types.Record) error {
 			record.SourceInfo(),
 			constructorType,
 			makeGoFunc(len(record.Fields), func(args ...runtime.Expr) runtime.Expr {
-				return runtime.Record{Fields: args}
+				return &runtime.Record{Fields: args}
 			}),
 		},
 	)
@@ -487,7 +487,7 @@ func (env *Env) addRecord(name string, record *types.Record) error {
 				To:   field.Type,
 			},
 			makeGoFunc(1, func(args ...runtime.Expr) runtime.Expr {
-				return args[0].Reduce().(runtime.Record).Fields[index]
+				return args[0].Reduce().(*runtime.Record).Fields[index]
 			}),
 		})
 		if err != nil {
@@ -506,9 +506,9 @@ func (env *Env) addRecord(name string, record *types.Record) error {
 			},
 			makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
 				newFields := make([]runtime.Expr, len(record.Fields))
-				copy(newFields, args[1].Reduce().(runtime.Record).Fields)
+				copy(newFields, args[1].Reduce().(*runtime.Record).Fields)
 				newFields[index] = args[0]
-				return runtime.Record{Fields: newFields}
+				return &runtime.Record{Fields: newFields}
 			}),
 		})
 		if err != nil {
@@ -554,7 +554,7 @@ func (env *Env) addUnion(name string, union *types.Union) error {
 				alt.SI,
 				altType,
 				makeGoFunc(len(alt.Fields), func(args ...runtime.Expr) runtime.Expr {
-					return runtime.Union{Alternative: alternative, Fields: args}
+					return &runtime.Union{Alternative: alternative, Fields: args}
 				}),
 			},
 		)
