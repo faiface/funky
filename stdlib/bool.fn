@@ -1,5 +1,11 @@
 union Bool = true | false
 
+func string : Bool -> String =
+    \bool
+    switch bool
+    case true  "true"
+    case false "false"
+
 func if : Bool -> a -> a -> a =
     \bool \then \else
     switch bool
