@@ -62,3 +62,7 @@ func scanln : (String -> IO) -> IO =
         if (c == '\n')
             (f (reverse s));
         loop (c :: s)
+
+func when : Bool -> (IO -> IO) -> IO -> IO =
+    \cond \then \next
+    if cond (then next) next
