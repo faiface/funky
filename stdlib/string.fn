@@ -3,3 +3,5 @@ alias String = List Char
 func (==) : String -> String -> Bool =
     \left \right
     (length left == length right) && all id (zip (==) left right)
+
+func (!=) : String -> String -> Bool = not . (==)
