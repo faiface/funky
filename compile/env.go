@@ -478,6 +478,7 @@ func (env *Env) addRecord(name string, record *types.Record) error {
 	}
 
 	// add record field getters
+	// RecordType -> FieldType
 	for i, field := range record.Fields {
 		index := i
 		err := env.addFunc(field.Name, &implInternal{
@@ -496,18 +497,20 @@ func (env *Env) addRecord(name string, record *types.Record) error {
 	}
 
 	// add record fiel setters
+	// (FieldType -> FieldType) -> RecordType -> RecordType
 	for i, field := range record.Fields {
 		index := i
 		err := env.addFunc(field.Name, &implInternal{
 			field.SI,
 			&types.Func{
-				From: field.Type,
+				From: &types.Func{From: field.Type, To: field.Type},
 				To:   &types.Func{From: recordType, To: recordType},
 			},
 			makeGoFunc(2, func(args ...runtime.Expr) runtime.Expr {
-				newFields := make([]runtime.Expr, len(record.Fields))
-				copy(newFields, args[1].Reduce().(*runtime.Record).Fields)
-				newFields[index] = args[0]
+				oldFields := args[1].Reduce().(*runtime.Record).Fields
+				newFields := make([]runtime.Expr, len(oldFields))
+				copy(newFields, oldFields)
+				newFields[index] = args[0].Reduce().Apply(oldFields[index])
 				return &runtime.Record{Fields: newFields}
 			}),
 		})
