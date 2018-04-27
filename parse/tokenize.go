@@ -9,7 +9,7 @@ import (
 	"github.com/faiface/funky/parse/parseinfo"
 )
 
-var SpecialRunes = []rune{'(', ')', '[', ']', '{', '}', ',', ';', '\\', 'λ', '#'}
+var SpecialRunes = []rune{'(', ')', '[', ']', '{', '}', ',', ';', '\\', '#'}
 
 func IsSpecialRune(r rune) bool {
 	for _, special := range SpecialRunes {

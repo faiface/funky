@@ -25,7 +25,7 @@ func (v *Var) String() string { return v.Name }
 func (a *Appl) String() string {
 	return fmt.Sprintf("%s %s", a.Left.leftString(), a.Right.rightString())
 }
-func (a *Abst) String() string { return fmt.Sprintf("λ%v %v", a.Bound, a.Body) }
+func (a *Abst) String() string { return fmt.Sprintf("\\%v %v", a.Bound, a.Body) }
 func (s *Switch) String() string {
 	str := fmt.Sprintf("switch %v", s.Expr.String())
 	for _, cas := range s.Cases {

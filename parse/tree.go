@@ -213,7 +213,7 @@ func SingleTree(tokens []Token) (t Tree, end int, err error) {
 		paren := &Paren{SI: tokens[0].SourceInfo, Kind: tokens[0].Value, Inside: inside}
 		return paren, closing + 1, nil
 
-	case "\\", "λ", "case":
+	case "\\", "case":
 		if len(tokens) < 2 {
 			return nil, 0, &Error{
 				tokens[0].SourceInfo,

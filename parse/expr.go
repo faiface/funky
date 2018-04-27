@@ -178,7 +178,7 @@ func TreeToExpr(tree Tree) (expr.Expr, error) {
 
 	case *Binding:
 		switch tree.Kind {
-		case "\\", "λ":
+		case "\\":
 			bound, err := TreeToExpr(tree.Bound)
 			if err != nil {
 				return nil, err
