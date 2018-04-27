@@ -24,6 +24,8 @@ func take : Int -> List a -> List a =
     \n \list
     if (n <= 0)
         [];
+    if (empty? list)
+        [];
     first list :: take (n - 1) (rest list)
 
 func take-while : (a -> Bool) -> List a -> List a =
@@ -40,6 +42,8 @@ func drop : Int -> List a -> List a =
     \n \list
     if (n <= 0)
         list;
+    if (empty? list)
+        [];
     drop (n - 1) (rest list)
 
 func drop-while : (a -> Bool) -> List a -> List a =
