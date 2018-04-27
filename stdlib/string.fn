@@ -2,6 +2,12 @@ alias String = List Char
 
 func (==) : String -> String -> Bool =
     \left \right
-    (length left == length right) && all id (zip (==) left right)
+    if (empty? left && empty? right)
+        true;
+    if (empty? left || empty? right)
+        false;
+    if (first left != first right)
+        false;
+    rest left == rest right
 
 func (!=) : String -> String -> Bool = not . (==)
