@@ -25,4 +25,8 @@ func (|>) : (a -> b) -> (b -> c) -> a -> c =
     \g \f \x
     f (g x)
 
+func when : Bool -> (a -> a) -> a -> a =
+    \cond \then \next
+    if cond (then next) next
+
 func dumpln : String -> a -> a = dump . (++ "\n")
