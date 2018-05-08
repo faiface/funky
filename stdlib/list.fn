@@ -1,5 +1,7 @@
 union List a = empty | a :: (List a)
 
+func yield : a -> List a -> List a = (::)
+
 func empty? : List a -> Bool =
     \list
     switch list
