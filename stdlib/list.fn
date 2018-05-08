@@ -58,13 +58,13 @@ func drop-while : (a -> Bool) -> List a -> List a =
             (drop-while p xs);
         list
 
-func fold< : (a -> b -> b) -> List a -> b -> b =
-    \f \list \zero
+func fold< : (a -> b -> b) -> b -> List a -> b =
+    \f \zero \list
     switch list
     case empty
         zero
     case (::) \x \xs
-        f x (fold< f xs zero)
+        f x (fold< f zero xs)
 
 func fold> : (b -> a -> b) -> b -> List a -> b =
     \f \zero \list
@@ -77,8 +77,8 @@ func fold> : (b -> a -> b) -> b -> List a -> b =
         fold> f new-zero xs
 
 func map : (a -> b) -> List a -> List b =
-    \f \list
-    fold< ((::) . f) list []
+    \f
+    fold< ((::) . f) []
 
 func filter : (a -> Bool) -> List a -> List a =
     \p \list
@@ -96,15 +96,15 @@ func zip : (a -> b -> c) -> List a -> List b -> List c =
         [];
     f (first left) (first right) :: zip f (rest left) (rest right)
 
-func (++) : List a -> List a -> List a = fold< (::)
+func (++) : List a -> List a -> List a = \l \r fold< (::) r l
 
 func any : (a -> Bool) -> List a -> Bool =
-    \p \list
-    fold< ((||) . p) list false
+    \p
+    fold< ((||) . p) false
 
 func all : (a -> Bool) -> List a -> Bool =
-    \p \list
-    fold< ((&&) . p) list true
+    \p
+    fold< ((&&) . p) true
 
 func repeat : a -> List a = \x x :: repeat x
 
