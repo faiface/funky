@@ -60,7 +60,7 @@ func MkRecord(fields ...*Value) *Value {
 	}
 	return &Value{record}
 }
-func MkUnion(alternative int, fields []*Value) *Value {
+func MkUnion(alternative int, fields ...*Value) *Value {
 	union := &Union{Alternative: alternative, Fields: make([]Expr, len(fields))}
 	for i := range union.Fields {
 		union.Fields[i] = fields[i].Expr
