@@ -1,4 +1,4 @@
-# funky
+# Funky
 
 The best functional language ever.
 
