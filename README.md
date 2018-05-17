@@ -18,3 +18,5 @@ To do that, you need to:
 6. `cd ../../test`
 7. `funkycmd ../stdlib/*.fn ../stdlib/funkycmd/*.fn test.fn`
 8. There you go!
+
+_Secret... [here](http://www.dcs.fmph.uniba.sk/bakalarky/registracia/getfile.php/funky.pdf?id=363&fid=712&type=application%2Fpdf)'s my thesis on the language, lots of interesting stuff there... more and more coming..._
