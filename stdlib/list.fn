@@ -1,4 +1,4 @@
-union List a = empty | a :: (List a)
+union List a = empty | a :: List a
 
 func yield : a -> List a -> List a = (::)
 
