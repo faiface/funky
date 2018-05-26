@@ -19,9 +19,9 @@ func (v *Value) Field(i int) *Value {
 	v.reduce()
 	switch state := v.State.(type) {
 	case *Record:
-		return &Value{state.Fields[i]}
+		return &Value{state.Field(i)}
 	case *Union:
-		return &Value{state.Fields[i]}
+		return &Value{state.Field(i)}
 	default:
 		panic("not a record or a union")
 	}

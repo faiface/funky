@@ -29,3 +29,13 @@ func (f *Float) Reduce() State  { return f }
 func (r *Record) Reduce() State { return r }
 func (u *Union) Reduce() State  { return u }
 func (gf GoFunc) Reduce() State { return gf }
+
+func (r *Record) Field(i int) State {
+	r.Fields[i] = r.Fields[i].Reduce()
+	return r.Fields[i]
+}
+
+func (u *Union) Field(i int) State {
+	u.Fields[i] = u.Fields[i].Reduce()
+	return u.Fields[i]
+}
