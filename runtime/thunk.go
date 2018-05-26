@@ -12,7 +12,7 @@ const (
 	CodeAppl
 	CodeStrictAppl
 	CodeSwitch
-	CodeGlobal
+	CodeRef
 	CodeAbst
 	CodeGoFunc
 	CodeState
@@ -97,9 +97,9 @@ func reduceThunk(code *Code, data *Data) (*Code, *Data) {
 			code, data = bcode, bdata
 			continue
 
-		case CodeGlobal:
+		case CodeRef:
 			code = code.A
-			data = nil
+			data = Drop(code.Drop, data)
 
 		case CodeAbst, CodeGoFunc:
 			return code, data
