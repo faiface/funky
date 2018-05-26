@@ -40,7 +40,7 @@ func (v *Value) Apply(arg *Value) *Value {
 	}
 	return &Value{&Thunk{
 		thunk.Code.A,
-		cons(arg.State, drop(thunk.Code.Drop, thunk.Data)),
+		Cons(arg.State, Drop(thunk.Code.Drop, thunk.Data)),
 	}}
 }
 

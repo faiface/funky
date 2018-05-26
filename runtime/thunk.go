@@ -31,11 +31,11 @@ type Data struct {
 	Next  *Data
 }
 
-func cons(x State, d *Data) *Data {
+func Cons(x State, d *Data) *Data {
 	return &Data{x, d}
 }
 
-func drop(n int32, d *Data) *Data {
+func Drop(n int32, d *Data) *Data {
 	for i := int32(0); i < n; i++ {
 		d = d.Next
 	}
@@ -52,7 +52,7 @@ func reduceThunk(code *Code, data *Data) (*Code, *Data) {
 	for {
 		switch code.Kind {
 		case CodeVar:
-			dropped := drop(code.Drop, data)
+			dropped := Drop(code.Drop, data)
 			switch state := dropped.State.(type) {
 			case *Thunk:
 				vcode, vdata := reduceThunk(state.Code, state.Data)
@@ -63,7 +63,7 @@ func reduceThunk(code *Code, data *Data) (*Code, *Data) {
 			}
 
 		case CodeAppl, CodeStrictAppl:
-			dropped := drop(code.Drop, data)
+			dropped := Drop(code.Drop, data)
 			lcode, ldata := reduceThunk(code.A, dropped)
 			switch lcode.Kind {
 			case CodeAbst:
@@ -74,7 +74,7 @@ func reduceThunk(code *Code, data *Data) (*Code, *Data) {
 				} else {
 					arg = &Thunk{code.B, dropped}
 				}
-				code, data = lcode.A, cons(arg, drop(lcode.Drop, ldata))
+				code, data = lcode.A, Cons(arg, Drop(lcode.Drop, ldata))
 				continue
 			case CodeGoFunc:
 				return code, data
@@ -83,7 +83,7 @@ func reduceThunk(code *Code, data *Data) (*Code, *Data) {
 			}
 
 		case CodeSwitch:
-			dropped := drop(code.Drop, data)
+			dropped := Drop(code.Drop, data)
 			ecode, edata := reduceThunk(code.A, dropped)
 			union := extractState(ecode, edata).(*Union)
 			bcode, bdata := &code.SwitchTable[union.Alternative], dropped
@@ -92,7 +92,7 @@ func reduceThunk(code *Code, data *Data) (*Code, *Data) {
 				if bcode.Kind != CodeAbst {
 					panic("switch case body not an abstraction")
 				}
-				bcode, bdata = bcode.A, cons(field, drop(bcode.Drop, bdata))
+				bcode, bdata = bcode.A, Cons(field, Drop(bcode.Drop, bdata))
 			}
 			code, data = bcode, bdata
 			continue
@@ -121,7 +121,7 @@ func reduceThunk(code *Code, data *Data) (*Code, *Data) {
 func extractState(code *Code, data *Data) State {
 	switch code.Kind {
 	case CodeVar:
-		return drop(code.Drop, data).State
+		return Drop(code.Drop, data).State
 	case CodeAbst:
 		return &Thunk{code, data}
 	case CodeGoFunc:
