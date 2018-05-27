@@ -42,6 +42,8 @@ func Drop(n int32, d *Data) *Data {
 	return d
 }
 
+var Reductions = 0
+
 // reduceThunk efficiently evalutes the thunk decomposed in the arguments.
 // Here are all possible kinds of results:
 // 1. CodeVar, which does not evaluate to a thunk
@@ -50,14 +52,15 @@ func Drop(n int32, d *Data) *Data {
 // 5. CodeValue
 func reduceThunk(code *Code, data *Data) (*Code, *Data) {
 	for {
+		Reductions++
 		switch code.Kind {
 		case CodeVar:
 			dropped := Drop(code.Drop, data)
 			switch state := dropped.State.(type) {
 			case *Thunk:
-				vcode, vdata := reduceThunk(state.Code, state.Data)
-				dropped.State = extractState(vcode, vdata)
-				return vcode, vdata
+				state.Code, state.Data = reduceThunk(state.Code, state.Data)
+				dropped.State = extractState(state.Code, state.Data)
+				return state.Code, state.Data
 			default:
 				return code, data
 			}
@@ -98,8 +101,9 @@ func reduceThunk(code *Code, data *Data) (*Code, *Data) {
 			continue
 
 		case CodeRef:
+			dropped := Drop(code.Drop, data)
 			code = code.A
-			data = Drop(code.Drop, data)
+			data = dropped
 
 		case CodeAbst, CodeGoFunc:
 			return code, data
@@ -119,6 +123,7 @@ func reduceThunk(code *Code, data *Data) (*Code, *Data) {
 
 // extractState accepts a reduced thunk and returns its result
 func extractState(code *Code, data *Data) State {
+	Reductions++
 	switch code.Kind {
 	case CodeVar:
 		return Drop(code.Drop, data).State

@@ -49,9 +49,9 @@ type (
 )
 
 func (i *internalFunc) SourceInfo() *parseinfo.Source { return i.SI }
-func (e *exprFunc) SourceInfo() *parseinfo.Source     { return e.SourceInfo() }
+func (e *exprFunc) SourceInfo() *parseinfo.Source     { return e.Expr.SourceInfo() }
 func (i *internalFunc) TypeInfo() types.Type          { return i.Type }
-func (e *exprFunc) TypeInfo() types.Type              { return e.TypeInfo() }
+func (e *exprFunc) TypeInfo() types.Type              { return e.Expr.TypeInfo() }
 
 func runtimeStateToString(s runtime.State) string {
 	var builder strings.Builder
@@ -113,8 +113,8 @@ func (env *Env) lazyInit() {
 	env.addFunc("eval", &internalFunc{
 		Type: parseType("a -> b -> b"), Arity: 2,
 		GoFunc: func(d *runtime.Data) runtime.State {
-			d.Next.State = d.Next.State.Reduce()
-			return d.State
+			d.Next.State.Reduce()
+			return d.State.Reduce()
 		},
 	})
 	env.addFunc("dump", &internalFunc{

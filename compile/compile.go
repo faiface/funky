@@ -1,6 +1,8 @@
 package compile
 
 import (
+	"fmt"
+
 	"github.com/faiface/funky/expr"
 	"github.com/faiface/funky/runtime"
 	"github.com/faiface/funky/types"
@@ -90,7 +92,7 @@ func (env *Env) Compile(main string) (*runtime.Value, error) {
 				Kind: runtime.CodeAbst,
 				Drop: drop,
 			})
-			newLocals := append([]string{e.Bound.Name}, locals...)
+			newLocals := append([]string{e.Bound.Name}, locals[drop:]...)
 			body := compileExpr(newLocals, e.Body)
 			linkAs = append(linkAs, struct{ from, to int }{offset, body})
 			return offset
@@ -112,11 +114,16 @@ func (env *Env) Compile(main string) (*runtime.Value, error) {
 					Drop: 0,
 				}
 			}
+			linkSwitchTables = append(linkSwitchTables, struct {
+				from, to, len int
+			}{offset, switchTableOffset, len(e.Cases)})
 
 			for i := range e.Cases {
 				cas := compileExpr(locals[drop:], e.Cases[i].Body)
 				linkAs = append(linkAs, struct{ from, to int }{switchTableOffset + i, cas})
 			}
+
+			return offset
 
 		case *expr.Char:
 			offset := len(codes)
@@ -185,5 +192,21 @@ func (env *Env) Compile(main string) (*runtime.Value, error) {
 		codes[link.from].A = &codes[offsets[link.to][link.index]]
 	}
 
-	return nil, nil
+	if len(env.funcs[main]) == 0 {
+		return nil, &Error{
+			SourceInfo: nil,
+			Msg:        fmt.Sprintf("no %s function", main),
+		}
+	}
+	if len(env.funcs[main]) > 1 {
+		return nil, &Error{
+			SourceInfo: nil,
+			Msg:        fmt.Sprintf("multiple %s functions", main),
+		}
+	}
+
+	return &runtime.Value{State: &runtime.Thunk{
+		Code: &codes[offsets[main][0]],
+		Data: nil,
+	}}, nil
 }
