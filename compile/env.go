@@ -522,8 +522,7 @@ func (env *Env) addRecord(name string, record *types.Record) error {
 			Arity: 1,
 			GoFunc: func(d *runtime.Data) runtime.State {
 				r := d.State.Reduce().(*runtime.Record)
-				r.Fields[index] = r.Fields[index].Reduce() // reduce the field only once
-				return r.Fields[index]
+				return r.Fields[index].Reduce()
 			},
 		})
 		if err != nil {

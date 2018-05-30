@@ -41,6 +41,7 @@ func (v *Value) Apply(arg *Value) *Value {
 	return &Value{&Thunk{
 		thunk.Code.A,
 		Cons(arg.State, Drop(thunk.Code.Drop, thunk.Data)),
+		nil,
 	}}
 }
 

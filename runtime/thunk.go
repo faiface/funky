@@ -3,6 +3,7 @@ package runtime
 type Thunk struct {
 	Code *Code
 	Data *Data
+	Memo State
 }
 
 type CodeKind int16
@@ -58,8 +59,7 @@ func reduceThunk(code *Code, data *Data) (*Code, *Data) {
 			dropped := Drop(code.Drop, data)
 			switch state := dropped.State.(type) {
 			case *Thunk:
-				state.Code, state.Data = reduceThunk(state.Code, state.Data)
-				dropped.State = extractState(state.Code, state.Data)
+				state.Reduce()
 				return state.Code, state.Data
 			default:
 				return code, data
@@ -75,7 +75,7 @@ func reduceThunk(code *Code, data *Data) (*Code, *Data) {
 					rcode, rdata := reduceThunk(code.B, dropped)
 					arg = extractState(rcode, rdata)
 				} else {
-					arg = &Thunk{code.B, dropped}
+					arg = &Thunk{code.B, dropped, nil}
 				}
 				code, data = lcode.A, Cons(arg, Drop(lcode.Drop, ldata))
 				continue
@@ -128,7 +128,7 @@ func extractState(code *Code, data *Data) State {
 	case CodeVar:
 		return Drop(code.Drop, data).State
 	case CodeAbst:
-		return &Thunk{code, data}
+		return &Thunk{code, data, nil}
 	case CodeGoFunc:
 		return code.State.(GoFunc)(data)
 	case CodeState:
@@ -139,6 +139,10 @@ func extractState(code *Code, data *Data) State {
 }
 
 func (t *Thunk) Reduce() State {
+	if t.Memo != nil {
+		return t.Memo
+	}
 	t.Code, t.Data = reduceThunk(t.Code, t.Data)
-	return extractState(t.Code, t.Data)
+	t.Memo = extractState(t.Code, t.Data)
+	return t.Memo
 }
