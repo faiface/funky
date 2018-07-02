@@ -58,6 +58,10 @@ func drop-while : (a -> Bool) -> List a -> List a =
             (drop-while p xs);
         list
 
+func (@) : List a -> Int -> a =
+    \list \index
+    first (drop index list)
+
 func fold< : (a -> b -> b) -> b -> List a -> b =
     \f \zero \list
     switch list
@@ -107,6 +111,12 @@ func all : (a -> Bool) -> List a -> Bool =
     fold< ((&&) . p) true
 
 func repeat : a -> List a = \x x :: repeat x
+
+func replicate : Int -> List a -> List a =
+    \n \list
+    if (n <= 0)
+        [];
+    list ++ replicate (n - 1) list
 
 func reverse : List a -> List a =
     \list

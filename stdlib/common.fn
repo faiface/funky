@@ -29,4 +29,14 @@ func when : Bool -> (a -> a) -> a -> a =
     \cond \then \next
     if cond (then next) next
 
+func for : List a -> (a -> b -> b) -> b -> b =
+    \list \body \next
+    switch list
+    case empty
+        next
+    case (::) \x \xs
+        body x;
+        for xs body;
+        next
+
 func dumpln : String -> a -> a = dump . (++ "\n")
