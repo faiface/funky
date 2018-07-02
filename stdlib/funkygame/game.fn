@@ -1,0 +1,26 @@
+record Image =
+    id     : Int,
+    width  : Int,
+    height : Int,
+
+record Sprite =
+    image    : Image,
+    position : Vec2D,
+    anchor   : Vec2D,
+    angle    : Float,
+    scale    : Float,
+
+record Input =
+    left  : Bool,
+    right : Bool,
+    up    : Bool,
+    down  : Bool,
+    space : Bool,
+
+union Loader =
+    start String Int Int Game           |
+    load-image String (Image -> Loader) |
+
+union Game =
+    done                                |
+    frame (List Sprite) (Input -> Game) |
