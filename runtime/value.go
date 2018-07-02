@@ -89,9 +89,9 @@ func MkUnion(alternative int, fields ...*Value) *Value {
 
 func MkBool(b bool) *Value {
 	if b {
-		return MkUnion(0, nil)
+		return MkUnion(0)
 	}
-	return MkUnion(1, nil)
+	return MkUnion(1)
 }
 
 func MkList(elems ...*Value) *Value {

@@ -34,7 +34,7 @@ loop:
 			program = program.Field(0).Apply(runtime.MkChar(r))
 		}
 	}
-	fmt.Fprintln(out, runtime.Reductions)
+	fmt.Fprintf(out, "reductions:  %d\n", runtime.Reductions)
 }
 
 func handleErr(err error) {

@@ -51,47 +51,47 @@ var Reductions = 0
 // 3. CodeAbst
 // 4. CodeGoFunc
 // 5. CodeValue
-func reduceThunk(code *Code, data *Data) (*Code, *Data) {
+func reduceThunk(code *Code, data *Data) (*Code, *Data, State) {
 	for {
 		Reductions++
+
 		switch code.Kind {
 		case CodeVar:
-			dropped := Drop(code.Drop, data)
-			switch state := dropped.State.(type) {
+			state := Drop(code.Drop, data).State.Reduce()
+			switch state := state.(type) {
 			case *Thunk:
-				state.Reduce()
-				return state.Code, state.Data
+				return state.Code, state.Data, state
 			default:
-				return code, data
+				return code, data, state
 			}
 
 		case CodeAppl, CodeStrictAppl:
 			dropped := Drop(code.Drop, data)
-			lcode, ldata := reduceThunk(code.A, dropped)
+			lcode, ldata, left := reduceThunk(code.A, dropped)
 			switch lcode.Kind {
 			case CodeAbst:
 				var arg State
 				if code.Kind == CodeStrictAppl {
-					rcode, rdata := reduceThunk(code.B, dropped)
-					arg = extractState(rcode, rdata)
+					_, _, arg = reduceThunk(code.B, dropped)
 				} else {
 					arg = &Thunk{code.B, dropped, nil}
 				}
 				code, data = lcode.A, Cons(arg, Drop(lcode.Drop, ldata))
 				continue
 			case CodeGoFunc:
-				return code, data
+				code, data = lcode, Cons(&Thunk{code.B, dropped, nil}, Drop(lcode.Drop, ldata))
+				return code, data, left.(GoFunc)(data)
 			default:
 				panic("not an abstraction")
 			}
 
 		case CodeSwitch:
 			dropped := Drop(code.Drop, data)
-			ecode, edata := reduceThunk(code.A, dropped)
-			union := extractState(ecode, edata).(*Union)
+			_, _, expr := reduceThunk(code.A, dropped)
+			union := expr.(*Union)
 			bcode, bdata := &code.SwitchTable[union.Alternative], dropped
 			for _, field := range union.Fields {
-				bcode, bdata = reduceThunk(bcode, bdata)
+				bcode, bdata, _ = reduceThunk(bcode, bdata)
 				if bcode.Kind != CodeAbst {
 					panic("switch case body not an abstraction")
 				}
@@ -104,37 +104,17 @@ func reduceThunk(code *Code, data *Data) (*Code, *Data) {
 			dropped := Drop(code.Drop, data)
 			code = code.A
 			data = dropped
+			continue
 
-		case CodeAbst, CodeGoFunc:
-			return code, data
+		case CodeAbst:
+			return code, data, nil
+
+		case CodeGoFunc:
+			return code, data, code.State.(GoFunc)(data)
 
 		case CodeState:
-			switch state := code.State.(type) {
-			case *Thunk:
-				vcode, vdata := reduceThunk(state.Code, state.Data)
-				code.State = extractState(vcode, vdata)
-				return vcode, vdata
-			default:
-				return code, data
-			}
+			return code, data, code.State.Reduce()
 		}
-	}
-}
-
-// extractState accepts a reduced thunk and returns its result
-func extractState(code *Code, data *Data) State {
-	Reductions++
-	switch code.Kind {
-	case CodeVar:
-		return Drop(code.Drop, data).State
-	case CodeAbst:
-		return &Thunk{code, data, nil}
-	case CodeGoFunc:
-		return code.State.(GoFunc)(data)
-	case CodeState:
-		return code.State
-	default:
-		panic("not a reduced thunk")
 	}
 }
 
@@ -142,7 +122,9 @@ func (t *Thunk) Reduce() State {
 	if t.Memo != nil {
 		return t.Memo
 	}
-	t.Code, t.Data = reduceThunk(t.Code, t.Data)
-	t.Memo = extractState(t.Code, t.Data)
+	t.Code, t.Data, t.Memo = reduceThunk(t.Code, t.Data)
+	if t.Code.Kind == CodeAbst {
+		return t
+	}
 	return t.Memo
 }
