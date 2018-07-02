@@ -72,7 +72,14 @@ func reduceThunk(code *Code, data *Data) (*Code, *Data, State) {
 			case CodeAbst:
 				var arg State
 				if code.Kind == CodeStrictAppl {
-					_, _, arg = reduceThunk(code.B, dropped)
+					var (
+						acode *Code
+						adata *Data
+					)
+					acode, adata, arg = reduceThunk(code.B, dropped)
+					if acode.Kind == CodeAbst {
+						arg = &Thunk{acode, adata, nil}
+					}
 				} else {
 					arg = &Thunk{code.B, dropped, nil}
 				}
