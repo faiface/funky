@@ -14,7 +14,8 @@ import (
 )
 
 func main() {
-	program := funky.Run("main")
+	program, cleanup := funky.Run("main")
+	defer cleanup()
 	title, w, h, images, game := runLoader(program)
 	runGame(title, w, h, images, game)
 }
