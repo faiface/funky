@@ -133,5 +133,6 @@ func (t *Thunk) Reduce() State {
 	if t.Code.Kind == CodeAbst {
 		return t
 	}
+	t.Code, t.Data = nil, nil
 	return t.Memo
 }
