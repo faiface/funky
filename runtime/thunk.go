@@ -3,7 +3,7 @@ package runtime
 type Thunk struct {
 	Code *Code
 	Data *Data
-	Memo State
+	Memo Value
 }
 
 type CodeKind int16
@@ -16,7 +16,7 @@ const (
 	CodeRef
 	CodeAbst
 	CodeGoFunc
-	CodeState
+	CodeValue
 )
 
 type Code struct {
@@ -24,15 +24,15 @@ type Code struct {
 	Drop        int32
 	A, B        *Code
 	SwitchTable []Code
-	State       State
+	Value       Value
 }
 
 type Data struct {
-	State State
+	Value Value
 	Next  *Data
 }
 
-func Cons(x State, d *Data) *Data {
+func Cons(x Value, d *Data) *Data {
 	return &Data{x, d}
 }
 
@@ -45,24 +45,19 @@ func Drop(n int32, d *Data) *Data {
 
 var Reductions = 0
 
-// reduceThunk efficiently evalutes the thunk decomposed in the arguments.
-// Here are all possible kinds of results:
-// 1. CodeVar, which does not evaluate to a thunk
-// 3. CodeAbst
-// 4. CodeGoFunc
-// 5. CodeValue
-func reduceThunk(code *Code, data *Data) (*Code, *Data, State) {
+// reduceThunk efficiently evalutes the thunk decomposed in the arguments
+func reduceThunk(code *Code, data *Data) (*Code, *Data, Value) {
 	for {
 		Reductions++
 
 		switch code.Kind {
 		case CodeVar:
-			state := Drop(code.Drop, data).State.Reduce()
-			switch state := state.(type) {
+			value := Drop(code.Drop, data).Value.Reduce()
+			switch value := value.(type) {
 			case *Thunk:
-				return state.Code, state.Data, state
+				return value.Code, value.Data, value
 			default:
-				return code, data, state
+				return code, data, value
 			}
 
 		case CodeAppl, CodeStrictAppl:
@@ -70,7 +65,7 @@ func reduceThunk(code *Code, data *Data) (*Code, *Data, State) {
 			lcode, ldata, left := reduceThunk(code.A, dropped)
 			switch lcode.Kind {
 			case CodeAbst:
-				var arg State
+				var arg Value
 				if code.Kind == CodeStrictAppl {
 					var (
 						acode *Code
@@ -117,15 +112,15 @@ func reduceThunk(code *Code, data *Data) (*Code, *Data, State) {
 			return code, data, nil
 
 		case CodeGoFunc:
-			return code, data, code.State.(GoFunc)(data)
+			return code, data, code.Value.(GoFunc)(data)
 
-		case CodeState:
-			return code, data, code.State.Reduce()
+		case CodeValue:
+			return code, data, code.Value.Reduce()
 		}
 	}
 }
 
-func (t *Thunk) Reduce() State {
+func (t *Thunk) Reduce() Value {
 	if t.Memo != nil {
 		return t.Memo
 	}

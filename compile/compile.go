@@ -9,7 +9,7 @@ import (
 	"github.com/faiface/funky/types/typecheck"
 )
 
-func (env *Env) Compile(main string) (*runtime.Value, error) {
+func (env *Env) Compile(main string) (*runtime.Box, error) {
 	var (
 		offsets = make(map[string][]int)
 
@@ -128,24 +128,24 @@ func (env *Env) Compile(main string) (*runtime.Value, error) {
 		case *expr.Char:
 			offset := len(codes)
 			codes = append(codes, runtime.Code{
-				Kind:  runtime.CodeState,
-				State: &runtime.Char{Value: e.Value},
+				Kind:  runtime.CodeValue,
+				Value: &runtime.Char{Value: e.Value},
 			})
 			return offset
 
 		case *expr.Int:
 			offset := len(codes)
 			codes = append(codes, runtime.Code{
-				Kind:  runtime.CodeState,
-				State: &runtime.Int{Value: e.Value},
+				Kind:  runtime.CodeValue,
+				Value: &runtime.Int{Value: e.Value},
 			})
 			return offset
 
 		case *expr.Float:
 			offset := len(codes)
 			codes = append(codes, runtime.Code{
-				Kind:  runtime.CodeState,
-				State: &runtime.Float{Value: e.Value},
+				Kind:  runtime.CodeValue,
+				Value: &runtime.Float{Value: e.Value},
 			})
 			return offset
 		}
@@ -167,7 +167,7 @@ func (env *Env) Compile(main string) (*runtime.Value, error) {
 				}
 				codes = append(codes, runtime.Code{
 					Kind:  runtime.CodeGoFunc,
-					State: impl.GoFunc,
+					Value: impl.GoFunc,
 				})
 
 			case *exprFunc:
@@ -205,7 +205,7 @@ func (env *Env) Compile(main string) (*runtime.Value, error) {
 		}
 	}
 
-	return &runtime.Value{State: &runtime.Thunk{
+	return &runtime.Box{Value: &runtime.Thunk{
 		Code: &codes[offsets[main][0]],
 		Data: nil,
 	}}, nil

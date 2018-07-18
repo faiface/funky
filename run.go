@@ -12,7 +12,7 @@ import (
 	"github.com/faiface/funky/runtime"
 )
 
-func Run(main string) (value *runtime.Value, cleanup func()) {
+func Run(main string) (value *runtime.Box, cleanup func()) {
 	stats := flag.Bool("stats", false, "print stats after running program")
 	flag.Parse()
 
