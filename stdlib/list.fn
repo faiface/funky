@@ -102,6 +102,12 @@ func zip : (a -> b -> c) -> List a -> List b -> List c =
 
 func (++) : List a -> List a -> List a = \l \r fold< (::) r l
 
+func concat : List (List a) -> List a = fold< (++) []
+
+func pick : List a -> (a -> List b) -> List b =
+    \list \f
+    fold< (++) [] (map f list)
+
 func any : (a -> Bool) -> List a -> Bool =
     \p
     fold< ((||) . p) false
@@ -124,3 +130,13 @@ func reverse : List a -> List a =
         if (empty? left)
             right;
         loop (rest left) (first left :: right)
+
+func range : Int -> Int -> List Int =
+    \from \to
+    if (from > to)
+        [];
+    from :: range (from + 1) to
+
+func iterate : (a -> a) -> a -> List a =
+    \f \z
+    z :: iterate f (f z)
