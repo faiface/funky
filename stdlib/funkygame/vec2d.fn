@@ -2,18 +2,18 @@ record Vec2D = x : Float, y : Float
 
 func zero : Vec2D = Vec2D 0.0 0.0
 
-func (+) : Vec2D -> Vec2D -> Vec2D =
+func + : Vec2D -> Vec2D -> Vec2D =
     \u \v
     Vec2D (x u + x v) (y u + y v)
 
-func (-) : Vec2D -> Vec2D -> Vec2D =
+func - : Vec2D -> Vec2D -> Vec2D =
     \u \v
     Vec2D (x u - x v) (y u - y v)
 
-func (*) : Vec2D -> Float -> Vec2D =
+func * : Vec2D -> Float -> Vec2D =
     \u \k
     Vec2D (x u * k) (y u * k)
 
-func (/) : Vec2D -> Float -> Vec2D =
+func / : Vec2D -> Float -> Vec2D =
     \u \k
     Vec2D (x u / k) (y u / k)

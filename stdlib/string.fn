@@ -1,6 +1,6 @@
 alias String = List Char
 
-func (==) : String -> String -> Bool =
+func == : String -> String -> Bool =
     \left \right
     if (empty? left && empty? right)
         true;
@@ -10,18 +10,18 @@ func (==) : String -> String -> Bool =
         false;
     rest left == rest right
 
-func (!=) : String -> String -> Bool = not . (==)
+func != : String -> String -> Bool = not (==)
 
 func prefix? : String -> String -> Bool =
     \prefix \s
     take (length prefix) s == prefix
 
-func (%) : String -> List String -> String =
+func % : String -> List String -> String =
     \format \substs
     if (empty? format)
         "";
     if (prefix? "%%" format)
         ('%' :: rest (rest format) % substs);
-    if (prefix? "%s" format && not (empty? substs))
+    if (prefix? "%s" format && not empty? substs)
         (first substs ++ rest (rest format) % rest substs);
     first format :: rest format % substs

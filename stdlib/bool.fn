@@ -18,21 +18,24 @@ func not : Bool -> Bool =
     case true  false
     case false true
 
-func (&&) : Bool -> Bool -> Bool = \p \q if p q false
-func (||) : Bool -> Bool -> Bool = \p \q if p true q
-func (==) : Bool -> Bool -> Bool = \p \q if p q (not q)
-func (!=) : Bool -> Bool -> Bool = \p \q if p (not q) q
+func not : (a -> Bool) -> a -> Bool           = \f \x    not (f x)
+func not : (a -> b -> Bool) -> a -> b -> Bool = \f \x \y not (f x y)
 
-func (&&) : (a -> Bool) -> (a -> Bool) -> a -> Bool =
+func && : Bool -> Bool -> Bool = \p \q if p q false
+func || : Bool -> Bool -> Bool = \p \q if p true q
+func == : Bool -> Bool -> Bool = \p \q if p q (not q)
+func != : Bool -> Bool -> Bool = \p \q if p (not q) q
+
+func && : (a -> Bool) -> (a -> Bool) -> a -> Bool =
     \f \g \x
     f x && g x
-func (||) : (a -> Bool) -> (a -> Bool) -> a -> Bool =
+func || : (a -> Bool) -> (a -> Bool) -> a -> Bool =
     \f \g \x
     f x || g x
 
-func (&&) : (a -> b -> Bool) -> (a -> b -> Bool) -> a -> b -> Bool =
+func && : (a -> b -> Bool) -> (a -> b -> Bool) -> a -> b -> Bool =
     \f \g \x \y
     f x y && g x y
-func (||) : (a -> b -> Bool) -> (a -> b -> Bool) -> a -> b -> Bool =
+func || : (a -> b -> Bool) -> (a -> b -> Bool) -> a -> b -> Bool =
     \f \g \x \y
     f x y || g x y

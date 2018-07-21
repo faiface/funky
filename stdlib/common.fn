@@ -5,23 +5,23 @@ func fix   : (a -> a) -> a      = \f f (fix f)
 
 func flip : (a -> b -> c) -> b -> a -> c = \f \x \y f y x
 
-func (.) : (a -> b) -> a -> b = \f \x f x
+func . : (a -> b) -> a -> b = \f \x f x
 
-func (.) : (b -> c) -> (a -> b) -> a -> c =
+func . : (b -> c) -> (a -> b) -> a -> c =
     \f \g \x
     f (g x)
 
-func (.) : (c -> d) -> (a -> b -> c) -> a -> b -> d =
+func . : (c -> d) -> (a -> b -> c) -> a -> b -> d =
     \f \g \x \y
     f (g x y)
 
-func (.) : (d -> e) -> (a -> b -> c -> d) -> a -> b -> c -> e =
+func . : (d -> e) -> (a -> b -> c -> d) -> a -> b -> c -> e =
     \f \g \x \y \z
     f (g x y z)
 
-func (|>) : a -> (a -> b) -> b = \x \f f x
+func |> : a -> (a -> b) -> b = \x \f f x
 
-func (|>) : (a -> b) -> (b -> c) -> a -> c =
+func |> : (a -> b) -> (b -> c) -> a -> c =
     \g \f \x
     f (g x)
 
