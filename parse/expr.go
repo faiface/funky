@@ -51,6 +51,19 @@ func TreeToExpr(tree Tree) (expr.Expr, error) {
 		return nil, nil
 	}
 
+	beforeColon, _, afterColon := FindNextSpecialOrBinding(tree, ":")
+	if afterColon != nil {
+		e, err := TreeToExpr(beforeColon)
+		if err != nil {
+			return nil, err
+		}
+		t, err := TreeToType(afterColon)
+		if err != nil {
+			return nil, err
+		}
+		return e.WithTypeInfo(t), nil
+	}
+
 	switch tree := tree.(type) {
 	case *Literal:
 		switch LiteralKindOf(tree.Value) {
@@ -199,13 +212,6 @@ func TreeToExpr(tree Tree) (expr.Expr, error) {
 		left, err := TreeToExpr(tree.Left)
 		if err != nil {
 			return nil, err
-		}
-		if special, ok := tree.Right.(*Special); ok && special.Kind == ":" { // type info after :
-			typ, err := TreeToType(special.After)
-			if err != nil {
-				return nil, err
-			}
-			return left.WithTypeInfo(typ), nil
 		}
 		right, err := TreeToExpr(tree.Right)
 		if err != nil {
