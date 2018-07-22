@@ -60,11 +60,9 @@ func drop-while : (a -> Bool) -> List a -> List a =
             (drop-while p xs);
         list
 
-func @ : List a -> Int -> a =
-    \list \i
+func index : Int -> List a -> a =
+    \i \list
     first (drop i list)
-
-func index : Int -> List a -> a = flip (@)
 
 func index : Int -> (a -> a) -> List a -> List a =
     \i \f \list
