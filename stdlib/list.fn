@@ -125,6 +125,12 @@ func all : (a -> Bool) -> List a -> Bool =
     \p
     fold< ((&&) . p) true
 
+func count : (a -> Bool) -> List a -> Int =
+    \p \list
+    switch list
+    case empty       0
+    case (::) \x \xs when (p x) (1 +) (count p xs)
+
 func repeat : a -> List a = \x x :: repeat x
 
 func replicate : Int -> List a -> List a =
@@ -140,9 +146,9 @@ func reverse : List a -> List a =
             right;
         loop (rest left) (first left :: right)
 
-func count : Int -> List Int =
+func range : Int -> List Int =
     \start
-    start :: count (start + 1)
+    start :: range (start + 1)
 
 func range : Int -> Int -> List Int =
     \from \to
@@ -155,4 +161,4 @@ func iterate : (a -> a) -> a -> List a =
     z :: iterate f (f z)
 
 func enumerate : List a -> List (Pair Int a) =
-    zip pair (count 0)
+    zip pair (range 0)
