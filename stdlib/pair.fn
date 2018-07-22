@@ -1,0 +1,17 @@
+record Pair a b = first : a, second : b
+
+func pair : a -> b -> Pair a b = Pair
+
+func let-pair : Pair a b -> (a -> b -> c) -> c =
+    \p \f
+    f (first p) (second p)
+
+func for-pair : List (Pair a b) -> (a -> b -> c -> c) -> c -> c =
+    \list \body \next
+    switch list
+    case empty
+        next
+    case (::) \p \xs
+        body (first p) (second p);
+        for-pair xs body;
+        next
