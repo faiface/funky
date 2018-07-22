@@ -140,6 +140,10 @@ func reverse : List a -> List a =
             right;
         loop (rest left) (first left :: right)
 
+func count : Int -> List Int =
+    \start
+    start :: count (start + 1)
+
 func range : Int -> Int -> List Int =
     \from \to
     if (from > to)
@@ -149,3 +153,6 @@ func range : Int -> Int -> List Int =
 func iterate : (a -> a) -> a -> List a =
     \f \z
     z :: iterate f (f z)
+
+func enumerate : List a -> List (Pair Int a) =
+    zip pair (count 0)
