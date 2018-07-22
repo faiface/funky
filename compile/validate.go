@@ -111,7 +111,7 @@ func (env *Env) validateRecord(record *types.Record) error {
 		return err
 	}
 
-	// check if all fields have distinct names
+	/*// check if all fields have distinct names
 	for i, field1 := range record.Fields {
 		for _, field2 := range record.Fields[:i] {
 			if field1.Name == field2.Name {
@@ -121,7 +121,7 @@ func (env *Env) validateRecord(record *types.Record) error {
 				}
 			}
 		}
-	}
+	}*/
 
 	// validate field types
 	for _, field := range record.Fields {
