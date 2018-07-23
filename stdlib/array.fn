@@ -1,41 +1,6 @@
-union Array a = single a | empty Int | node Int (Array a) (Array a)
+union Array a = _single a | _empty Int | _node Int (Array a) (Array a)
 
-func empty : Array a = empty 0
-
-func empty? : Array a -> Bool =
-    \arr
-    switch arr
-    case single \_     false
-    case empty \_      true
-    case node \_ \_ \_ false
-
-func level : Array a -> Int =
-    \arr
-    switch arr
-    case single \_     0
-    case empty \n      n
-    case node \n \_ \_ n
-
-func :: : Array a -> a -> Array a =
-    \arr \x
-    switch arr
-    case single \y
-        node 1 (single y) (single x)
-    case empty \n
-        if (n == 0)
-            (single x);
-        node n (empty (n - 1) :: x) (empty (n - 1))
-    case node \n \left \right
-        if (empty? right) (
-            let (left :: x) \new-left
-            if (level new-left < n)
-                (node n new-left right);
-            new-left
-        );
-        let (right :: x) \new-right
-        if (level new-right < n)
-            (node n left new-right);
-        node (n + 1) (node n left right) (empty n :: x)
+func empty : Array a = _empty 0
 
 func array : List a -> Array a =
     fold> (::) empty
@@ -43,20 +8,58 @@ func array : List a -> Array a =
 func list : Array a -> List a =
     \arr
     switch arr
-    case single \x            [x]
-    case empty \_             []
-    case node \_ \left \right list left ++ list right
+    case _single \x            [x]
+    case _empty \_             []
+    case _node \_ \left \right list left ++ list right
+
+func empty? : Array a -> Bool =
+    \arr
+    switch arr
+    case _single \_     false
+    case _empty \_      true
+    case _node \_ \_ \_ false
+
+func _level : Array a -> Int =
+    \arr
+    switch arr
+    case _single \_     0
+    case _empty \n      n
+    case _node \n \_ \_ n
+
+func :: : Array a -> a -> Array a =
+    \arr \x
+    switch arr
+    case _single \y
+        _node 1 (_single y) (_single x)
+    case _empty \n
+        if (n == 0)
+            (_single x);
+        _node n (_empty (n - 1) :: x) (_empty (n - 1))
+    case _node \n \left \right
+        if (empty? right) (
+            let (left :: x) \new-left
+            if (_level new-left < n)
+                (_node n new-left right);
+            new-left
+        );
+        let (right :: x) \new-right
+        if (_level new-right < n)
+            (_node n left new-right);
+        _node (n + 1) (_node n left right) (_empty n :: x)
+
+func ++ : Array a -> List a -> Array a =
+    fold> (::)
 
 func index : Int -> Array a -> a =
     \i \arr
     switch arr
-    case single \x
+    case _single \x
         if (i != 0)
             (error "index out of range");
         x
-    case empty \_
+    case _empty \_
         error "index out of range"
-    case node \n \left \right
+    case _node \n \left \right
         let (2 ^ n - 1) \mid
         if (i < mid)
             (index i left);
@@ -65,26 +68,26 @@ func index : Int -> Array a -> a =
 func index : Int -> (a -> a) -> Array a -> Array a =
     \i \f \arr
     switch arr
-    case single \x
+    case _single \x
         if (i != 0)
             (error "index out of range");
-        single (f x)
-    case empty \_
+        _single (f x)
+    case _empty \_
         error "index out of range"
-    case node \n \left \right
+    case _node \n \left \right
         let (2 ^ n - 1) \mid
         if (i < mid)
-            (node n (index i f left) right);
-        node n left (index (i - mid) f right)
+            (_node n (index i f left) right);
+        _node n left (index (i - mid) f right)
 
 func length : Array a -> Int =
     \arr
     switch arr
-    case single \_
+    case _single \_
         1
-    case empty \_
+    case _empty \_
         0
-    case node \n \left \right
+    case _node \n \left \right
         if (empty? right)
             (length left);
         (2 ^ n - 1) + length right
