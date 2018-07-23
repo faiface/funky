@@ -13,6 +13,7 @@ import (
 	"github.com/faiface/funky/parse/parseinfo"
 	"github.com/faiface/funky/runtime"
 	"github.com/faiface/funky/types"
+	"golang.org/x/exp/rand"
 )
 
 type Error struct {
@@ -132,6 +133,20 @@ func (env *Env) lazyInit() {
 			fmt.Fprintf(os.Stderr, "ERROR: %s\n", runtimeValueToString(x))
 			os.Exit(1)
 			return nil
+		},
+	})
+	//TODO: remove random
+	env.addFunc("random", &internalFunc{
+		Type: parseType("Int -> Int"), Arity: 1,
+		GoFunc: func(d *runtime.Data) runtime.Value {
+			max := d.Value.Reduce().(*runtime.Int)
+			return &runtime.Int{Value: big.NewInt(rand.Int63n(max.Value.Int64()))}
+		},
+	})
+	env.addFunc("random", &internalFunc{
+		Type: parseType("Float"), Arity: 0,
+		GoFunc: func(d *runtime.Data) runtime.Value {
+			return &runtime.Float{Value: rand.Float64()}
 		},
 	})
 
