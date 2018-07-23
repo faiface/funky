@@ -91,3 +91,38 @@ func length : Array a -> Int =
         if (empty? right)
             (length left);
         (2 ^ n - 1) + length right
+
+func fold< : (a -> b -> b) -> b -> Array a -> b =
+    \f \zero \arr
+    switch arr
+    case _single \x
+        f x zero
+    case _empty \_
+        zero
+    case _node \_ \left \right
+        fold< f (fold< f zero right) left
+
+func fold> : (b -> a -> b) -> b -> Array a -> b =
+    #FIXME: implementation analogous to fold< doesn't typecheck, which is a bug
+    \f \zero \arr
+    fold> f zero (list arr)
+
+func map : (a -> b) -> Array a -> Array b =
+    \f \arr
+    switch arr
+    case _single \x
+        _single (f x)
+    case _empty \n
+        _empty n
+    case _node \n \left \right
+        _node n (map f left) (map f right)
+
+func map-index : (Int -> a -> b) -> Array a -> Array b =
+    0 |> fix \loop \offset \f \arr
+        switch (arr : Array a)
+        case _single \x
+            _single (f offset x)
+        case _empty \n
+            _empty n
+        case _node \n \left \right
+            _node n (loop offset f left) (loop (offset + 2 ^ n - 1) f right)
