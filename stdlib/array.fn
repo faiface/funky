@@ -1,0 +1,78 @@
+union Array a = single a | empty Int | node Int (Array a) (Array a)
+
+func empty : Array a = empty 0
+
+func empty? : Array a -> Bool =
+    \arr
+    switch arr
+    case single \_     false
+    case empty \_      true
+    case node \_ \_ \_ false
+
+func level : Array a -> Int =
+    \arr
+    switch arr
+    case single \_     0
+    case empty \n      n
+    case node \n \_ \_ n
+
+func :: : Array a -> a -> Array a =
+    \arr \x
+    switch arr
+    case single \y
+        node 1 (single y) (single x)
+    case empty \n
+        if (n == 0)
+            (single x);
+        node n (empty (n - 1) :: x) (empty (n - 1))
+    case node \n \left \right
+        if (empty? right) (
+            let (left :: x) \new-left
+            if (level new-left < n)
+                (node n new-left right);
+            new-left
+        );
+        let (right :: x) \new-right
+        if (level new-right < n)
+            (node n left new-right);
+        node (n + 1) (node n left right) (empty n :: x)
+
+func array : List a -> Array a =
+    fold> (::) empty
+
+func list : Array a -> List a =
+    \arr
+    switch arr
+    case single \x            [x]
+    case empty \_             []
+    case node \_ \left \right list left ++ list right
+
+func index : Int -> Array a -> a =
+    \i \arr
+    switch arr
+    case single \x
+        if (i != 0)
+            (error "index out of range");
+        x
+    case empty \_
+        error "index out of range"
+    case node \n \left \right
+        let (2 ^ n - 1) \mid
+        if (i < mid)
+            (index i left);
+        index (i - mid) right
+
+func index : Int -> (a -> a) -> Array a -> Array a =
+    \i \f \arr
+    switch arr
+    case single \x
+        if (i != 0)
+            (error "index out of range");
+        single (f x)
+    case empty \_
+        error "index out of range"
+    case node \n \left \right
+        let (2 ^ n - 1) \mid
+        if (i < mid)
+            (node n (index i f left) right);
+        node n left (index (i - mid) f right)
