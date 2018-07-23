@@ -76,3 +76,15 @@ func index : Int -> (a -> a) -> Array a -> Array a =
         if (i < mid)
             (node n (index i f left) right);
         node n left (index (i - mid) f right)
+
+func length : Array a -> Int =
+    \arr
+    switch arr
+    case single \_
+        1
+    case empty \_
+        0
+    case node \n \left \right
+        if (empty? right)
+            (length left);
+        (2 ^ n - 1) + length right
