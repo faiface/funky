@@ -123,7 +123,7 @@ func (env *Env) lazyInit() {
 		GoFunc: func(d *runtime.Data) runtime.Value {
 			x, y := d.Next.Value, d.Value
 			fmt.Fprint(os.Stderr, runtimeValueToString(x))
-			return y
+			return y.Reduce()
 		},
 	})
 	env.addFunc("error", &internalFunc{
