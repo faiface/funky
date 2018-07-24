@@ -17,7 +17,7 @@ func empty? : Array a -> Bool =
     switch arr
     case _single \_     false
     case _empty \_      true
-    case _node \_ \_ \_ false
+    case _node \_ \l \r empty? l
 
 func _level : Array a -> Int =
     \arr
