@@ -50,6 +50,21 @@ func :: : Array a -> a -> Array a =
 func ++ : Array a -> List a -> Array a =
     fold> (::)
 
+func take : Int -> Array a -> Array a =
+    \i \arr
+    switch arr
+    case _single \x
+        if (i < 1)
+            (_empty 0);
+        _single x
+    case _empty \n
+        _empty n
+    case _node \n \left \right
+        let (2 ^ n - 1) \mid
+        if (i < mid)
+            (_node n (take i left) (_empty (n - 1)));
+        _node n left (take (i - mid) right)
+
 func index : Int -> Array a -> a =
     \i \arr
     switch arr
