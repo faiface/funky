@@ -204,6 +204,9 @@ func TreeToExpr(tree Tree) (expr.Expr, error) {
 			if err != nil {
 				return nil, err
 			}
+			if body == nil {
+				return nil, &Error{tree.SourceInfo(), "no function body after binding"}
+			}
 			return &expr.Abst{SI: tree.SourceInfo(), Bound: boundVar, Body: body}, nil
 		}
 		return nil, &Error{tree.SourceInfo(), fmt.Sprintf("unexpected: %s", tree.Kind)}
