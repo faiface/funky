@@ -18,6 +18,26 @@ func (s Subst) Compose(s1 Subst) Subst {
 	return s2
 }
 
+func (s Subst) Unify(names map[string]types.Name, s1 Subst) (s2 Subst, ok bool) {
+	s2 = make(Subst)
+	for v, t := range s {
+		if t1, ok := s1[v]; ok {
+			suni, ok := Unify(names, s2.ApplyToType(t), s2.ApplyToType(t1))
+			if !ok {
+				return nil, false
+			}
+			s2 = s2.Compose(suni)
+		}
+	}
+	for v, t := range s {
+		s2[v] = s2.ApplyToType(t)
+	}
+	for v, t := range s1 {
+		s2[v] = s2.ApplyToType(t)
+	}
+	return s2, true
+}
+
 func (s Subst) ApplyToType(t types.Type) types.Type {
 	if t == nil {
 		return nil

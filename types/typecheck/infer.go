@@ -253,55 +253,35 @@ func infer(
 		return nil, &NotBoundError{e.SourceInfo(), e.Name}
 
 	case *expr.Appl:
+		resultsL, err := infer(varIndex, names, global, local, e.Left)
+		if err != nil {
+			return nil, err
+		}
 		resultsR, err := infer(varIndex, names, global, local, e.Right)
 		if err != nil {
 			return nil, err
 		}
-		// if the left side is wrong in itself, return a simple error from there
-		_, err = infer(varIndex, names, global, local, e.Left)
-		if err != nil {
-			return nil, err
-		}
+
 		results = nil
-		cannotApplyErr := &CannotApplyError{
-			LeftSourceInfo:  e.Left.SourceInfo(),
-			RightSourceInfo: e.Right.SourceInfo(),
-		}
-		for _, rR := range resultsR {
-			resultsL, err := infer(
-				varIndex,
-				names,
-				global,
-				rR.Subst.ApplyToVars(local),
-				e.Left,
-			)
-			if err != nil {
-				cannotApplyErr.AddCase(rR.Type, err)
-			}
-			resultType := newVar(varIndex)
-			for _, rL := range resultsL {
-				s, ok := Unify(
-					names,
-					rL.Type,
-					&types.Func{
-						From: rL.Subst.ApplyToType(rR.Type),
-						To:   resultType,
-					},
-				)
+		resultType := newVar(varIndex)
+		for _, rL := range resultsL {
+			for _, rR := range resultsR {
+				s, ok := rL.Subst.Unify(names, rR.Subst)
 				if !ok {
-					cannotApplyErr.AddCase(
-						rL.Type,
-						fmt.Errorf(
-							"%v: argument does not match: %v",
-							e.Right.SourceInfo(), rL.Subst.ApplyToType(rR.Type),
-						),
-					)
 					continue
 				}
+				st, ok := Unify(names, s.ApplyToType(rL.Type), &types.Func{
+					From: s.ApplyToType(rR.Type),
+					To:   resultType,
+				})
+				if !ok {
+					continue
+				}
+				s = s.Compose(st)
 				t := s.ApplyToType(resultType)
 				results = append(results, InferResult{
 					Type:  t,
-					Subst: rR.Subst.Compose(rL.Subst).Compose(s),
+					Subst: s,
 					Expr: &expr.Appl{
 						TI:    t,
 						Left:  rL.Expr,
@@ -310,8 +290,9 @@ func infer(
 				})
 			}
 		}
+
 		if len(results) == 0 {
-			return nil, cannotApplyErr
+			return nil, fmt.Errorf("%v: type-checking error", e.Right.SourceInfo())
 		}
 		return results, nil
 
