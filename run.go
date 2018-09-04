@@ -12,7 +12,7 @@ import (
 	"github.com/faiface/funky/runtime"
 )
 
-func Run(main string) (value *runtime.Box, cleanup func()) {
+func Run(main string) (value *runtime.Value, cleanup func()) {
 	stats := flag.Bool("stats", false, "print stats after running program")
 	flag.Parse()
 
@@ -49,7 +49,7 @@ func Run(main string) (value *runtime.Box, cleanup func()) {
 		if *stats {
 			fmt.Fprintf(os.Stderr, "\n")
 			fmt.Fprintf(os.Stderr, "STATS\n")
-			fmt.Fprintf(os.Stderr, "reductions:       %d\n", runtime.Reductions)
+			//fmt.Fprintf(os.Stderr, "reductions:       %d\n", runtime.Reductions)
 			fmt.Fprintf(os.Stderr, "compilation time: %v\n", runningStart.Sub(compilationStart))
 			fmt.Fprintf(os.Stderr, "running time:     %v\n", time.Since(runningStart))
 		}

@@ -2,18 +2,14 @@ package compile
 
 import (
 	"fmt"
-	"math"
-	"math/big"
-	"os"
-	"strconv"
-	"strings"
 
+	"github.com/faiface/crux"
+	"github.com/faiface/crux/mk"
+	"github.com/faiface/crux/runtime"
 	"github.com/faiface/funky/expr"
 	"github.com/faiface/funky/parse"
 	"github.com/faiface/funky/parse/parseinfo"
-	"github.com/faiface/funky/runtime"
 	"github.com/faiface/funky/types"
-	"golang.org/x/exp/rand"
 )
 
 type Error struct {
@@ -37,49 +33,21 @@ type funcImpl interface {
 }
 
 type (
-	internalFunc struct {
-		SI     *parseinfo.Source
-		Type   types.Type
-		Arity  int
-		GoFunc runtime.GoFunc
+	internal struct {
+		SI   *parseinfo.Source
+		Type types.Type
+		Expr crux.Expr
 	}
 
-	exprFunc struct {
+	function struct {
 		Expr expr.Expr
 	}
 )
 
-func (i *internalFunc) SourceInfo() *parseinfo.Source { return i.SI }
-func (e *exprFunc) SourceInfo() *parseinfo.Source     { return e.Expr.SourceInfo() }
-func (i *internalFunc) TypeInfo() types.Type          { return i.Type }
-func (e *exprFunc) TypeInfo() types.Type              { return e.Expr.TypeInfo() }
-
-func runtimeValueToString(s runtime.Value) string {
-	var builder strings.Builder
-	union := s.Reduce().(*runtime.Union)
-	for union.Alternative != 0 {
-		builder.WriteRune(union.Fields[0].Reduce().(*runtime.Char).Value)
-		union = union.Fields[1].Reduce().(*runtime.Union)
-	}
-	return builder.String()
-}
-
-func boolToRuntimeValue(b bool) runtime.Value {
-	alt := 0
-	if !b {
-		alt = 1
-	}
-	return &runtime.Union{Alternative: alt, Fields: nil}
-}
-
-func stringToRuntimeValue(s string) runtime.Value {
-	str := &runtime.Union{Alternative: 0}
-	runes := []rune(s)
-	for i := len(runes) - 1; i >= 0; i-- {
-		str = &runtime.Union{Alternative: 1, Fields: []runtime.Value{&runtime.Char{Value: runes[i]}, str}}
-	}
-	return str
-}
+func (i *internal) SourceInfo() *parseinfo.Source { return i.SI }
+func (f *function) SourceInfo() *parseinfo.Source { return f.Expr.SourceInfo() }
+func (i *internal) TypeInfo() types.Type          { return i.Type }
+func (f *function) TypeInfo() types.Type          { return f.Expr.TypeInfo() }
 
 func parseType(s string) types.Type {
 	tokens, err := parse.Tokenize("", s)
@@ -108,358 +76,61 @@ func (env *Env) lazyInit() {
 
 	env.funcs = make(map[string][]funcImpl)
 
-	// built-in functions
-
-	// common
-	env.addFunc("eval", &internalFunc{
-		Type: parseType("a -> b -> b"), Arity: 2,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			d.Next.Value.Reduce()
-			return d.Value.Reduce()
-		},
-	})
-	env.addFunc("dump", &internalFunc{
-		Type: parseType("String -> a -> a"), Arity: 2,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			x, y := d.Next.Value, d.Value
-			fmt.Fprint(os.Stderr, runtimeValueToString(x))
-			return y.Reduce()
-		},
-	})
-	env.addFunc("error", &internalFunc{
-		Type: parseType("String -> a"), Arity: 1,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			x := d.Value
-			fmt.Fprintf(os.Stderr, "ERROR: %s\n", runtimeValueToString(x))
-			os.Exit(1)
-			return nil
-		},
-	})
-	//TODO: remove random
-	env.addFunc("random", &internalFunc{
-		Type: parseType("Int -> Int"), Arity: 1,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			max := d.Value.Reduce().(*runtime.Int)
-			return &runtime.Int{Value: big.NewInt(rand.Int63n(max.Value.Int64()))}
-		},
-	})
-	env.addFunc("random", &internalFunc{
-		Type: parseType("Float"), Arity: 0,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			return &runtime.Float{Value: rand.Float64()}
-		},
-	})
-
-	// conversions
-	env.addFunc("int", &internalFunc{
-		Type: parseType("Char -> Int"), Arity: 1,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			x := d.Value
-			return &runtime.Int{Value: big.NewInt(int64(x.Reduce().(*runtime.Char).Value))}
-		},
-	})
-	env.addFunc("char", &internalFunc{
-		Type: parseType("Int -> Char"), Arity: 1,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			x := d.Value
-			return &runtime.Char{Value: rune(x.Reduce().(*runtime.Int).Value.Int64())}
-		},
-	})
-	env.addFunc("int", &internalFunc{
-		Type: parseType("Float -> Int"), Arity: 1,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			x := math.Floor(d.Value.Reduce().(*runtime.Float).Value)
-			z, _ := big.NewFloat(x).Int(nil)
-			return &runtime.Int{Value: z}
-		},
-	})
-	env.addFunc("float", &internalFunc{
-		Type: parseType("Int -> Float"), Arity: 1,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			x := d.Value.Reduce().(*runtime.Int).Value
-			z, _ := big.NewFloat(0).SetInt(x).Float64()
-			return &runtime.Float{Value: z}
-		},
-	})
-	env.addFunc("string", &internalFunc{
-		Type: parseType("Int -> String"), Arity: 1,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			x := d.Value.Reduce().(*runtime.Int).Value
-			return stringToRuntimeValue(x.Text(10))
-		},
-	})
-	env.addFunc("int", &internalFunc{
-		Type: parseType("String -> Maybe Int"), Arity: 1,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			s := runtimeValueToString(d.Value)
-			i, ok := big.NewInt(0).SetString(s, 10)
-			if !ok {
-				return &runtime.Union{Alternative: 0}
-			}
-			return &runtime.Union{Alternative: 1, Fields: []runtime.Value{&runtime.Int{Value: i}}}
-		},
-	})
-	env.addFunc("string", &internalFunc{
-		Type: parseType("Float -> String"), Arity: 1,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			x := d.Value.Reduce().(*runtime.Float).Value
-			return stringToRuntimeValue(strconv.FormatFloat(x, 'f', -1, 64))
-		},
-	})
-	env.addFunc("float", &internalFunc{
-		Type: parseType("String -> Maybe Float"), Arity: 1,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			s := runtimeValueToString(d.Value)
-			f, err := strconv.ParseFloat(s, 64)
-			if err != nil {
-				return &runtime.Union{Alternative: 0}
-			}
-			return &runtime.Union{Alternative: 1, Fields: []runtime.Value{&runtime.Float{Value: f}}}
-		},
-	})
+	// built-in operator functions
 
 	// Char
-	env.addFunc("==", &internalFunc{
-		Type: parseType("Char -> Char -> Bool"), Arity: 2,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			x := d.Next.Value.Reduce().(*runtime.Char).Value
-			y := d.Value.Reduce().(*runtime.Char).Value
-			return boolToRuntimeValue(x == y)
-		},
-	})
-	env.addFunc("!=", &internalFunc{
-		Type: parseType("Char -> Char -> Bool"), Arity: 2,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			x := d.Next.Value.Reduce().(*runtime.Char).Value
-			y := d.Value.Reduce().(*runtime.Char).Value
-			return boolToRuntimeValue(x != y)
-		},
-	})
+	env.addFunc("int", &internal{Type: parseType("Char -> Int"), Expr: mk.Op(runtime.OpCharInt)})
+	env.addFunc("inc", &internal{Type: parseType("Char -> Char"), Expr: mk.Op(runtime.OpCharInc)})
+	env.addFunc("dec", &internal{Type: parseType("Char -> Char"), Expr: mk.Op(runtime.OpCharDec)})
+	env.addFunc("+", &internal{Type: parseType("Char -> Int -> Char"), Expr: mk.Op(runtime.OpCharAdd)})
+	env.addFunc("-", &internal{Type: parseType("Char -> Int -> Char"), Expr: mk.Op(runtime.OpCharSub)})
+	env.addFunc("==", &internal{Type: parseType("Char -> Char -> Bool"), Expr: mk.Op(runtime.OpCharEq)})
+	env.addFunc("!=", &internal{Type: parseType("Char -> Char -> Bool"), Expr: mk.Op(runtime.OpCharNeq)})
+	env.addFunc("<", &internal{Type: parseType("Char -> Char -> Bool"), Expr: mk.Op(runtime.OpCharLess)})
+	env.addFunc("<=", &internal{Type: parseType("Char -> Char -> Bool"), Expr: mk.Op(runtime.OpCharLessEq)})
+	env.addFunc(">", &internal{Type: parseType("Char -> Char -> Bool"), Expr: mk.Op(runtime.OpCharMore)})
+	env.addFunc(">=", &internal{Type: parseType("Char -> Char -> Bool"), Expr: mk.Op(runtime.OpCharMoreEq)})
 
 	// Int
-	env.addFunc("neg", &internalFunc{
-		Type: parseType("Int -> Int"), Arity: 1,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			x := d.Value.Reduce().(*runtime.Int).Value
-			z := big.NewInt(0)
-			z.Neg(x)
-			return &runtime.Int{Value: z}
-		},
-	})
-	env.addFunc("+", &internalFunc{
-		Type: parseType("Int -> Int -> Int"), Arity: 2,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			x := d.Next.Value.Reduce().(*runtime.Int).Value
-			y := d.Value.Reduce().(*runtime.Int).Value
-			z := big.NewInt(0)
-			z.Add(x, y)
-			return &runtime.Int{Value: z}
-		},
-	})
-	env.addFunc("-", &internalFunc{
-		Type: parseType("Int -> Int -> Int"), Arity: 2,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			x := d.Next.Value.Reduce().(*runtime.Int).Value
-			y := d.Value.Reduce().(*runtime.Int).Value
-			z := big.NewInt(0)
-			z.Sub(x, y)
-			return &runtime.Int{Value: z}
-		},
-	})
-	env.addFunc("*", &internalFunc{
-		Type: parseType("Int -> Int -> Int"), Arity: 2,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			x := d.Next.Value.Reduce().(*runtime.Int).Value
-			y := d.Value.Reduce().(*runtime.Int).Value
-			z := big.NewInt(0)
-			z.Mul(x, y)
-			return &runtime.Int{Value: z}
-		},
-	})
-	env.addFunc("/", &internalFunc{
-		Type: parseType("Int -> Int -> Int"), Arity: 2,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			x := d.Next.Value.Reduce().(*runtime.Int).Value
-			y := d.Value.Reduce().(*runtime.Int).Value
-			z := big.NewInt(0)
-			z.Div(x, y)
-			return &runtime.Int{Value: z}
-		},
-	})
-	env.addFunc("%", &internalFunc{
-		Type: parseType("Int -> Int -> Int"), Arity: 2,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			x := d.Next.Value.Reduce().(*runtime.Int).Value
-			y := d.Value.Reduce().(*runtime.Int).Value
-			z := big.NewInt(0)
-			z.Mod(x, y)
-			return &runtime.Int{Value: z}
-		},
-	})
-	env.addFunc("^", &internalFunc{
-		Type: parseType("Int -> Int -> Int"), Arity: 2,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			x := d.Next.Value.Reduce().(*runtime.Int).Value
-			y := d.Value.Reduce().(*runtime.Int).Value
-			z := big.NewInt(0)
-			z.Exp(x, y, nil)
-			return &runtime.Int{Value: z}
-		},
-	})
-	env.addFunc("==", &internalFunc{
-		Type: parseType("Int -> Int -> Bool"), Arity: 2,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			x := d.Next.Value.Reduce().(*runtime.Int).Value
-			y := d.Value.Reduce().(*runtime.Int).Value
-			return boolToRuntimeValue(x.Cmp(y) == 0)
-		},
-	})
-	env.addFunc("!=", &internalFunc{
-		Type: parseType("Int -> Int -> Bool"), Arity: 2,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			x := d.Next.Value.Reduce().(*runtime.Int).Value
-			y := d.Value.Reduce().(*runtime.Int).Value
-			return boolToRuntimeValue(x.Cmp(y) != 0)
-		},
-	})
-	env.addFunc("<", &internalFunc{
-		Type: parseType("Int -> Int -> Bool"), Arity: 2,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			x := d.Next.Value.Reduce().(*runtime.Int).Value
-			y := d.Value.Reduce().(*runtime.Int).Value
-			return boolToRuntimeValue(x.Cmp(y) < 0)
-		},
-	})
-	env.addFunc("<=", &internalFunc{
-		Type: parseType("Int -> Int -> Bool"), Arity: 2,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			x := d.Next.Value.Reduce().(*runtime.Int).Value
-			y := d.Value.Reduce().(*runtime.Int).Value
-			return boolToRuntimeValue(x.Cmp(y) <= 0)
-		},
-	})
-	env.addFunc(">", &internalFunc{
-		Type: parseType("Int -> Int -> Bool"), Arity: 2,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			x := d.Next.Value.Reduce().(*runtime.Int).Value
-			y := d.Value.Reduce().(*runtime.Int).Value
-			return boolToRuntimeValue(x.Cmp(y) > 0)
-		},
-	})
-	env.addFunc(">=", &internalFunc{
-		Type: parseType("Int -> Int -> Bool"), Arity: 2,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			x := d.Next.Value.Reduce().(*runtime.Int).Value
-			y := d.Value.Reduce().(*runtime.Int).Value
-			return boolToRuntimeValue(x.Cmp(y) >= 0)
-		},
-	})
+	env.addFunc("char", &internal{Type: parseType("Int -> Char"), Expr: mk.Op(runtime.OpIntChar)})
+	env.addFunc("float", &internal{Type: parseType("Int -> Float"), Expr: mk.Op(runtime.OpIntFloat)})
+	env.addFunc("string", &internal{Type: parseType("Int -> String"), Expr: mk.Op(runtime.OpIntString)})
+	env.addFunc("neg", &internal{Type: parseType("Int -> Int"), Expr: mk.Op(runtime.OpIntNeg)})
+	env.addFunc("abs", &internal{Type: parseType("Int -> Int"), Expr: mk.Op(runtime.OpIntAbs)})
+	env.addFunc("inc", &internal{Type: parseType("Int -> Int"), Expr: mk.Op(runtime.OpIntInc)})
+	env.addFunc("dec", &internal{Type: parseType("Int -> Int"), Expr: mk.Op(runtime.OpIntDec)})
+	env.addFunc("+", &internal{Type: parseType("Int -> Int -> Int"), Expr: mk.Op(runtime.OpIntAdd)})
+	env.addFunc("-", &internal{Type: parseType("Int -> Int -> Int"), Expr: mk.Op(runtime.OpIntSub)})
+	env.addFunc("*", &internal{Type: parseType("Int -> Int -> Int"), Expr: mk.Op(runtime.OpIntMul)})
+	env.addFunc("/", &internal{Type: parseType("Int -> Int -> Int"), Expr: mk.Op(runtime.OpIntDiv)})
+	env.addFunc("%", &internal{Type: parseType("Int -> Int -> Int"), Expr: mk.Op(runtime.OpIntMod)})
+	env.addFunc("^", &internal{Type: parseType("Int -> Int -> Int"), Expr: mk.Op(runtime.OpIntExp)})
+	env.addFunc("==", &internal{Type: parseType("Int -> Int -> Bool"), Expr: mk.Op(runtime.OpIntEq)})
+	env.addFunc("!=", &internal{Type: parseType("Int -> Int -> Bool"), Expr: mk.Op(runtime.OpIntNeq)})
+	env.addFunc("<", &internal{Type: parseType("Int -> Int -> Bool"), Expr: mk.Op(runtime.OpIntLess)})
+	env.addFunc("<=", &internal{Type: parseType("Int -> Int -> Bool"), Expr: mk.Op(runtime.OpIntLessEq)})
+	env.addFunc(">", &internal{Type: parseType("Int -> Int -> Bool"), Expr: mk.Op(runtime.OpIntMore)})
+	env.addFunc(">=", &internal{Type: parseType("Int -> Int -> Bool"), Expr: mk.Op(runtime.OpIntMoreEq)})
 
 	// Float
-	env.addFunc("neg", &internalFunc{
-		Type: parseType("Float -> Float"), Arity: 1,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			x := d.Value.Reduce().(*runtime.Float).Value
-			return &runtime.Float{Value: -x}
-		},
-	})
-	env.addFunc("inv", &internalFunc{
-		Type: parseType("Float -> Float"), Arity: 1,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			x := d.Value.Reduce().(*runtime.Float).Value
-			return &runtime.Float{Value: 1 / x}
-		},
-	})
-	env.addFunc("+", &internalFunc{
-		Type: parseType("Float -> Float -> Float"), Arity: 2,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			x := d.Next.Value.Reduce().(*runtime.Float).Value
-			y := d.Value.Reduce().(*runtime.Float).Value
-			return &runtime.Float{Value: x + y}
-		},
-	})
-	env.addFunc("-", &internalFunc{
-		Type: parseType("Float -> Float -> Float"), Arity: 2,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			x := d.Next.Value.Reduce().(*runtime.Float).Value
-			y := d.Value.Reduce().(*runtime.Float).Value
-			return &runtime.Float{Value: x - y}
-		},
-	})
-	env.addFunc("*", &internalFunc{
-		Type: parseType("Float -> Float -> Float"), Arity: 2,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			x := d.Next.Value.Reduce().(*runtime.Float).Value
-			y := d.Value.Reduce().(*runtime.Float).Value
-			return &runtime.Float{Value: x * y}
-		},
-	})
-	env.addFunc("/", &internalFunc{
-		Type: parseType("Float -> Float -> Float"), Arity: 2,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			x := d.Next.Value.Reduce().(*runtime.Float).Value
-			y := d.Value.Reduce().(*runtime.Float).Value
-			return &runtime.Float{Value: x / y}
-		},
-	})
-	env.addFunc("^", &internalFunc{
-		Type: parseType("Float -> Float -> Float"), Arity: 2,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			x := d.Next.Value.Reduce().(*runtime.Float).Value
-			y := d.Value.Reduce().(*runtime.Float).Value
-			return &runtime.Float{Value: math.Pow(x, y)}
-		},
-	})
-	env.addFunc("==", &internalFunc{
-		Type: parseType("Float -> Float -> Bool"), Arity: 2,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			x := d.Next.Value.Reduce().(*runtime.Float).Value
-			y := d.Value.Reduce().(*runtime.Float).Value
-			return boolToRuntimeValue(x == y)
-		},
-	})
-	env.addFunc("!=", &internalFunc{
-		Type: parseType("Float -> Float -> Bool"), Arity: 2,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			x := d.Next.Value.Reduce().(*runtime.Float).Value
-			y := d.Value.Reduce().(*runtime.Float).Value
-			return boolToRuntimeValue(x != y)
-		},
-	})
-	env.addFunc("<", &internalFunc{
-		Type: parseType("Float -> Float -> Bool"), Arity: 2,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			x := d.Next.Value.Reduce().(*runtime.Float).Value
-			y := d.Value.Reduce().(*runtime.Float).Value
-			return boolToRuntimeValue(x < y)
-		},
-	})
-	env.addFunc("<=", &internalFunc{
-		Type: parseType("Float -> Float -> Bool"), Arity: 2,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			x := d.Next.Value.Reduce().(*runtime.Float).Value
-			y := d.Value.Reduce().(*runtime.Float).Value
-			return boolToRuntimeValue(x <= y)
-		},
-	})
-	env.addFunc(">", &internalFunc{
-		Type: parseType("Float -> Float -> Bool"), Arity: 2,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			x := d.Next.Value.Reduce().(*runtime.Float).Value
-			y := d.Value.Reduce().(*runtime.Float).Value
-			return boolToRuntimeValue(x > y)
-		},
-	})
-	env.addFunc(">=", &internalFunc{
-		Type: parseType("Float -> Float -> Bool"), Arity: 2,
-		GoFunc: func(d *runtime.Data) runtime.Value {
-			x := d.Next.Value.Reduce().(*runtime.Float).Value
-			y := d.Value.Reduce().(*runtime.Float).Value
-			return boolToRuntimeValue(x >= y)
-		},
-	})
-
-	//TODO: useful math functions for Float (sin, cos, sqrt, ...)
+	env.addFunc("int", &internal{Type: parseType("Float -> Int"), Expr: mk.Op(runtime.OpFloatInt)})
+	env.addFunc("string", &internal{Type: parseType("Float -> String"), Expr: mk.Op(runtime.OpFloatString)})
+	env.addFunc("neg", &internal{Type: parseType("Float -> Float"), Expr: mk.Op(runtime.OpFloatNeg)})
+	env.addFunc("abs", &internal{Type: parseType("Float -> Float"), Expr: mk.Op(runtime.OpFloatAbs)})
+	env.addFunc("inc", &internal{Type: parseType("Float -> Float"), Expr: mk.Op(runtime.OpFloatInc)})
+	env.addFunc("dec", &internal{Type: parseType("Float -> Float"), Expr: mk.Op(runtime.OpFloatDec)})
+	env.addFunc("+", &internal{Type: parseType("Float -> Float -> Float"), Expr: mk.Op(runtime.OpFloatAdd)})
+	env.addFunc("-", &internal{Type: parseType("Float -> Float -> Float"), Expr: mk.Op(runtime.OpFloatSub)})
+	env.addFunc("*", &internal{Type: parseType("Float -> Float -> Float"), Expr: mk.Op(runtime.OpFloatMul)})
+	env.addFunc("/", &internal{Type: parseType("Float -> Float -> Float"), Expr: mk.Op(runtime.OpFloatDiv)})
+	env.addFunc("%", &internal{Type: parseType("Float -> Float -> Float"), Expr: mk.Op(runtime.OpFloatMod)})
+	env.addFunc("^", &internal{Type: parseType("Float -> Float -> Float"), Expr: mk.Op(runtime.OpFloatExp)})
+	env.addFunc("==", &internal{Type: parseType("Float -> Float -> Bool"), Expr: mk.Op(runtime.OpFloatEq)})
+	env.addFunc("!=", &internal{Type: parseType("Float -> Float -> Bool"), Expr: mk.Op(runtime.OpFloatNeq)})
+	env.addFunc("<", &internal{Type: parseType("Float -> Float -> Bool"), Expr: mk.Op(runtime.OpFloatLess)})
+	env.addFunc("<=", &internal{Type: parseType("Float -> Float -> Bool"), Expr: mk.Op(runtime.OpFloatLessEq)})
+	env.addFunc(">", &internal{Type: parseType("Float -> Float -> Bool"), Expr: mk.Op(runtime.OpFloatMore)})
+	env.addFunc(">=", &internal{Type: parseType("Float -> Float -> Bool"), Expr: mk.Op(runtime.OpFloatMoreEq)})
 }
 
 func (env *Env) Add(d parse.Definition) error {
@@ -473,7 +144,7 @@ func (env *Env) Add(d parse.Definition) error {
 	case *types.Alias:
 		return env.addAlias(d.Name, value)
 	case expr.Expr:
-		return env.addFunc(d.Name, &exprFunc{value})
+		return env.addFunc(d.Name, &function{value})
 	}
 
 	panic("unreachable")
@@ -506,21 +177,12 @@ func (env *Env) addRecord(name string, record *types.Record) error {
 			To:   constructorType,
 		}
 	}
-	constructorArity := len(record.Fields)
 	err := env.addFunc(
 		name,
-		&internalFunc{
-			SI:    record.SourceInfo(),
-			Type:  constructorType,
-			Arity: constructorArity,
-			GoFunc: func(d *runtime.Data) runtime.Value {
-				fields := make([]runtime.Value, constructorArity)
-				for i := len(fields) - 1; i >= 0; i-- {
-					fields[i] = d.Value
-					d = d.Next
-				}
-				return &runtime.Record{Fields: fields}
-			},
+		&internal{
+			SI:   record.SourceInfo(),
+			Type: constructorType,
+			Expr: mk.Make(0),
 		},
 	)
 	if err != nil {
@@ -530,15 +192,10 @@ func (env *Env) addRecord(name string, record *types.Record) error {
 	// add record field getters
 	// RecordType -> FieldType
 	for i, field := range record.Fields {
-		index := i
-		err := env.addFunc(field.Name, &internalFunc{
-			SI:    field.SI,
-			Type:  &types.Func{From: recordType, To: field.Type},
-			Arity: 1,
-			GoFunc: func(d *runtime.Data) runtime.Value {
-				r := d.Value.Reduce().(*runtime.Record)
-				return r.Fields[index].Reduce()
-			},
+		err := env.addFunc(field.Name, &internal{
+			SI:   field.SI,
+			Type: &types.Func{From: recordType, To: field.Type},
+			Expr: mk.Field(int32(i)),
 		})
 		if err != nil {
 			return err
@@ -547,30 +204,26 @@ func (env *Env) addRecord(name string, record *types.Record) error {
 
 	// add record field setters
 	// (FieldType -> FieldType) -> RecordType -> RecordType
+	fieldVars := make([]string, len(record.Fields))
+	for i := range args {
+		fieldVars[i] = fmt.Sprintf("x%d", i)
+	}
+	switchArgs := append([]string{"f"}, fieldVars...)
 	for i, field := range record.Fields {
-		index := i
-		err := env.addFunc(field.Name, &internalFunc{
+		switchResult := mk.Appl(mk.Make(0), make([]crux.Expr, len(fieldVars))...)
+		for j := range switchResult.Rands {
+			switchResult.Rands[j] = mk.Var(fieldVars[j], -1)
+		}
+		switchResult.Rands[i] = mk.Appl(mk.Var("f", -1), mk.Var(fieldVars[i], -1))
+		err := env.addFunc(field.Name, &internal{
 			SI: field.SI,
 			Type: &types.Func{
 				From: &types.Func{From: field.Type, To: field.Type},
 				To:   &types.Func{From: recordType, To: recordType},
 			},
-			Arity: 2,
-			GoFunc: func(d *runtime.Data) runtime.Value {
-				f, r := d.Next.Value.Reduce(), d.Value.Reduce()
-				oldFields := r.(*runtime.Record).Fields
-				newFields := make([]runtime.Value, len(oldFields))
-				copy(newFields, oldFields)
-				thunk := f.(*runtime.Thunk)
-				if thunk.Code.Kind != runtime.CodeAbst {
-					panic("not an abstraction")
-				}
-				newFields[index] = &runtime.Thunk{
-					Code: thunk.Code.A,
-					Data: runtime.Cons(oldFields[index], runtime.Drop(thunk.Code.Drop, thunk.Data)),
-				}
-				return &runtime.Record{Fields: newFields}
-			},
+			Expr: mk.Abst("r", "f")(mk.Switch(mk.Var("r", -1),
+				mk.Appl(mk.Abst(switchArgs...)(switchResult), mk.Var("f", -1)),
+			)),
 		})
 		if err != nil {
 			return err
@@ -601,7 +254,7 @@ func (env *Env) addUnion(name string, union *types.Union) error {
 
 	// add union alternative constructors
 	for i, alt := range union.Alts {
-		alternative := i
+		alternative := int32(i)
 		var altType types.Type = unionType
 		for i := len(alt.Fields) - 1; i >= 0; i-- {
 			altType = &types.Func{
@@ -609,21 +262,12 @@ func (env *Env) addUnion(name string, union *types.Union) error {
 				To:   altType,
 			}
 		}
-		altArity := len(alt.Fields)
 		err := env.addFunc(
 			alt.Name,
-			&internalFunc{
-				SI:    alt.SI,
-				Type:  altType,
-				Arity: altArity,
-				GoFunc: func(d *runtime.Data) runtime.Value {
-					fields := make([]runtime.Value, altArity)
-					for i := len(fields) - 1; i >= 0; i-- {
-						fields[i] = d.Value
-						d = d.Next
-					}
-					return &runtime.Union{Alternative: alternative, Fields: fields}
-				},
+			&internal{
+				SI:   alt.SI,
+				Type: altType,
+				Expr: mk.Make(alternative),
 			},
 		)
 		if err != nil {

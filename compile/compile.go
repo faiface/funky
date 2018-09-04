@@ -3,210 +3,220 @@ package compile
 import (
 	"fmt"
 
+	"github.com/faiface/crux"
 	"github.com/faiface/funky/expr"
 	"github.com/faiface/funky/runtime"
-	"github.com/faiface/funky/types"
 	"github.com/faiface/funky/types/typecheck"
 )
 
-func (env *Env) Compile(main string) (*runtime.Box, error) {
-	var (
-		offsets = make(map[string][]int)
+func (env *Env) Compile(main string) (*runtime.Value, error) {
+	env.lazyInit()
 
-		codes []runtime.Code
+	globals := make(map[string][]crux.Expr)
 
-		linkAs           []struct{ from, to int }
-		linkBs           []struct{ from, to int }
-		linkSwitchTables []struct{ from, to, len int }
-		linkRefs         []struct {
-			from  int
-			to    string
-			index int
-		}
-	)
-
-	// gather function type info
-	global := make(map[string][]types.Type)
 	for name, impls := range env.funcs {
-		for _, impl := range impls {
-			global[name] = append(global[name], impl.TypeInfo())
-		}
-	}
-
-	// here's a recursive helper function for compiling expressions
-	// it's local here, for easy access to env fields and local variables in this function
-	var compileExpr func([]string, expr.Expr) int
-	compileExpr = func(locals []string, e expr.Expr) int {
-		drop := int32(0)
-		for _, local := range locals {
-			if e.HasFree(local) {
-				break
-			}
-			drop++
-		}
-
-		switch e := e.(type) {
-		case *expr.Var:
-			// local variable
-			if int(drop) < len(locals) {
-				offset := len(codes)
-				codes = append(codes, runtime.Code{
-					Kind: runtime.CodeVar,
-					Drop: drop,
-				})
-				return offset
-			}
-			// global function reference
-			for i, typ := range global[e.Name] {
-				if typecheck.CheckIfUnify(env.names, e.TypeInfo(), typ) {
-					offset := len(codes)
-					codes = append(codes, runtime.Code{
-						Kind: runtime.CodeRef,
-						Drop: drop,
-					})
-					linkRefs = append(linkRefs, struct {
-						from  int
-						to    string
-						index int
-					}{offset, e.Name, i})
-					return offset
-				}
-			}
-			panic("unreachable")
-
-		case *expr.Appl:
-			offset := len(codes)
-			codes = append(codes, runtime.Code{
-				Kind: runtime.CodeAppl,
-				Drop: drop,
-			})
-			left := compileExpr(locals[drop:], e.Left)
-			right := compileExpr(locals[drop:], e.Right)
-			linkAs = append(linkAs, struct{ from, to int }{offset, left})
-			linkBs = append(linkBs, struct{ from, to int }{offset, right})
-			return offset
-
-		case *expr.Abst:
-			offset := len(codes)
-			codes = append(codes, runtime.Code{
-				Kind: runtime.CodeAbst,
-				Drop: drop,
-			})
-			newLocals := append([]string{e.Bound.Name}, locals[drop:]...)
-			body := compileExpr(newLocals, e.Body)
-			linkAs = append(linkAs, struct{ from, to int }{offset, body})
-			return offset
-
-		case *expr.Switch:
-			offset := len(codes)
-			codes = append(codes, runtime.Code{
-				Kind: runtime.CodeSwitch,
-				Drop: drop,
-			})
-			exp := compileExpr(locals[drop:], e.Expr)
-			linkAs = append(linkAs, struct{ from, to int }{offset, exp})
-
-			switchTableOffset := len(codes)
-			codes = append(codes, make([]runtime.Code, len(e.Cases))...)
-			for i := 0; i < len(e.Cases); i++ {
-				codes[switchTableOffset+i] = runtime.Code{
-					Kind: runtime.CodeRef,
-					Drop: 0,
-				}
-			}
-			linkSwitchTables = append(linkSwitchTables, struct {
-				from, to, len int
-			}{offset, switchTableOffset, len(e.Cases)})
-
-			for i := range e.Cases {
-				cas := compileExpr(locals[drop:], e.Cases[i].Body)
-				linkAs = append(linkAs, struct{ from, to int }{switchTableOffset + i, cas})
-			}
-
-			return offset
-
-		case *expr.Char:
-			offset := len(codes)
-			codes = append(codes, runtime.Code{
-				Kind:  runtime.CodeValue,
-				Value: &runtime.Char{Value: e.Value},
-			})
-			return offset
-
-		case *expr.Int:
-			offset := len(codes)
-			codes = append(codes, runtime.Code{
-				Kind:  runtime.CodeValue,
-				Value: &runtime.Int{Value: e.Value},
-			})
-			return offset
-
-		case *expr.Float:
-			offset := len(codes)
-			codes = append(codes, runtime.Code{
-				Kind:  runtime.CodeValue,
-				Value: &runtime.Float{Value: e.Value},
-			})
-			return offset
-		}
-
-		panic("unreachable")
-	}
-
-	// compile individual functions
-	for name, impls := range env.funcs {
-		for _, impl := range impls {
-			switch impl := impl.(type) {
-			case *internalFunc:
-				offsets[name] = append(offsets[name], len(codes))
-				for j := 0; j < impl.Arity; j++ {
-					codes = append(codes, runtime.Code{
-						Kind: runtime.CodeAbst,
-					})
-					linkAs = append(linkAs, struct{ from, to int }{len(codes) - 1, len(codes)})
-				}
-				codes = append(codes, runtime.Code{
-					Kind:  runtime.CodeGoFunc,
-					Value: impl.GoFunc,
-				})
-
-			case *exprFunc:
-				//TODO: proper sharing of top-level functions
-				offset := compileExpr(nil, impl.Expr)
-				offsets[name] = append(offsets[name], offset)
+		for i := range impls {
+			switch impl := impls[i].(type) {
+			case *internal:
+				globals[name] = append(globals[name], impl.Expr)
+			case *function:
+				globals[name] = append(globals[name], compress(lift(nil, compress(env.translate(nil, impl.Expr)))))
 			}
 		}
 	}
 
-	// finalize all direct links to codes and switch tables
-	for _, link := range linkAs {
-		codes[link.from].A = &codes[link.to]
-	}
-	for _, link := range linkBs {
-		codes[link.from].B = &codes[link.to]
-	}
-	for _, link := range linkSwitchTables {
-		codes[link.from].SwitchTable = codes[link.to : link.to+link.len]
-	}
-	for _, link := range linkRefs {
-		codes[link.from].A = &codes[offsets[link.to][link.index]]
-	}
-
-	if len(env.funcs[main]) == 0 {
+	if len(globals[main]) == 0 {
 		return nil, &Error{
 			SourceInfo: nil,
 			Msg:        fmt.Sprintf("no %s function", main),
 		}
 	}
-	if len(env.funcs[main]) > 1 {
+	if len(globals[main]) > 1 {
 		return nil, &Error{
 			SourceInfo: nil,
 			Msg:        fmt.Sprintf("multiple %s functions", main),
 		}
 	}
 
-	return &runtime.Box{Value: &runtime.Thunk{
-		Code: &codes[offsets[main][0]],
-		Data: nil,
-	}}, nil
+	indices, values, _ := crux.Compile(globals)
+
+	return &runtime.Value{Globals: values, Value: values[indices[main][0]]}, nil
+}
+
+func (env *Env) translate(locals []string, e expr.Expr) crux.Expr {
+	switch e := e.(type) {
+	case *expr.Var:
+		for _, local := range locals {
+			if local == e.Name {
+				return &crux.Var{Name: e.Name, Index: -1}
+			}
+		}
+		for i, impl := range env.funcs[e.Name] {
+			if typecheck.CheckIfUnify(env.names, e.TypeInfo(), impl.TypeInfo()) {
+				return &crux.Var{
+					Name:  e.Name,
+					Index: int32(i),
+				}
+			}
+		}
+		panic("unknown variable")
+
+	case *expr.Appl:
+		return &crux.Appl{
+			Rator: env.translate(locals, e.Left),
+			Rands: []crux.Expr{env.translate(locals, e.Right)},
+		}
+
+	case *expr.Abst:
+		return &crux.Abst{
+			Bound: []string{e.Bound.Name},
+			Body:  env.translate(append(locals, e.Bound.Name), e.Body),
+		}
+
+	case *expr.Switch:
+		cases := make([]crux.Expr, len(e.Cases))
+		for i := range cases {
+			cases[i] = env.translate(locals, e.Cases[i].Body)
+		}
+		return &crux.Switch{
+			Expr:  env.translate(locals, e.Expr),
+			Cases: cases,
+		}
+
+	case *expr.Char:
+		return &crux.Char{Value: e.Value}
+
+	case *expr.Int:
+		var i crux.Int
+		i.Value.Set(e.Value)
+		return &i
+
+	case *expr.Float:
+		return &crux.Float{Value: e.Value}
+
+	default:
+		panic("unreachable")
+	}
+}
+
+func compress(e crux.Expr) crux.Expr {
+	switch e := e.(type) {
+	case *crux.Char, *crux.Int, *crux.Float, *crux.Operator, *crux.Make, *crux.Field, *crux.Var:
+		return e
+
+	case *crux.Abst:
+		compressedBody := compress(e.Body)
+		if abst, ok := compressedBody.(*crux.Abst); ok {
+			return &crux.Abst{Bound: append(e.Bound, abst.Bound...), Body: abst.Body}
+		}
+		return &crux.Abst{Bound: e.Bound, Body: compressedBody}
+
+	case *crux.Appl:
+		compressedRator := compress(e.Rator)
+		compressedRands := make([]crux.Expr, len(e.Rands))
+		for i := range compressedRands {
+			compressedRands[i] = compress(e.Rands[i])
+		}
+		if appl, ok := compressedRator.(*crux.Appl); ok {
+			return &crux.Appl{Rator: appl.Rator, Rands: append(appl.Rands, compressedRands...)}
+		}
+		return &crux.Appl{Rator: compressedRator, Rands: compressedRands}
+
+	case *crux.Strict:
+		return &crux.Strict{Expr: compress(e.Expr)}
+
+	case *crux.Switch:
+		compressedExpr := compress(e.Expr)
+		compressedCases := make([]crux.Expr, len(e.Cases))
+		for i := range compressedCases {
+			compressedCases[i] = compress(e.Cases[i])
+		}
+		return &crux.Switch{Expr: compressedExpr, Cases: compressedCases}
+
+	default:
+		panic("unreachable")
+	}
+}
+
+func lift(locals []string, e crux.Expr) crux.Expr {
+	switch e := e.(type) {
+	case *crux.Char, *crux.Int, *crux.Float, *crux.Operator, *crux.Make, *crux.Field, *crux.Var:
+		return e
+
+	case *crux.Abst:
+		var (
+			toBind  []string
+			toApply []crux.Expr
+		)
+		for _, local := range locals {
+			if isFree(local, e) {
+				toBind = append(toBind, local)
+				toApply = append(toApply, &crux.Var{Name: local, Index: -1})
+			}
+		}
+		if len(toBind) == 0 {
+			return &crux.Abst{Bound: e.Bound, Body: lift(e.Bound, e.Body)}
+		}
+		newLocals := append(toBind, e.Bound...)
+		return &crux.Appl{
+			Rator: &crux.Abst{Bound: newLocals, Body: lift(newLocals, e.Body)},
+			Rands: toApply,
+		}
+
+	case *crux.Appl:
+		liftedRator := lift(locals, e.Rator)
+		liftedRands := make([]crux.Expr, len(e.Rands))
+		for i := range liftedRands {
+			liftedRands[i] = lift(locals, e.Rands[i])
+		}
+		return &crux.Appl{Rator: liftedRator, Rands: liftedRands}
+
+	case *crux.Strict:
+		return &crux.Strict{Expr: lift(locals, e.Expr)}
+
+	case *crux.Switch:
+		liftedExpr := lift(locals, e.Expr)
+		liftedCases := make([]crux.Expr, len(e.Cases))
+		for i := range liftedCases {
+			liftedCases[i] = lift(locals, e.Cases[i])
+		}
+		return &crux.Switch{Expr: liftedExpr, Cases: liftedCases}
+
+	default:
+		panic("unreachable")
+	}
+}
+
+func isFree(local string, e crux.Expr) bool {
+	switch e := e.(type) {
+	case *crux.Char, *crux.Int, *crux.Float, *crux.Operator, *crux.Make, *crux.Field:
+		return false
+	case *crux.Var:
+		return e.Index < 0 && local == e.Name
+	case *crux.Abst:
+		for _, bound := range e.Bound {
+			if local == bound {
+				return false
+			}
+		}
+		return isFree(local, e.Body)
+	case *crux.Appl:
+		for _, rand := range e.Rands {
+			if isFree(local, rand) {
+				return true
+			}
+		}
+		return isFree(local, e.Rator)
+	case *crux.Strict:
+		return isFree(local, e.Expr)
+	case *crux.Switch:
+		for _, cas := range e.Cases {
+			if isFree(local, cas) {
+				return true
+			}
+		}
+		return isFree(local, e.Expr)
+	default:
+		panic("unreachable")
+	}
 }

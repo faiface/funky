@@ -6,6 +6,8 @@ import (
 )
 
 func (env *Env) TypeInfer() []error {
+	env.lazyInit()
+
 	var errs []error
 
 	global := make(map[string][]types.Type)
@@ -17,17 +19,17 @@ func (env *Env) TypeInfer() []error {
 
 	for _, impls := range env.funcs {
 		for _, imp := range impls {
-			impExpr, ok := imp.(*exprFunc)
+			function, ok := imp.(*function)
 			if !ok {
 				continue
 			}
-			results, err := typecheck.Infer(env.names, global, impExpr.Expr)
+			results, err := typecheck.Infer(env.names, global, function.Expr)
 			if err != nil {
 				errs = append(errs, err)
 				continue
 			}
 			// there's exactly one result
-			impExpr.Expr = results[0].Expr
+			function.Expr = results[0].Expr
 		}
 	}
 
