@@ -20,7 +20,7 @@ func main() {
 	runGame(title, w, h, images, game)
 }
 
-func runLoader(loader *runtime.Box) (title string, w, h int, images []*ebiten.Image, game *runtime.Box) {
+func runLoader(loader *runtime.Value) (title string, w, h int, images []*ebiten.Image, game *runtime.Value) {
 	for {
 		switch loader.Alternative() {
 		case 0: // start
@@ -47,7 +47,7 @@ func runLoader(loader *runtime.Box) (title string, w, h int, images []*ebiten.Im
 	}
 }
 
-func runGame(title string, w, h int, images []*ebiten.Image, game *runtime.Box) {
+func runGame(title string, w, h int, images []*ebiten.Image, game *runtime.Value) {
 	update := func(screen *ebiten.Image) error {
 		screen.Fill(color.Black)
 		switch game.Alternative() {
