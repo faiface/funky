@@ -153,12 +153,12 @@ func traverseHelper(ch chan<- expr.Expr, e expr.Expr) {
 	switch e := e.(type) {
 	case *expr.Var:
 		ch <- e
-	case *expr.Appl:
-		traverseHelper(ch, e.Right)
-		traverseHelper(ch, e.Left)
 	case *expr.Abst:
 		ch <- e.Bound
 		traverseHelper(ch, e.Body)
+	case *expr.Appl:
+		traverseHelper(ch, e.Right)
+		traverseHelper(ch, e.Left)
 	case *expr.Switch:
 		traverseHelper(ch, e.Expr)
 		for i := len(e.Cases) - 1; i >= 0; i-- {
@@ -252,6 +252,45 @@ func infer(
 		}
 		return nil, &NotBoundError{e.SourceInfo(), e.Name}
 
+	case *expr.Abst:
+		var (
+			bindType = e.Bound.TypeInfo()
+			bodyType = e.Body.TypeInfo()
+		)
+		if f, ok := e.TypeInfo().(*types.Func); ok {
+			if bindType == nil {
+				bindType = f.From
+			}
+			if bodyType == nil {
+				bodyType = f.To
+			}
+		} else if bindType == nil {
+			bindType = newVar(varIndex)
+		}
+		newLocal := assume(local, e.Bound.Name, bindType)
+		bodyResults, err := infer(varIndex, names, global, newLocal, e.Body.WithTypeInfo(bodyType))
+		if err != nil {
+			return nil, err
+		}
+		results = nil
+		for _, r := range bodyResults {
+			inferredBindType := r.Subst.ApplyToType(bindType)
+			t := &types.Func{
+				From: inferredBindType,
+				To:   r.Type,
+			}
+			results = append(results, InferResult{
+				Type:  t,
+				Subst: r.Subst,
+				Expr: &expr.Abst{
+					TI:    t,
+					Bound: e.Bound.WithTypeInfo(inferredBindType).(*expr.Var),
+					Body:  r.Expr,
+				},
+			})
+		}
+		return results, nil
+
 	case *expr.Appl:
 		resultsL, err := infer(varIndex, names, global, local, e.Left)
 		if err != nil {
@@ -293,45 +332,6 @@ func infer(
 
 		if len(results) == 0 {
 			return nil, fmt.Errorf("%v: type-checking error", e.Right.SourceInfo())
-		}
-		return results, nil
-
-	case *expr.Abst:
-		var (
-			bindType = e.Bound.TypeInfo()
-			bodyType = e.Body.TypeInfo()
-		)
-		if f, ok := e.TypeInfo().(*types.Func); ok {
-			if bindType == nil {
-				bindType = f.From
-			}
-			if bodyType == nil {
-				bodyType = f.To
-			}
-		} else if bindType == nil {
-			bindType = newVar(varIndex)
-		}
-		newLocal := assume(local, e.Bound.Name, bindType)
-		bodyResults, err := infer(varIndex, names, global, newLocal, e.Body.WithTypeInfo(bodyType))
-		if err != nil {
-			return nil, err
-		}
-		results = nil
-		for _, r := range bodyResults {
-			inferredBindType := r.Subst.ApplyToType(bindType)
-			t := &types.Func{
-				From: inferredBindType,
-				To:   r.Type,
-			}
-			results = append(results, InferResult{
-				Type:  t,
-				Subst: r.Subst,
-				Expr: &expr.Abst{
-					TI:    t,
-					Bound: e.Bound.WithTypeInfo(inferredBindType).(*expr.Var),
-					Body:  r.Expr,
-				},
-			})
 		}
 		return results, nil
 

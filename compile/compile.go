@@ -45,6 +45,17 @@ func (env *Env) Compile(main string) (*runtime.Value, error) {
 
 func (env *Env) translate(locals []string, e expr.Expr) crux.Expr {
 	switch e := e.(type) {
+	case *expr.Char:
+		return &crux.Char{Value: e.Value}
+
+	case *expr.Int:
+		var i crux.Int
+		i.Value.Set(e.Value)
+		return &i
+
+	case *expr.Float:
+		return &crux.Float{Value: e.Value}
+
 	case *expr.Var:
 		for _, local := range locals {
 			if local == e.Name {
@@ -61,16 +72,16 @@ func (env *Env) translate(locals []string, e expr.Expr) crux.Expr {
 		}
 		panic("unknown variable")
 
-	case *expr.Appl:
-		return &crux.Appl{
-			Rator: env.translate(locals, e.Left),
-			Rands: []crux.Expr{env.translate(locals, e.Right)},
-		}
-
 	case *expr.Abst:
 		return &crux.Abst{
 			Bound: []string{e.Bound.Name},
 			Body:  env.translate(append(locals, e.Bound.Name), e.Body),
+		}
+
+	case *expr.Appl:
+		return &crux.Appl{
+			Rator: env.translate(locals, e.Left),
+			Rands: []crux.Expr{env.translate(locals, e.Right)},
 		}
 
 	case *expr.Switch:
@@ -82,17 +93,6 @@ func (env *Env) translate(locals []string, e expr.Expr) crux.Expr {
 			Expr:  env.translate(locals, e.Expr),
 			Cases: cases,
 		}
-
-	case *expr.Char:
-		return &crux.Char{Value: e.Value}
-
-	case *expr.Int:
-		var i crux.Int
-		i.Value.Set(e.Value)
-		return &i
-
-	case *expr.Float:
-		return &crux.Float{Value: e.Value}
 
 	default:
 		panic("unreachable")
