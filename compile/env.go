@@ -205,7 +205,7 @@ func (env *Env) addRecord(name string, record *types.Record) error {
 	// add record field setters
 	// (FieldType -> FieldType) -> RecordType -> RecordType
 	fieldVars := make([]string, len(record.Fields))
-	for i := range args {
+	for i := range fieldVars {
 		fieldVars[i] = fmt.Sprintf("x%d", i)
 	}
 	switchArgs := append([]string{"f"}, fieldVars...)
@@ -221,7 +221,7 @@ func (env *Env) addRecord(name string, record *types.Record) error {
 				From: &types.Func{From: field.Type, To: field.Type},
 				To:   &types.Func{From: recordType, To: recordType},
 			},
-			Expr: mk.Abst("r", "f")(mk.Switch(mk.Var("r", -1),
+			Expr: mk.Abst("f", "r")(mk.Switch(mk.Var("r", -1),
 				mk.Appl(mk.Abst(switchArgs...)(switchResult), mk.Var("f", -1)),
 			)),
 		})
