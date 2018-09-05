@@ -35,8 +35,8 @@ func (env *Env) Validate() []error {
 	implsLoop:
 		for i, imp := range impls {
 			// check function type
-			freeVars := typecheck.FreeVars(imp.TypeInfo()).InOrder()
-			err := env.validateType(freeVars, imp.TypeInfo())
+			free := freeVars(imp.TypeInfo())
+			err := env.validateType(free, imp.TypeInfo())
 			if err != nil {
 				errs = append(errs, err)
 				continue
@@ -191,4 +191,19 @@ func validateArgs(si *parseinfo.Source, args []string) error {
 		}
 	}
 	return nil
+}
+
+func freeVars(t types.Type) []string {
+	seen := make(map[string]bool)
+	t.Map(func(t types.Type) types.Type {
+		if v, ok := t.(*types.Var); ok {
+			seen[v.Name] = true
+		}
+		return t
+	})
+	var names []string
+	for name := range seen {
+		names = append(names, name)
+	}
+	return names
 }

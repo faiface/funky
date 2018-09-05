@@ -21,7 +21,7 @@ func Unify(names map[string]types.Name, t, u types.Type) (Subst, bool) {
 
 	switch t := t.(type) {
 	case *types.Var:
-		if _, ok := u.(*types.Var); !ok && ContainsVar(t.Name, u) {
+		if _, ok := u.(*types.Var); !ok && containsVar(t.Name, u) {
 			// occurence check fail
 			// variable t is contained in the type u
 			// final type would have to be infinitely recursive
@@ -71,6 +71,17 @@ func Unify(names map[string]types.Name, t, u types.Type) (Subst, bool) {
 	}
 
 	panic("unreachable")
+}
+
+func containsVar(name string, t types.Type) bool {
+	contains := false
+	t.Map(func(t types.Type) types.Type {
+		if v, ok := t.(*types.Var); ok && v.Name == name {
+			contains = true
+		}
+		return t
+	})
+	return contains
 }
 
 func lesserName(s, t string) bool {
