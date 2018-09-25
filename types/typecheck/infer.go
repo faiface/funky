@@ -238,19 +238,20 @@ func infer(
 				Expr:  e.WithTypeInfo(t),
 			}}, nil
 		}
-		if ts, ok := global[e.Name]; ok {
-			results = nil
-			for _, t := range ts {
-				t = instType(varIndex, t)
-				results = append(results, InferResult{
-					Type:  t,
-					Subst: nil,
-					Expr:  e.WithTypeInfo(t),
-				})
-			}
-			return results, nil
+		ts, ok := global[e.Name]
+		if !ok {
+			return nil, &NotBoundError{e.SourceInfo(), e.Name}
 		}
-		return nil, &NotBoundError{e.SourceInfo(), e.Name}
+		results = nil
+		for _, t := range ts {
+			t = instType(varIndex, t)
+			results = append(results, InferResult{
+				Type:  t,
+				Subst: nil,
+				Expr:  e.WithTypeInfo(t),
+			})
+		}
+		return results, nil
 
 	case *expr.Abst:
 		var (
@@ -302,7 +303,12 @@ func infer(
 		}
 
 		results = nil
-		resultType := newVar(varIndex)
+		var resultType types.Type
+		if e.TypeInfo() == nil {
+			resultType = newVar(varIndex)
+		} else {
+			resultType = e.TypeInfo()
+		}
 		for _, rL := range resultsL {
 			for _, rR := range resultsR {
 				s, ok := rL.Subst.Unify(names, rR.Subst)
@@ -336,174 +342,149 @@ func infer(
 		return results, nil
 
 	case *expr.Switch:
-		exprResults, err := infer(varIndex, names, global, local, e.Expr)
+		resultsExpr, err := infer(varIndex, names, global, local, e.Expr)
 		if err != nil {
 			return nil, err
 		}
 
-		// check if cases don't produce errors on their own, if so, report simple error
+		resultsCases := make([][]InferResult, len(e.Cases))
 		for i := range e.Cases {
-			_, err := infer(varIndex, names, global, local, e.Cases[i].Body)
+			resultsCases[i], err = infer(varIndex, names, global, local, e.Cases[i].Body)
 			if err != nil {
 				return nil, err
 			}
 		}
 
-		results = nil
-		cannotSwitchError := &CannotSwitchError{
-			ExprSourceInfo: e.Expr.SourceInfo(),
-		}
-
-	exprResultsLoop:
-		for _, exprResult := range exprResults {
-			appl, ok := exprResult.Type.(*types.Appl)
+		var eligibleUnions []string
+	namesLoop:
+		for name := range names {
+			union, ok := names[name].(*types.Union)
 			if !ok {
-				cannotSwitchError.AddCase(
-					exprResult.Type,
-					fmt.Errorf("not a union or too general type; fix your code or add a type annotation"),
-				)
-				continue
+				continue namesLoop
 			}
-			for {
-				alias, ok := names[appl.Name].(*types.Alias)
-				if !ok {
-					break
-				}
-				revealed := revealAlias(alias, appl.Args)
-				revealedAppl, ok := revealed.(*types.Appl)
-				if !ok {
-					break
-				}
-				appl = revealedAppl
-			}
-			union, ok := names[appl.Name].(*types.Union)
-			if !ok {
-				cannotSwitchError.AddCase(
-					exprResult.Type,
-					fmt.Errorf("not a union or too general type; fix your code or add a type annotation"),
-				)
-				continue
-			}
-
 			if len(union.Alts) != len(e.Cases) {
-				cannotSwitchError.AddCase(
-					exprResult.Type,
-					fmt.Errorf(
-						"wrong number of cases; %d required, %d given",
-						len(union.Alts), len(e.Cases),
-					),
-				)
-				continue
+				continue namesLoop
 			}
 			for i := range union.Alts {
 				if union.Alts[i].Name != e.Cases[i].Alt {
-					cannotSwitchError.AddCase(
-						exprResult.Type,
-						fmt.Errorf(
-							"wrong case alternative; should be %s, is %s",
-							union.Alts[i].Name, e.Cases[i].Alt,
-						),
+					continue namesLoop
+				}
+			}
+			eligibleUnions = append(eligibleUnions, name)
+		}
+
+		if len(eligibleUnions) == 0 {
+			return nil, fmt.Errorf("%v: no union fits", e.SourceInfo())
+		}
+
+		var (
+			resultType types.Type
+			unionTypes []types.Type
+			altsTypes  [][]types.Type
+		)
+
+		if e.TypeInfo() == nil {
+			resultType = newVar(varIndex)
+		} else {
+			resultType = e.TypeInfo()
+		}
+
+		for _, name := range eligibleUnions {
+			union := names[name].(*types.Union)
+
+			unionTyp := &types.Appl{Name: name, Args: make([]types.Type, len(union.Args))}
+			s := Subst(nil)
+			for i, arg := range union.Args {
+				unionTyp.Args[i] = newVar(varIndex)
+				s = s.Compose(Subst{arg: unionTyp.Args[i]})
+			}
+
+			unionTypes = append(unionTypes, unionTyp)
+
+			altTypes := make([]types.Type, len(union.Alts))
+			for i := range altTypes {
+				typ := resultType
+				for j := len(union.Alts[i].Fields) - 1; j >= 0; j-- {
+					typ = &types.Func{From: s.ApplyToType(union.Alts[i].Fields[j]), To: typ}
+				}
+				altTypes[i] = typ
+			}
+
+			altsTypes = append(altsTypes, altTypes)
+		}
+
+		results = nil
+
+		for _, rExpr := range resultsExpr {
+			for unionIndex := range unionTypes {
+				unionType := unionTypes[unionIndex]
+				altTypes := altsTypes[unionIndex]
+
+				s, ok := Unify(names, rExpr.Type, unionType)
+				if !ok {
+					continue
+				}
+
+				var (
+					substs = []Subst{rExpr.Subst.Compose(s)}
+					exprs  = []*expr.Switch{{SI: e.SI, Expr: rExpr.Expr}}
+				)
+
+				for altIndex, altType := range altTypes {
+					var (
+						newSubsts []Subst
+						newExprs  []*expr.Switch
 					)
-					continue exprResultsLoop
-				}
-			}
-
-			// build a substitution for the union type arguments
-			unionSubst := Subst(nil)
-			for i := range union.Args {
-				unionSubst = unionSubst.Compose(Subst{union.Args[i]: appl.Args[i]})
-			}
-
-			s := exprResult.Subst
-
-			//TODO: use type info (was causing problems, though)
-			/*var resultType types.Type
-			if e.TypeInfo() != nil {
-				resultType = e.TypeInfo()
-			} else {
-				resultType = newVar(varIndex)
-			}*/
-			resultType := newVar(varIndex)
-
-			tmpResults := []InferResult{{ // results for this specific inference of Switch.Expr
-				Type:  resultType,
-				Subst: s,
-				Expr: (&expr.Switch{
-					TI:    e.TI,
-					SI:    e.SI,
-					Expr:  exprResult.Expr,
-					Cases: e.Cases,
-				}).WithTypeInfo(resultType),
-			}}
-
-			for i := range e.Cases {
-				var newTmpResults []InferResult
-				tmpCannotSwitchError := &CannotSwitchError{}
-
-				for _, tmpResult := range tmpResults {
-					s := s.Compose(tmpResult.Subst)
-
-					caseType := tmpResult.Type
-					for j := len(union.Alts[i].Fields) - 1; j >= 0; j-- {
-						caseType = &types.Func{
-							From: unionSubst.Compose(s).ApplyToType(union.Alts[i].Fields[j]),
-							To:   caseType,
+					for i := range substs {
+						subst := substs[i]
+						exp := exprs[i]
+						for _, resultCase := range resultsCases[altIndex] {
+							subst, ok := subst.Unify(names, resultCase.Subst)
+							if !ok {
+								continue
+							}
+							s, ok := Unify(names, altType, subst.ApplyToType(resultCase.Type))
+							if !ok {
+								continue
+							}
+							subst = subst.Compose(s)
+							newSubsts = append(newSubsts, subst)
+							newExprs = append(newExprs, &expr.Switch{
+								SI:   exp.SI,
+								Expr: exp.Expr,
+								Cases: append(exp.Cases[:altIndex:altIndex], struct {
+									SI   *parseinfo.Source
+									Alt  string
+									Body expr.Expr
+								}{e.Cases[altIndex].SI, e.Cases[altIndex].Alt, resultCase.Expr}),
+							})
 						}
 					}
-
-					bodyResults, err := infer(
-						varIndex,
-						names,
-						global,
-						s.ApplyToVars(local),
-						e.Cases[i].Body,
-					)
-					if err != nil {
-						tmpCannotSwitchError.AddCase(s.ApplyToType(exprResult.Type), err)
-						continue
-					}
-
-					for _, bodyResult := range bodyResults {
-						s := s.Compose(bodyResult.Subst)
-
-						s1, ok := Unify(names, bodyResult.Type, s.ApplyToType(caseType))
-						if !ok {
-							tmpCannotSwitchError.AddCase(
-								s.ApplyToType(exprResult.Type),
-								fmt.Errorf(
-									"%v: case body type: %v; does not match: %v",
-									e.Cases[i].SI,
-									bodyResult.Type,
-									s.ApplyToType(caseType),
-								),
-							)
-							continue
-						}
-
-						s = s.Compose(s1)
-						result := InferResult{
-							Type:  s.ApplyToType(tmpResult.Type),
-							Subst: s,
-						}
-						result.Expr = tmpResult.Expr.WithTypeInfo(result.Type)
-						result.Expr.(*expr.Switch).Cases[i].Body = bodyResult.Expr
-
-						newTmpResults = append(newTmpResults, result)
-					}
+					substs = newSubsts
+					exprs = newExprs
 				}
 
-				if len(newTmpResults) == 0 {
-					cannotSwitchError.Cases = append(cannotSwitchError.Cases, tmpCannotSwitchError.Cases...)
+				for i := range substs {
+					t := substs[i].ApplyToType(resultType)
+
+					resultExpr := exprs[i]
+					resultExpr.TI = t
+
+					result := InferResult{
+						Type:  t,
+						Subst: substs[i],
+						Expr:  resultExpr,
+					}
+
+					results = append(results, result)
 				}
-				tmpResults = newTmpResults
 			}
-
-			results = append(results, tmpResults...)
 		}
 
 		if len(results) == 0 {
-			return nil, cannotSwitchError
+			return nil, fmt.Errorf("%v: type-checking error", e.SourceInfo())
 		}
+
 		return results, nil
 	}
 

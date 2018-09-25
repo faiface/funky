@@ -55,6 +55,11 @@ func Unify(names map[string]types.Name, t, u types.Type) (Subst, bool) {
 		return s, true
 
 	case *types.Func:
+		if applU, ok := u.(*types.Appl); ok {
+			if alias, ok := names[applU.Name].(*types.Alias); ok {
+				return Unify(names, t, revealAlias(alias, applU.Args))
+			}
+		}
 		funcU, ok := u.(*types.Func)
 		if !ok {
 			return nil, false

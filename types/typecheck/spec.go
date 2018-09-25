@@ -33,6 +33,11 @@ func isSpec(names map[string]types.Name, bind map[string]types.Type, t, u types.
 		}
 		return true
 	case *types.Func:
+		if applU, ok := u.(*types.Appl); ok {
+			if alias, ok := names[applU.Name].(*types.Alias); ok {
+				return isSpec(names, bind, t, revealAlias(alias, applU.Args))
+			}
+		}
 		uf, ok := u.(*types.Func)
 		if !ok {
 			return false
