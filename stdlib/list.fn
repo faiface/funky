@@ -103,7 +103,7 @@ func zip : (a -> b -> c) -> List a -> List b -> List c =
         [];
     f (first left) (first right) :: zip f (rest left) (rest right)
 
-func ++ : List a -> List a -> List a = \l \r fold< (::) r l
+func ++ : List a -> List a -> List a = \l \r fold< (::) l r
 
 func concat : List (List a) -> List a = \lists fold< (++) lists []
 
