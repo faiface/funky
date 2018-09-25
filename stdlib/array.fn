@@ -139,7 +139,7 @@ func map : (a -> b) -> Array a -> Array b =
 
 func map-index : (Int -> a -> b) -> Array a -> Array b =
     0 |> fix \loop \offset \f \arr
-        switch (arr : Array a)
+        switch arr
         case _single \x
             _single (f offset x)
         case _empty \n
