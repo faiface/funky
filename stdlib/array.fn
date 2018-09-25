@@ -107,15 +107,15 @@ func length : Array a -> Int =
             (length left);
         (2 ^ n - 1) + length right
 
-func fold< : (a -> b -> b) -> b -> Array a -> b =
-    \f \zero \arr
+func fold< : (a -> b -> b) -> Array a -> b -> b =
+    \f \arr \zero
     switch arr
     case _single \x
         f x zero
     case _empty \_
         zero
     case _node \_ \left \right
-        fold< f (fold< f zero right) left
+        fold< f left (fold< f right zero)
 
 func fold> : (b -> a -> b) -> b -> Array a -> b =
     \f \zero \arr

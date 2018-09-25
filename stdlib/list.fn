@@ -69,13 +69,13 @@ func index : Int -> (a -> a) -> List a -> List a =
     let (drop i list) \tail
     take i list ++ f (first tail) :: rest tail
 
-func fold< : (a -> b -> b) -> b -> List a -> b =
-    \f \zero \list
+func fold< : (a -> b -> b) -> List a -> b -> b =
+    \f \list \zero
     switch list
     case empty
         zero
     case (::) \x \xs
-        f x (fold< f zero xs)
+        f x (fold< f xs zero)
 
 func fold> : (b -> a -> b) -> b -> List a -> b =
     \f \zero \list
@@ -86,18 +86,16 @@ func fold> : (b -> a -> b) -> b -> List a -> b =
         fold> f (f zero x) xs
 
 func map : (a -> b) -> List a -> List b =
-    \f
-    fold< ((::) . f) []
+    \f \list
+    switch list
+    case empty       empty
+    case (::) \x \xs f x :: map f xs
 
 func filter : (a -> Bool) -> List a -> List a =
     \p \list
     switch list
-    case empty
-        []
-    case (::) \x \xs
-        if (p x)
-            (x :: filter p xs);
-        filter p xs
+    case empty       empty
+    case (::) \x \xs when (p x) (x ::) (filter p xs)
 
 func zip : (a -> b -> c) -> List a -> List b -> List c =
     \f \left \right
@@ -107,19 +105,19 @@ func zip : (a -> b -> c) -> List a -> List b -> List c =
 
 func ++ : List a -> List a -> List a = \l \r fold< (::) r l
 
-func concat : List (List a) -> List a = fold< (++) []
+func concat : List (List a) -> List a = \lists fold< (++) lists []
 
 func pick : List a -> (a -> List b) -> List b =
     \list \f
-    fold< (++) [] (map f list)
+    fold< (++) (map f list) []
 
 func any : (a -> Bool) -> List a -> Bool =
-    \p
-    fold< ((||) . p) false
+    \p \list
+    fold< ((||) . p) list false
 
 func all : (a -> Bool) -> List a -> Bool =
-    \p
-    fold< ((&&) . p) true
+    \p \list
+    fold< ((&&) . p) list true
 
 func count : (a -> Bool) -> List a -> Int =
     \p \list

@@ -1,6 +1,6 @@
 union IO = done | putc Char IO | getc (Char -> IO)
 
-func print   : String -> IO -> IO = \s \io fold< putc io s
+func print   : String -> IO -> IO = \s \next for s putc; next
 func println : String -> IO -> IO = print . (++ "\n")
 
 func ungetc : Char -> IO -> IO =
