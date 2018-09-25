@@ -93,7 +93,7 @@ func filter : (a -> Bool) -> List a -> List a =
     \p \list
     switch list
     case empty
-        [];
+        []
     case (::) \x \xs
         if (p x)
             (x :: filter p xs);
@@ -142,10 +142,6 @@ func reverse : List a -> List a =
             right;
         loop (rest left) (first left :: right)
 
-func range : Int -> List Int =
-    \start
-    start :: range (start + 1)
-
 func range : Int -> Int -> List Int =
     \from \to
     if (from > to)
@@ -157,4 +153,4 @@ func iterate : (a -> a) -> a -> List a =
     z :: iterate f (f z)
 
 func enumerate : List a -> List (Pair Int a) =
-    zip pair (range 0)
+    zip pair (iterate inc 0)
