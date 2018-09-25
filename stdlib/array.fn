@@ -118,9 +118,14 @@ func fold< : (a -> b -> b) -> b -> Array a -> b =
         fold< f (fold< f zero right) left
 
 func fold> : (b -> a -> b) -> b -> Array a -> b =
-    #FIXME: implementation analogous to fold< doesn't typecheck, which is a bug
     \f \zero \arr
-    fold> f zero (list arr)
+    switch arr
+    case _single \x
+        f zero x
+    case _empty \_
+        zero
+    case _node \_ \left \right
+        fold> f (fold> f zero left) right
 
 func map : (a -> b) -> Array a -> Array b =
     \f \arr
