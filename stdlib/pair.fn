@@ -15,3 +15,7 @@ func for-pair : List (Pair a b) -> (a -> b -> c -> c) -> c -> c =
         body (first p) (second p);
         for-pair xs body;
         next
+
+func pick-pair : List (Pair a b) -> (a -> b -> List c) -> List c =
+    \list \f
+    fold< (++) (map (\p f (first p) (second p)) list) []
