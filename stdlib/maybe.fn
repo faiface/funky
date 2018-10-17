@@ -24,6 +24,18 @@ func do : Maybe a -> (a -> Maybe b) -> Maybe b =
     case just \x
         f x
 
+func ? : Maybe a -> a -> a =
+    \maybe \default
+    switch maybe
+    case nothing default
+    case just \x x
+
+func || : Maybe a -> Maybe a -> Maybe a =
+    \maybe \default
+    switch maybe
+    case nothing default
+    case just    just
+
 func map : (a -> b) -> Maybe a -> Maybe b =
     \f \maybe
     switch maybe
