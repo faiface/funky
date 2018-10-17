@@ -146,6 +146,8 @@ func range : Int -> Int -> List Int =
         [];
     from :: range (from + 1) to
 
+func rangex : Int -> List Int = \n range 0 (dec n)
+
 func iterate : (a -> a) -> a -> List a =
     \f \z
     z :: iterate f (f z)
