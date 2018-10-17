@@ -5,6 +5,10 @@ func empty : Array a = _empty 0
 func array : List a -> Array a =
     fold> (::) empty
 
+func make-array : Int -> (Int -> a) -> Array a =
+    \n \f
+    array (map f (rangex n))
+
 func list : Array a -> List a =
     \arr
     switch arr
@@ -65,15 +69,15 @@ func take : Int -> Array a -> Array a =
             (_node n (take i left) (_empty (n - 1)));
         _node n left (take (i - mid) right)
 
-func index : Int -> Array a -> a =
-    \i \arr
+func index : Int -> Array a -> a = index-or (error "index out of range")
+
+func index-or : a -> Int -> Array a -> a =
+    \default \i \arr
     switch arr
     case _single \x
-        if (i != 0)
-            (error "index out of range");
-        x
+        if (i != 0) default x
     case _empty \_
-        error "index out of range"
+        default
     case _node \n \left \right
         let (2 ^ n - 1) \mid
         if (i < mid)
