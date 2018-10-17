@@ -1,0 +1,58 @@
+union State s r =
+    view (s -> State s r)       |
+    update (s -> s) (State s r) |
+    return r                    |
+
+func retreat : (s -> a) -> State s a =
+    \f
+    view \x
+    return (f x)
+
+func -> : (s -> a) -> (a -> State s r) -> State s r =
+    \viewer \fnext
+    view (fnext . viewer)
+
+func := : ((a -> a) -> s -> s) -> a -> State s r -> State s r =
+    \accessor \value \next
+    update (accessor (const value));
+    next
+
+func <- : ((a -> a) -> s -> s) -> (a -> a) -> State s r -> State s r =
+    \accessor \f \next
+    update (accessor f);
+    next
+
+func <= : ((a -> a) -> s -> s) -> (s -> a) -> State s r -> State s r =
+    \accessor \viewer \next
+    update (\s accessor (const (viewer s)) s);
+    next
+
+func do : State s a -> (a -> State s b) -> State s b =
+    \state \fnext
+    switch state
+    case view \f
+        view \s
+        do (f s) fnext
+    case update \f \next
+        update f;
+        do next fnext
+    case return \x
+        fnext x
+
+func start-with : s -> State s r -> r =
+    \value \state
+    switch state
+    case view \f
+        start-with value;
+        f value
+    case update \f \next
+        start-with (f value);
+        next
+    case return \x
+        x
+
+func block : State s (a -> b) -> State s a -> State s b =
+    \first \second
+    do first  \f
+    do second \x
+    return (f x)
