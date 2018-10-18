@@ -18,4 +18,4 @@ func for-pair : List (Pair a b) -> (a -> b -> c -> c) -> c -> c =
 
 func pick-pair : List (Pair a b) -> (a -> b -> List c) -> List c =
     \list \f
-    fold< (++) (map (\p f (first p) (second p)) list) []
+    (concat . map) (\p f (first p) (second p)) list
