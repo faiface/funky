@@ -341,6 +341,41 @@ func infer(
 		}
 		return results, nil
 
+	case *expr.Strict:
+		resultsExpr, err := infer(varIndex, names, global, local, e.Expr)
+		if err != nil {
+			return nil, err
+		}
+
+		var results []InferResult
+
+		for _, rExpr := range resultsExpr {
+			s := rExpr.Subst
+			if e.TI != nil {
+				s1, ok := Unify(names, e.TI, rExpr.Type)
+				if !ok {
+					continue
+				}
+				s = s.Compose(s1)
+			}
+			t := s.ApplyToType(rExpr.Type)
+			results = append(results, InferResult{
+				Type:  t,
+				Subst: s,
+				Expr: &expr.Strict{
+					TI:   t,
+					SI:   e.SI,
+					Expr: rExpr.Expr,
+				},
+			})
+		}
+
+		if len(results) == 0 {
+			return nil, fmt.Errorf("%v: type-checking error", e.SourceInfo())
+		}
+
+		return results, nil
+
 	case *expr.Switch:
 		resultsExpr, err := infer(varIndex, names, global, local, e.Expr)
 		if err != nil {

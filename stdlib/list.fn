@@ -83,7 +83,7 @@ func fold> : (b -> a -> b) -> b -> List a -> b =
     case empty
         zero
     case (::) \x \xs
-        fold> f (f zero x) xs
+        fold> f (strict f zero x) xs
 
 func map : (a -> b) -> List a -> List b =
     \f \list

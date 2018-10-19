@@ -84,6 +84,9 @@ func (env *Env) translate(locals []string, e expr.Expr) crux.Expr {
 			Rands: []crux.Expr{env.translate(locals, e.Right)},
 		}
 
+	case *expr.Strict:
+		return &crux.Strict{Expr: env.translate(locals, e.Expr)}
+
 	case *expr.Switch:
 		cases := make([]crux.Expr, len(e.Cases))
 		for i := range cases {

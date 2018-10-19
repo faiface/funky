@@ -54,6 +54,12 @@ type (
 		Right Expr
 	}
 
+	Strict struct {
+		TI   types.Type
+		SI   *parseinfo.Source
+		Expr Expr
+	}
+
 	Switch struct {
 		TI    types.Type
 		SI    *parseinfo.Source
@@ -72,14 +78,16 @@ func (f *Float) TypeInfo() types.Type  { return &types.Appl{Name: "Float"} }
 func (v *Var) TypeInfo() types.Type    { return v.TI }
 func (a *Abst) TypeInfo() types.Type   { return a.TI }
 func (a *Appl) TypeInfo() types.Type   { return a.TI }
+func (s *Strict) TypeInfo() types.Type { return s.TI }
 func (s *Switch) TypeInfo() types.Type { return s.TI }
 
-func (c *Char) WithTypeInfo(types.Type) Expr   { return c }
-func (i *Int) WithTypeInfo(types.Type) Expr    { return i }
-func (f *Float) WithTypeInfo(types.Type) Expr  { return f }
-func (v *Var) WithTypeInfo(t types.Type) Expr  { return &Var{t, v.SI, v.Name} }
-func (a *Abst) WithTypeInfo(t types.Type) Expr { return &Abst{t, a.SI, a.Bound, a.Body} }
-func (a *Appl) WithTypeInfo(t types.Type) Expr { return &Appl{t, a.Left, a.Right} }
+func (c *Char) WithTypeInfo(types.Type) Expr     { return c }
+func (i *Int) WithTypeInfo(types.Type) Expr      { return i }
+func (f *Float) WithTypeInfo(types.Type) Expr    { return f }
+func (v *Var) WithTypeInfo(t types.Type) Expr    { return &Var{t, v.SI, v.Name} }
+func (a *Abst) WithTypeInfo(t types.Type) Expr   { return &Abst{t, a.SI, a.Bound, a.Body} }
+func (a *Appl) WithTypeInfo(t types.Type) Expr   { return &Appl{t, a.Left, a.Right} }
+func (s *Strict) WithTypeInfo(t types.Type) Expr { return &Strict{t, s.SI, s.Expr} }
 func (s *Switch) WithTypeInfo(t types.Type) Expr {
 	newCases := make([]struct {
 		SI   *parseinfo.Source
@@ -96,6 +104,7 @@ func (f *Float) SourceInfo() *parseinfo.Source  { return f.SI }
 func (v *Var) SourceInfo() *parseinfo.Source    { return v.SI }
 func (a *Abst) SourceInfo() *parseinfo.Source   { return a.SI }
 func (a *Appl) SourceInfo() *parseinfo.Source   { return a.Left.SourceInfo() }
+func (s *Strict) SourceInfo() *parseinfo.Source { return s.SI }
 func (s *Switch) SourceInfo() *parseinfo.Source { return s.SI }
 
 func (c *Char) Map(f func(Expr) Expr) Expr   { return f(c) }
@@ -105,7 +114,8 @@ func (v *Var) Map(f func(Expr) Expr) Expr    { return f(v) }
 func (a *Abst) Map(f func(Expr) Expr) Expr {
 	return f(&Abst{a.TI, a.SI, a.Bound.Map(f).(*Var), a.Body.Map(f)})
 }
-func (a *Appl) Map(f func(Expr) Expr) Expr { return f(&Appl{a.TI, a.Left.Map(f), a.Right.Map(f)}) }
+func (a *Appl) Map(f func(Expr) Expr) Expr   { return f(&Appl{a.TI, a.Left.Map(f), a.Right.Map(f)}) }
+func (s *Strict) Map(f func(Expr) Expr) Expr { return f(&Strict{s.TI, s.SI, s.Expr.Map(f)}) }
 func (s *Switch) Map(f func(Expr) Expr) Expr {
 	newCases := make([]struct {
 		SI   *parseinfo.Source

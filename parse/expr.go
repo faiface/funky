@@ -51,7 +51,7 @@ func TreeToExpr(tree Tree) (expr.Expr, error) {
 		return nil, nil
 	}
 
-	beforeSpecial, atSpecial, _ := FindNextSpecialOrBinding(false, tree, ";", "switch")
+	beforeSpecial, atSpecial, _ := FindNextSpecialOrBinding(false, tree, ";", "switch", "special")
 	if beforeSpecial != nil && atSpecial != nil {
 		left, err := TreeToExpr(beforeSpecial)
 		if err != nil {
@@ -199,6 +199,12 @@ func TreeToExpr(tree Tree) (expr.Expr, error) {
 				nextCasesTree = newNextCasesTree
 			}
 			return sw, nil
+		case "strict":
+			exp, err := TreeToExpr(tree.After)
+			if err != nil {
+				return nil, err
+			}
+			return &expr.Strict{SI: tree.SourceInfo(), Expr: exp}, nil
 		}
 		return nil, &Error{tree.SourceInfo(), fmt.Sprintf("unexpected: %s", tree.Kind)}
 
