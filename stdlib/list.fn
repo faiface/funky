@@ -7,20 +7,20 @@ func yield-all : List a -> List a -> List a = ++
 func empty? : List a -> Bool =
     \list
     switch list
-    case empty true
-    case (::)  \_ \_ false
+    case empty       true
+    case (::) \x \xs false
 
 func first : List a -> a =
     \list
     switch list
-    case empty error "first: empty list"
-    case (::)  \x \xs x
+    case empty       error "first: empty list"
+    case (::) \x \xs x
 
 func rest : List a -> List a =
     \list
     switch list
-    case empty error "rest: empty list"
-    case (::)  \x \xs xs
+    case empty       error "rest: empty list"
+    case (::) \x \xs xs
 
 func length : List a -> Int = fold> (\n \_ n + 1) 0
 
@@ -91,8 +91,7 @@ func filter : (a -> Bool) -> List a -> List a =
 
 func zip : (a -> b -> c) -> List a -> List b -> List c =
     \f \left \right
-    if (empty? left || empty? right)
-        [];
+    if (empty? left || empty? right) [];
     f (first left) (first right) :: zip f (rest left) (rest right)
 
 func ++ : List a -> List a -> List a = \l \r fold< (::) l r
@@ -101,7 +100,7 @@ func concat : List (List a) -> List a = \lists fold< (++) lists []
 
 func pick : List a -> (a -> List b) -> List b =
     \list \f
-    fold< (++) (map f list) []
+    (concat . map) f list
 
 func any : (a -> Bool) -> List a -> Bool =
     \p \list
@@ -121,21 +120,18 @@ func repeat : a -> List a = \x x :: repeat x
 
 func replicate : Int -> List a -> List a =
     \n \list
-    if (n <= 0)
-        [];
+    if (n <= 0) [];
     list ++ replicate (n - 1) list
 
 func reverse : List a -> List a =
     \list
     [] |> list |> fix \loop \left \right
-        if (empty? left)
-            right;
+        if (empty? left) right;
         loop (rest left) (first left :: right)
 
 func range : Int -> Int -> List Int =
     \from \to
-    if (from > to)
-        [];
+    if (from > to) [];
     from :: range (from + 1) to
 
 func rangex : Int -> List Int = \n range 0 (dec n)

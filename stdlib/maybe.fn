@@ -3,26 +3,20 @@ union Maybe a = nothing | just a
 func nothing? : Maybe a -> Bool =
     \maybe
     switch maybe
-    case nothing
-        true
-    case just \x
-        false
+    case nothing true
+    case just \x false
 
 func extract : Maybe a -> a =
     \maybe
     switch maybe
-    case nothing
-        error "extract: nothing"
-    case just \x
-        x
+    case nothing error "extract: nothing"
+    case just \x x
 
 func do : Maybe a -> (a -> Maybe b) -> Maybe b =
     \maybe \f
     switch maybe
-    case nothing
-        nothing
-    case just \x
-        f x
+    case nothing nothing
+    case just \x f x
 
 func ? : Maybe a -> a -> a =
     \maybe \default
@@ -39,7 +33,5 @@ func || : Maybe a -> Maybe a -> Maybe a =
 func map : (a -> b) -> Maybe a -> Maybe b =
     \f \maybe
     switch maybe
-    case nothing
-        nothing
-    case just \x
-        just (f x)
+    case nothing nothing
+    case just \x just (f x)

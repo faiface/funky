@@ -50,9 +50,3 @@ func start-with : s -> State s r -> r =
         next
     case return \x
         x
-
-func block : State s (a -> b) -> State s a -> State s b =
-    \first \second
-    do first  \f
-    do second \x
-    return (f x)
