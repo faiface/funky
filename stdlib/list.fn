@@ -22,13 +22,13 @@ func rest : List a -> List a =
     case empty       error "rest: empty list"
     case (::) \x \xs xs
 
-func length : List a -> Int = fold> (\n \_ n + 1) 0
+func length : List a -> Int = fold> (\n \_ inc n) 0
 
 func take : Int -> List a -> List a =
     \n \list
     if (n <= 0)      [];
     if (empty? list) [];
-    first list :: take (n - 1) (rest list)
+    first list :: take (dec n) (rest list)
 
 func take-while : (a -> Bool) -> List a -> List a =
     \p \list
@@ -42,7 +42,7 @@ func drop : Int -> List a -> List a =
     \n \list
     if (n <= 0)      list;
     if (empty? list) [];
-    drop (n - 1) (rest list)
+    drop (dec n) (rest list)
 
 func drop-while : (a -> Bool) -> List a -> List a =
     \p \list
@@ -114,14 +114,14 @@ func count : (a -> Bool) -> List a -> Int =
     \p \list
     switch list
     case empty       0
-    case (::) \x \xs when (p x) (1 +) (count p xs)
+    case (::) \x \xs when (p x) inc (count p xs)
 
 func repeat : a -> List a = \x x :: repeat x
 
 func replicate : Int -> List a -> List a =
     \n \list
     if (n <= 0) [];
-    list ++ replicate (n - 1) list
+    list ++ replicate (dec n) list
 
 func reverse : List a -> List a =
     \list
@@ -132,7 +132,7 @@ func reverse : List a -> List a =
 func range : Int -> Int -> List Int =
     \from \to
     if (from > to) [];
-    from :: range (from + 1) to
+    from :: range (inc from) to
 
 func rangex : Int -> List Int = \n range 0 (dec n)
 

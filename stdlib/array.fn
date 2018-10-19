@@ -49,7 +49,7 @@ func :: : Array a -> a -> Array a =
         let (right :: x) \new-right
         if (_level new-right < n)
             (_node n left new-right);
-        _node (n + 1) (_node n left right) (_empty n :: x)
+        _node (inc n) (_node n left right) (_empty n :: x)
 
 func ++ : Array a -> List a -> Array a =
     fold> (::)
