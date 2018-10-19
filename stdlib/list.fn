@@ -26,10 +26,8 @@ func length : List a -> Int = fold> (\n \_ n + 1) 0
 
 func take : Int -> List a -> List a =
     \n \list
-    if (n <= 0)
-        [];
-    if (empty? list)
-        [];
+    if (n <= 0)      [];
+    if (empty? list) [];
     first list :: take (n - 1) (rest list)
 
 func take-while : (a -> Bool) -> List a -> List a =
@@ -38,16 +36,12 @@ func take-while : (a -> Bool) -> List a -> List a =
     case empty
         []
     case (::) \x \xs
-        if (p x)
-            (x :: take-while p xs);
-        []
+        if (p x) (x :: take-while p xs) []
 
 func drop : Int -> List a -> List a =
     \n \list
-    if (n <= 0)
-        list;
-    if (empty? list)
-        [];
+    if (n <= 0)      list;
+    if (empty? list) [];
     drop (n - 1) (rest list)
 
 func drop-while : (a -> Bool) -> List a -> List a =
@@ -56,9 +50,7 @@ func drop-while : (a -> Bool) -> List a -> List a =
     case empty
         []
     case (::) \x \xs
-        if (p x)
-            (drop-while p xs);
-        list
+        if (p x) (drop-while p xs) list
 
 func index : Int -> List a -> a =
     \i \list
