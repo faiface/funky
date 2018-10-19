@@ -51,7 +51,20 @@ func TreeToExpr(tree Tree) (expr.Expr, error) {
 		return nil, nil
 	}
 
-	beforeColon, _, afterColon := FindNextSpecialOrBinding(tree, ":")
+	beforeSpecial, atSpecial, _ := FindNextSpecialOrBinding(false, tree, ";", "switch")
+	if beforeSpecial != nil && atSpecial != nil {
+		left, err := TreeToExpr(beforeSpecial)
+		if err != nil {
+			return nil, err
+		}
+		right, err := TreeToExpr(atSpecial)
+		if err != nil {
+			return nil, err
+		}
+		return &expr.Appl{Left: left, Right: right}, nil
+	}
+
+	beforeColon, _, afterColon := FindNextSpecialOrBinding(false, tree, ":")
 	if afterColon != nil {
 		e, err := TreeToExpr(beforeColon)
 		if err != nil {
@@ -119,7 +132,7 @@ func TreeToExpr(tree Tree) (expr.Expr, error) {
 			var elems []expr.Expr
 			inside := tree.Inside
 			for inside != nil {
-				elemTree, _, after := FindNextSpecialOrBinding(inside, ",")
+				elemTree, _, after := FindNextSpecialOrBinding(true, inside, ",")
 				inside = after
 				elem, err := TreeToExpr(elemTree)
 				if err != nil {
@@ -146,7 +159,7 @@ func TreeToExpr(tree Tree) (expr.Expr, error) {
 		case ";":
 			return TreeToExpr(tree.After)
 		case "switch":
-			expTree, caseBindingTree, nextCasesTree := FindNextSpecialOrBinding(tree.After, "case")
+			expTree, caseBindingTree, nextCasesTree := FindNextSpecialOrBinding(true, tree.After, "case")
 			if expTree == nil {
 				return nil, &Error{tree.SourceInfo(), "no expression to switch"}
 			}
@@ -156,7 +169,7 @@ func TreeToExpr(tree Tree) (expr.Expr, error) {
 			}
 			sw := &expr.Switch{SI: tree.SourceInfo(), Expr: exp}
 			for caseBindingTree != nil {
-				caseBodyTree, newCaseBindingTree, newNextCasesTree := FindNextSpecialOrBinding(nextCasesTree, "case")
+				caseBodyTree, newCaseBindingTree, newNextCasesTree := FindNextSpecialOrBinding(true, nextCasesTree, "case")
 
 				caseBinding := caseBindingTree.(*Binding)
 				altExpr, err := TreeToExpr(caseBinding.Bound)

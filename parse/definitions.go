@@ -24,14 +24,14 @@ func TreeToDefinitions(tree Tree) ([]Definition, error) {
 	var definitions []Definition
 
 	for tree != nil {
-		before, at, after := FindNextSpecialOrBinding(tree, "record", "union", "alias", "func")
+		before, at, after := FindNextSpecialOrBinding(true, tree, "record", "union", "alias", "func")
 		if before != nil {
 			return nil, &Error{
 				tree.SourceInfo(),
 				fmt.Sprintf("expected record, union, alias or func"),
 			}
 		}
-		definition, next, _ := FindNextSpecialOrBinding(after, "record", "union", "alias", "func")
+		definition, next, _ := FindNextSpecialOrBinding(true, after, "record", "union", "alias", "func")
 		tree = next
 
 		switch at.(*Special).Kind {
@@ -96,7 +96,7 @@ func treeToTypeHeader(tree Tree) (name string, args []string, err error) {
 }
 
 func treeToRecord(tree Tree) (name string, record *types.Record, err error) {
-	headerTree, _, fieldsTree := FindNextSpecialOrBinding(tree, "=")
+	headerTree, _, fieldsTree := FindNextSpecialOrBinding(false, tree, "=")
 
 	name, args, err := treeToTypeHeader(headerTree)
 	if err != nil {
@@ -106,7 +106,7 @@ func treeToRecord(tree Tree) (name string, record *types.Record, err error) {
 	var fields []types.Field
 
 	for fieldsTree != nil {
-		fieldTree, _, after := FindNextSpecialOrBinding(fieldsTree, ",")
+		fieldTree, _, after := FindNextSpecialOrBinding(false, fieldsTree, ",")
 		fieldsTree = after
 
 		if fieldTree == nil {
@@ -140,7 +140,7 @@ func treeToRecord(tree Tree) (name string, record *types.Record, err error) {
 }
 
 func treeToUnion(tree Tree) (name string, union *types.Union, err error) {
-	headerTree, _, altsTree := FindNextSpecialOrBinding(tree, "=")
+	headerTree, _, altsTree := FindNextSpecialOrBinding(false, tree, "=")
 
 	name, args, err := treeToTypeHeader(headerTree)
 	if err != nil {
@@ -150,7 +150,7 @@ func treeToUnion(tree Tree) (name string, union *types.Union, err error) {
 	var alts []types.Alternative
 
 	for altsTree != nil {
-		altTree, _, after := FindNextSpecialOrBinding(altsTree, "|")
+		altTree, _, after := FindNextSpecialOrBinding(false, altsTree, "|")
 		altsTree = after
 
 		if altTree == nil {
@@ -196,7 +196,7 @@ func treeToUnion(tree Tree) (name string, union *types.Union, err error) {
 }
 
 func treeToAlias(tree Tree) (name string, alias *types.Alias, err error) {
-	headerTree, _, typeTree := FindNextSpecialOrBinding(tree, "=")
+	headerTree, _, typeTree := FindNextSpecialOrBinding(false, tree, "=")
 
 	name, args, err := treeToTypeHeader(headerTree)
 	if err != nil {
@@ -216,7 +216,7 @@ func treeToAlias(tree Tree) (name string, alias *types.Alias, err error) {
 }
 
 func treeToFunc(tree Tree) (name string, body expr.Expr, err error) {
-	signatureTree, _, bodyTree := FindNextSpecialOrBinding(tree, "=")
+	signatureTree, _, bodyTree := FindNextSpecialOrBinding(false, tree, "=")
 
 	if signatureTree == nil {
 		return "", nil, &Error{tree.SourceInfo(), "missing function name"}
