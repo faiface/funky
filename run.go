@@ -16,6 +16,7 @@ import (
 
 func Run(main string) (value *runtime.Value, cleanup func()) {
 	stats := flag.Bool("stats", false, "print stats after running program")
+	typesSandbox := flag.Bool("types-sandbox", false, "start types sandbox instead of running the program")
 	flag.Parse()
 
 	compilationStart := time.Now()
@@ -40,6 +41,12 @@ func Run(main string) (value *runtime.Value, cleanup func()) {
 
 	errs := env.Validate()
 	handleErrs(errs...)
+
+	if *typesSandbox {
+		runTypesSandbox(env)
+		os.Exit(0)
+	}
+
 	errs = env.TypeInfer()
 	handleErrs(errs...)
 	program, err := env.Compile(main)
