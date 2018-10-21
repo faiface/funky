@@ -1,0 +1,55 @@
+union  Player = none | cross | circle
+record Field  = rows : Array (Array Player)
+
+func other : Player -> Player =
+    \player
+    switch player
+    case none   none
+    case cross  circle
+    case circle cross
+
+func empty-field : Int -> Int -> Field =
+    \height \width
+    Field (array; take height; repeat; array; take width; repeat none)
+
+func string : Player -> String =
+    \player
+    switch player
+    case none   "."
+    case cross  "X"
+    case circle "O"
+
+func string : Field -> String =
+    \field
+    for (list (rows field)) (
+        \row \next
+        for (list row) (yield-all . (++ " ") . string);
+        yield '\n';
+        next
+    );
+    empty
+
+record Vars =
+    player : Player,
+    field  : Field,
+
+func main : IO =
+    start-with (Vars cross (empty-field 3 3));
+    fix \loop
+    retreat \vars
+    print (string (field vars));
+    println ("It's " ++ string (player vars) ++ "'s turn.");
+    print "Type your position (row column): ";
+    scan \str-row
+    scan \str-column
+    let (int str-row)    \row
+    let (int str-column) \column
+    if ((row < 1) || (row > 3) || (column < 1) || (column > 3)) (
+        println "Position out of bounds. Try again.";
+        start-with vars;
+        loop
+    );
+    start-with vars;
+    (field . rows . index (dec row) . index (dec column)) <= player;
+    player <- other;
+    loop

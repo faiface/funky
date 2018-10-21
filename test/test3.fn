@@ -1,0 +1,81 @@
+record Field a =
+	height : Int,
+	width  : Int,
+	rows   : Array (Array a),
+
+func make-field : Int -> Int -> (Int -> Int -> a) -> Field a =
+	\height \width \f
+	Field height width;
+	make-array height \y
+	make-array width  \x
+	f y x
+
+func index : Int -> Int -> Field a -> a =
+	\y \x
+	index x . index y . rows
+
+func index-or : a -> Int -> Int -> Field a -> a =
+	\default \y \x \field
+	if ((y < 0) || (y >= length (rows field))) default;
+	let (index y (rows field)) \row
+	if ((x < 0) || (x >= length row)) default;
+	index x row
+
+func count-neighbors : Field Bool -> Field Int =
+	\field
+	make-field (height field) (width field) \y \x
+	count true? [
+		index-or false (y - 1) (x - 1) field,
+		index-or false (y - 1) x field,
+		index-or false (y - 1) (x + 1) field,
+		index-or false y (x - 1) field,
+		index-or false y (x + 1) field,
+		index-or false (y + 1) (x - 1) field,
+		index-or false (y + 1) x field,
+		index-or false (y + 1) (x + 1) field,
+	]
+
+func step-game-of-life : Field Bool -> Field Bool =
+	\field
+	let (count-neighbors field) \neighbors
+	make-field (height field) (width field) \y \x
+	let (index y x field)     \alive
+	let (index y x neighbors) \count
+	(alive && (count >= 2) && (count <= 3)) || (not alive && count == 3)
+
+func initial-field : Field Bool =
+	Field 10 10;
+	array; map array; map (map (\c c != ' ')) [
+		"          ",
+		"          ",
+		"          ",
+		"          ",
+		"     #    ",
+		"    ###   ",
+		"    # #   ",
+		"     #    ",
+		"          ",
+		"          ",
+		"          ",
+		"          ",
+	]
+
+func string : Field Bool -> String =
+	\field
+	for (list (rows field)) (
+		\row \next
+		for (list row) (yield-all . (\c if c "##" "  "));
+		yield '\n';
+		next
+	);
+	empty
+
+func main : IO =
+	start-with initial-field;
+	fix \loop
+	retreat \field
+	print (string field);
+	scanln \_
+	start-with field;
+	id <- step-game-of-life;
+	loop

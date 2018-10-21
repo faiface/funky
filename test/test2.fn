@@ -1,0 +1,175 @@
+record Point = y : Int, x : Int
+
+func random : Int -> Int = \n ((2 * (n / 3)) ^ 2) % n  # not *really* random
+
+func pt : Int -> Int -> Point = Point
+
+func let-pt : Point -> (Int -> Int -> a) -> a =
+    \p \f
+    f (y p) (x p)
+
+func == : Point -> Point -> Bool =
+    \p \q
+    (y p == y q) && (x p == x q)
+
+func != : Point -> Point -> Bool =
+    \p \q
+    (y p != y q) || (x p != x q)
+
+record Grid a =
+    height : Int,
+    width  : Int,
+    rows   : Array (Array a),
+
+func make-grid : Int -> Int -> a -> Grid a =
+    \h \w \value
+    Grid h w (array; take h; repeat; array; take w; repeat; value)
+
+func index : Int -> Int -> Grid a -> a =
+    \y \x \grid
+    (index x . index y) (rows grid)
+
+func index-default : a -> Int -> Int -> Grid a -> a =
+    \default \y \x \grid
+    if ((y < 0) || (y >= height grid) || (x < 0) || (x >= width grid))
+        default;
+    index y x grid
+
+func index : Int -> Int -> (a -> a) -> Grid a -> Grid a =
+    \y \x \f \grid
+    Grid (height grid) (width grid) ((index y . index x) f (rows grid))
+
+func map : (a -> b) -> Grid a -> Grid b =
+    \f \grid
+    Grid (height grid) (width grid) (map (map f) (rows grid))
+
+func map-index : (Int -> Int -> a -> b) -> Grid a -> Grid b =
+    \f \grid
+    Grid (height grid) (width grid) (map-index (map-index . f) (rows grid))
+
+func string : (a -> String) -> Grid a -> String =
+    \str \grid
+    for (list (rows grid)) (
+        \row \next
+        for (list row)
+            (yield-all . str);
+        yield '\n';
+        next
+    );
+    empty
+
+func neighbor-indices : Int -> Int -> List Point =
+    \y \x
+    [pt (y - 1) x, pt (y + 1) x, pt y (x - 1), pt y (x + 1)]
+
+func inside? : Int -> Int -> Point -> Bool =
+    \h \w \p
+    (y p >= 0) && (y p < h) && (x p >= 0) && (x p < w)
+
+func good-to-break? : Grid Bool -> Int -> Int -> Bool =
+    \maze \y \x
+    let (index-default false (y - 1) x maze)       \up
+    let (index-default false (y + 1) x maze)       \down
+    let (index-default false y (x - 1) maze)       \left
+    let (index-default false y (x + 1) maze)       \right
+    let (index-default false (y - 1) (x - 1) maze) \up-left
+    let (index-default false (y - 1) (x + 1) maze) \up-right
+    let (index-default false (y + 1) (x - 1) maze) \down-left
+    let (index-default false (y + 1) (x + 1) maze) \down-right
+    (count true? [up, down, left, right] <= 1)  &&
+    (not (up-left && not up && not left))       &&
+    (not (up-right && not up && not right))     &&
+    (not (down-left && not down && not left))   &&
+    (not (down-right && not down && not right))
+
+func generate-maze : Int -> Int -> Grid Bool =
+    \h \w
+    let (make-grid h w false) \maze
+    let (random h)            \start-y
+    let (random w)            \start-x
+    array [pt start-y start-x] |> maze |> fix \loop \maze \walls
+        if (empty? walls)
+            maze;
+        let (length walls)                                \j
+        let (random j)                                    \i
+        let-pt (index i walls)                            \y \x
+        let (index i (const (index (j - 1) walls)) walls) \walls
+        let (take (j - 1) walls)                          \walls
+        if (index y x maze || not (good-to-break? maze y x))
+            (loop maze walls);
+        let (index y x (const true) maze)    \maze
+        let (neighbor-indices y x)           \neighbors
+        let (filter (inside? h w) neighbors) \neighbors
+        loop maze (walls ++ neighbors)
+
+record Queue a = _left : List a, _right : List a
+
+func empty : Queue a = Queue [] []
+
+func empty? : Queue a -> Bool =
+    (empty? . _left) && (empty? . _right)
+
+func queue : List a -> Queue a =
+    fold> (flip push) empty
+
+func push : a -> Queue a -> Queue a =
+    \x \q
+    Queue (_left q) (x :: _right q)
+
+func pop : Queue a -> Pair a (Queue a) =
+    \q
+    if (empty? (_left q))
+        (pop (Queue (reverse (_right q)) []));
+    pair (first (_left q)) (Queue (rest (_left q)) (_right q))
+
+func find-path : Point -> Point -> Grid Bool -> List Point =
+    \start \finish \grid
+    make-grid (height grid) (width grid) false |> queue [[start]] |> fix \loop \q \visited
+        if (empty? q)
+            [];
+        let-pair (pop q) \path \q
+        let (first path) \p
+        if (not (index-default false (y p) (x p) grid))
+            (loop q visited);
+        if (index (y p) (x p) visited)
+            (loop q visited);
+        let (index (y p) (x p) (const true) visited) \visited
+        if (p == finish)
+            (reverse path);
+        loop (
+            push (pt (y p - 1) (x p) :: path);
+            push (pt (y p + 1) (x p) :: path);
+            push (pt (y p) (x p - 1) :: path);
+            push (pt (y p) (x p + 1) :: path);
+            q
+        ) visited
+
+func random-empty-point : Grid Bool -> Point =
+    \grid
+    let (random (height grid)) \y
+    let (random (width grid))  \x
+    if (index y x grid)
+        (pt y x);
+    random-empty-point grid
+
+func main : IO =
+    let (generate-maze 30 50) \maze
+    let (random-empty-point maze)                          \start
+    let (random-empty-point maze)                          \finish
+    let (find-path start finish maze)                      \path
+    let (map (\v if v "  " "██") maze)                     \pic
+    let (for path (\p index (y p) (x p) (const "▒▒")) pic) \pic
+    print (string id pic)
+    done
+
+#==================================================================
+
+func debug : (a -> String) -> Array a -> String =
+    \str \arr
+    switch arr
+    case _single \x
+        "(" ++ str x ++ ")"
+    case _empty \n
+        "[" ++ string n ++ "]"
+    case _node \n \left \right
+        "{" ++ string n ++ ": " ++ debug str left ++ " " ++ debug str right ++ "}"
