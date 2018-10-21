@@ -10,6 +10,8 @@ import (
 	"github.com/faiface/funky/compile"
 	"github.com/faiface/funky/parse"
 	"github.com/faiface/funky/runtime"
+
+	cxr "github.com/faiface/crux/runtime"
 )
 
 func Run(main string) (value *runtime.Value, cleanup func()) {
@@ -22,26 +24,26 @@ func Run(main string) (value *runtime.Value, cleanup func()) {
 
 	for _, filename := range flag.Args() {
 		b, err := ioutil.ReadFile(filename)
-		handleErr(err)
+		handleErrs(err)
 		tokens, err := parse.Tokenize(filename, string(b))
-		handleErr(err)
+		handleErrs(err)
 		defs, err := parse.Definitions(tokens)
-		handleErr(err)
+		handleErrs(err)
 		definitions = append(definitions, defs...)
 	}
 
 	env := new(compile.Env)
 	for _, definition := range definitions {
 		err := env.Add(definition)
-		handleErr(err)
+		handleErrs(err)
 	}
 
 	errs := env.Validate()
-	handleErrs(errs)
+	handleErrs(errs...)
 	errs = env.TypeInfer()
-	handleErrs(errs)
+	handleErrs(errs...)
 	program, err := env.Compile(main)
-	handleErr(err)
+	handleErrs(err)
 
 	runningStart := time.Now()
 
@@ -49,21 +51,14 @@ func Run(main string) (value *runtime.Value, cleanup func()) {
 		if *stats {
 			fmt.Fprintf(os.Stderr, "\n")
 			fmt.Fprintf(os.Stderr, "STATS\n")
-			//fmt.Fprintf(os.Stderr, "reductions:       %d\n", runtime.Reductions)
+			fmt.Fprintf(os.Stderr, "reductions:       %d\n", cxr.Reductions)
 			fmt.Fprintf(os.Stderr, "compilation time: %v\n", runningStart.Sub(compilationStart))
 			fmt.Fprintf(os.Stderr, "running time:     %v\n", time.Since(runningStart))
 		}
 	}
 }
 
-func handleErr(err error) {
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
-}
-
-func handleErrs(errs []error) {
+func handleErrs(errs ...error) {
 	if len(errs) == 0 {
 		return
 	}
