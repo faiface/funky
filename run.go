@@ -59,11 +59,14 @@ func Run(main string) (value *runtime.Value, cleanup func()) {
 }
 
 func handleErrs(errs ...error) {
-	if len(errs) == 0 {
-		return
-	}
+	bad := false
 	for _, err := range errs {
-		fmt.Fprintln(os.Stderr, err)
+		if err != nil {
+			bad = true
+			fmt.Fprintln(os.Stderr, err)
+		}
 	}
-	os.Exit(1)
+	if bad {
+		os.Exit(1)
+	}
 }
