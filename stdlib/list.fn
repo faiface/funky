@@ -111,10 +111,8 @@ func all : (a -> Bool) -> List a -> Bool =
     fold< ((&&) . p) list true
 
 func count : (a -> Bool) -> List a -> Int =
-    \p \list
-    switch list
-    case empty       0
-    case (::) \x \xs when (p x) inc (count p xs)
+    \pred \list
+    fold> (\n \x if (pred x) (inc n) n) 0 list
 
 func repeat : a -> List a = \x x :: repeat x
 
