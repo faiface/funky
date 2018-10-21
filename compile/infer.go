@@ -1,9 +1,23 @@
 package compile
 
 import (
+	"github.com/faiface/funky/expr"
 	"github.com/faiface/funky/types"
 	"github.com/faiface/funky/types/typecheck"
 )
+
+func (env *Env) TypeInferExpr(e expr.Expr) ([]typecheck.InferResult, error) {
+	env.lazyInit()
+
+	global := make(map[string][]types.Type)
+	for name, impls := range env.funcs {
+		for _, imp := range impls {
+			global[name] = append(global[name], imp.TypeInfo())
+		}
+	}
+
+	return typecheck.Infer(env.names, global, e)
+}
 
 func (env *Env) TypeInfer() []error {
 	env.lazyInit()
