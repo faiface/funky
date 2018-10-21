@@ -28,6 +28,9 @@ func runTypesSandbox(env *compile.Env) {
 			fmt.Println(err)
 			continue
 		}
+		if exp == nil {
+			continue
+		}
 		results, err := env.TypeInferExpr(exp)
 		if err != nil {
 			fmt.Println(err)
