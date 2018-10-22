@@ -158,6 +158,20 @@ func (env *Env) Add(d parse.Definition) error {
 	panic("unreachable")
 }
 
+func (env *Env) SourceInfo(name string, index int) *parseinfo.Source {
+	if len(env.funcs[name]) <= index {
+		return nil
+	}
+	return env.funcs[name][index].SourceInfo()
+}
+
+func (env *Env) TypeInfo(name string, index int) types.Type {
+	if len(env.funcs[name]) <= index {
+		return nil
+	}
+	return env.funcs[name][index].TypeInfo()
+}
+
 func (env *Env) addRecord(name string, record *types.Record) error {
 	if env.names[name] != nil {
 		return &Error{
