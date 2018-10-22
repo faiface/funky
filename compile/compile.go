@@ -1,15 +1,18 @@
 package compile
 
 import (
-	"fmt"
-
 	"github.com/faiface/crux"
+	"github.com/faiface/crux/runtime"
 	"github.com/faiface/funky/expr"
-	"github.com/faiface/funky/runtime"
 	"github.com/faiface/funky/types/typecheck"
 )
 
-func (env *Env) Compile(main string) (*runtime.Value, error) {
+func (env *Env) Compile(main string) (
+	globalIndices map[string][]int32,
+	globalValues []runtime.Value,
+	codeIndices map[string][]int32,
+	codes []runtime.Code,
+) {
 	env.lazyInit()
 
 	globals := make(map[string][]crux.Expr)
@@ -25,7 +28,9 @@ func (env *Env) Compile(main string) (*runtime.Value, error) {
 		}
 	}
 
-	if len(globals[main]) == 0 {
+	return crux.Compile(globals)
+
+	/*if len(globals[main]) == 0 {
 		return nil, &Error{
 			SourceInfo: nil,
 			Msg:        fmt.Sprintf("no %s function", main),
@@ -38,9 +43,9 @@ func (env *Env) Compile(main string) (*runtime.Value, error) {
 		}
 	}
 
-	indices, values, _ := crux.Compile(globals)
+	indices, values, _, _ := crux.Compile(globals)
 
-	return &runtime.Value{Globals: values, Value: values[indices[main][0]]}, nil
+	return &runtime.Value{Globals: values, Value: values[indices[main][0]]}, nil*/
 }
 
 func (env *Env) translate(locals []string, e expr.Expr) crux.Expr {

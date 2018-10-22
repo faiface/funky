@@ -17,6 +17,7 @@ import (
 func Run(main string) (value *runtime.Value, cleanup func()) {
 	stats := flag.Bool("stats", false, "print stats after running program")
 	typesSandbox := flag.Bool("types-sandbox", false, "start types sandbox instead of running the program")
+	dump := flag.String("dump", "", "specify a file to dump the compiled code into")
 	flag.Parse()
 
 	compilationStart := time.Now()
@@ -49,8 +50,31 @@ func Run(main string) (value *runtime.Value, cleanup func()) {
 
 	errs = env.TypeInfer()
 	handleErrs(errs...)
-	program, err := env.Compile(main)
-	handleErrs(err)
+	globalIndices, globalValues, codeIndices, codes := env.Compile(main)
+
+	if len(globalIndices[main]) == 0 {
+		handleErrs(fmt.Errorf("no %s function", main))
+	}
+	if len(globalIndices[main]) > 1 {
+		handleErrs(fmt.Errorf("multiple %s functions", main))
+	}
+
+	if *dump != "" {
+		df, err := os.Create(*dump)
+		handleErrs(err)
+		for name := range globalIndices {
+			for i := range globalIndices[name] {
+				fmt.Fprintf(df, "# %v\n", env.SourceInfo(name, i))
+				fmt.Fprintf(df, "# %v\n", env.TypeInfo(name, i))
+				fmt.Fprintf(df, "FUNC %s/%d\n", name, i)
+				dumpCodes(df, globalIndices, &codes[codeIndices[name][i]])
+				fmt.Fprintln(df)
+			}
+		}
+		handleErrs(df.Close())
+	}
+
+	program := &runtime.Value{Globals: globalValues, Value: globalValues[globalIndices[main][0]]}
 
 	runningStart := time.Now()
 
