@@ -285,6 +285,7 @@ func infer(
 				Subst: r.Subst,
 				Expr: &expr.Abst{
 					TI:    t,
+					SI:    e.SI,
 					Bound: e.Bound.WithTypeInfo(inferredBindType).(*expr.Var),
 					Body:  r.Expr,
 				},
