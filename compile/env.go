@@ -2,6 +2,7 @@ package compile
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/faiface/crux"
 	"github.com/faiface/crux/mk"
@@ -111,6 +112,7 @@ func (env *Env) lazyInit() {
 	env.addFunc("<=", &internal{Type: parseType("Int -> Int -> Bool"), Expr: mk.Op(runtime.OpIntLessEq)})
 	env.addFunc(">", &internal{Type: parseType("Int -> Int -> Bool"), Expr: mk.Op(runtime.OpIntMore)})
 	env.addFunc(">=", &internal{Type: parseType("Int -> Int -> Bool"), Expr: mk.Op(runtime.OpIntMoreEq)})
+	env.addFunc("zero?", &internal{Type: parseType("Int -> Bool"), Expr: mk.Op(runtime.OpIntIsZero)})
 
 	// Float
 	env.addFunc("int", &internal{Type: parseType("Float -> Int"), Expr: mk.Op(runtime.OpFloatInt)})
@@ -131,6 +133,36 @@ func (env *Env) lazyInit() {
 	env.addFunc("<=", &internal{Type: parseType("Float -> Float -> Bool"), Expr: mk.Op(runtime.OpFloatLessEq)})
 	env.addFunc(">", &internal{Type: parseType("Float -> Float -> Bool"), Expr: mk.Op(runtime.OpFloatMore)})
 	env.addFunc(">=", &internal{Type: parseType("Float -> Float -> Bool"), Expr: mk.Op(runtime.OpFloatMoreEq)})
+	env.addFunc("+inf", &internal{Type: parseType("Float"), Expr: mk.Float(math.Inf(+1))})
+	env.addFunc("-inf", &internal{Type: parseType("Float"), Expr: mk.Float(math.Inf(-1))})
+	env.addFunc("nan", &internal{Type: parseType("Float"), Expr: mk.Float(math.NaN())})
+	env.addFunc("e", &internal{Type: parseType("Float"), Expr: mk.Float(math.E)})
+	env.addFunc("pi", &internal{Type: parseType("Float"), Expr: mk.Float(math.Pi)})
+	env.addFunc("phi", &internal{Type: parseType("Float"), Expr: mk.Float(math.Phi)})
+	env.addFunc("+inf?", &internal{Type: parseType("Float -> Bool"), Expr: mk.Op(runtime.OpFloatIsPlusInf)})
+	env.addFunc("-inf?", &internal{Type: parseType("Float -> Bool"), Expr: mk.Op(runtime.OpFloatIsMinusInf)})
+	env.addFunc("inf?", &internal{Type: parseType("Float -> Bool"), Expr: mk.Op(runtime.OpFloatIsInf)})
+	env.addFunc("nan?", &internal{Type: parseType("Float -> Bool"), Expr: mk.Op(runtime.OpFloatIsNan)})
+	env.addFunc("sin", &internal{Type: parseType("Float -> Float"), Expr: mk.Op(runtime.OpFloatSin)})
+	env.addFunc("cos", &internal{Type: parseType("Float -> Float"), Expr: mk.Op(runtime.OpFloatCos)})
+	env.addFunc("tan", &internal{Type: parseType("Float -> Float"), Expr: mk.Op(runtime.OpFloatTan)})
+	env.addFunc("asin", &internal{Type: parseType("Float -> Float"), Expr: mk.Op(runtime.OpFloatAsin)})
+	env.addFunc("acos", &internal{Type: parseType("Float -> Float"), Expr: mk.Op(runtime.OpFloatAcos)})
+	env.addFunc("atan", &internal{Type: parseType("Float -> Float"), Expr: mk.Op(runtime.OpFloatAtan)})
+	env.addFunc("atan2", &internal{Type: parseType("Float -> Float -> Float"), Expr: mk.Op(runtime.OpFloatAtan2)})
+	env.addFunc("sinh", &internal{Type: parseType("Float -> Float"), Expr: mk.Op(runtime.OpFloatSinh)})
+	env.addFunc("cosh", &internal{Type: parseType("Float -> Float"), Expr: mk.Op(runtime.OpFloatCosh)})
+	env.addFunc("tanh", &internal{Type: parseType("Float -> Float"), Expr: mk.Op(runtime.OpFloatTanh)})
+	env.addFunc("asinh", &internal{Type: parseType("Float -> Float"), Expr: mk.Op(runtime.OpFloatAsinh)})
+	env.addFunc("acosh", &internal{Type: parseType("Float -> Float"), Expr: mk.Op(runtime.OpFloatAcosh)})
+	env.addFunc("atanh", &internal{Type: parseType("Float -> Float"), Expr: mk.Op(runtime.OpFloatAtanh)})
+	env.addFunc("ceil", &internal{Type: parseType("Float -> Float"), Expr: mk.Op(runtime.OpFloatCeil)})
+	env.addFunc("floor", &internal{Type: parseType("Float -> Float"), Expr: mk.Op(runtime.OpFloatFloor)})
+	env.addFunc("sqrt", &internal{Type: parseType("Float -> Float"), Expr: mk.Op(runtime.OpFloatSqrt)})
+	env.addFunc("cbrt", &internal{Type: parseType("Float -> Float"), Expr: mk.Op(runtime.OpFloatCbrt)})
+	env.addFunc("log", &internal{Type: parseType("Float -> Float"), Expr: mk.Op(runtime.OpFloatLog)})
+	env.addFunc("hypot", &internal{Type: parseType("Float -> Float -> Float"), Expr: mk.Op(runtime.OpFloatHypot)})
+	env.addFunc("gamma", &internal{Type: parseType("Float -> Float"), Expr: mk.Op(runtime.OpFloatGamma)})
 
 	// String
 	env.addFunc("int", &internal{Type: parseType("String -> Int"), Expr: mk.Op(runtime.OpStringInt)})
