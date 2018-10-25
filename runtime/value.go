@@ -30,8 +30,12 @@ func (v *Value) Field(i int) *Value {
 	return &Value{v.Globals, str.Values[index]}
 }
 
-func (v *Value) Apply(arg *Value) *Value {
-	return &Value{v.Globals, cxr.Reduce(v.Globals, v.Value, arg.Value)}
+func (v *Value) Apply(args ...*Value) *Value {
+	values := make([]cxr.Value, len(args))
+	for i := range values {
+		values[i] = args[i].Value
+	}
+	return &Value{v.Globals, cxr.Reduce(v.Globals, v.Value, values...)}
 }
 
 func (v *Value) Bool() bool {
