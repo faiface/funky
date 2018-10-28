@@ -6,7 +6,7 @@ func string : Bool -> String =
     case true  "true"
     case false "false"
 
-func true?  : Bool -> Bool = id
+func true?  : Bool -> Bool = self
 func false? : Bool -> Bool = not
 
 func if : Bool -> a -> a -> a =

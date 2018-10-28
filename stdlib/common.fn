@@ -1,4 +1,4 @@
-func id    : a -> a             = \x x
+func self  : a -> a             = \x x
 func const : a -> b -> a        = \x \_ x
 func let   : a -> (a -> b) -> b = \x \f f x
 func fix   : (a -> a) -> a      = \f f (fix f)
