@@ -3,7 +3,7 @@ union State s r =
     update (s -> s) (State s r) |
     return r                    |
 
-func retreat : (s -> a) -> State s a =
+func return : (s -> a) -> State s a =
     \f
     view \x
     return (f x)
