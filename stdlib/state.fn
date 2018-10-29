@@ -17,14 +17,14 @@ func := : ((a -> a) -> s -> s) -> a -> State s r -> State s r =
     update (accessor (const value));
     next
 
+func := : ((a -> a) -> s -> s) -> (s -> a) -> State s r -> State s r =
+    \accessor \viewer \next
+    update (\s accessor (const (viewer s)) s);
+    next
+
 func <- : ((a -> a) -> s -> s) -> (a -> a) -> State s r -> State s r =
     \accessor \f \next
     update (accessor f);
-    next
-
-func <= : ((a -> a) -> s -> s) -> (s -> a) -> State s r -> State s r =
-    \accessor \viewer \next
-    update (\s accessor (const (viewer s)) s);
     next
 
 func do : State s a -> (a -> State s b) -> State s b =
