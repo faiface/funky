@@ -29,23 +29,6 @@ func (env *Env) Compile(main string) (
 	}
 
 	return crux.Compile(globals)
-
-	/*if len(globals[main]) == 0 {
-		return nil, &Error{
-			SourceInfo: nil,
-			Msg:        fmt.Sprintf("no %s function", main),
-		}
-	}
-	if len(globals[main]) > 1 {
-		return nil, &Error{
-			SourceInfo: nil,
-			Msg:        fmt.Sprintf("multiple %s functions", main),
-		}
-	}
-
-	indices, values, _, _ := crux.Compile(globals)
-
-	return &runtime.Value{Globals: values, Value: values[indices[main][0]]}, nil*/
 }
 
 func (env *Env) translate(locals []string, e expr.Expr) crux.Expr {
