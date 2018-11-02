@@ -138,7 +138,7 @@ func map : (a -> b) -> Array a -> Array b =
         _node n (map f left) (map f right)
 
 func map-index : (Int -> a -> b) -> Array a -> Array b =
-    0 |> fix \loop \offset \f \arr
+    0 |> recur \loop \offset \f \arr
         switch arr
         case _single \x
             _single (f offset x)

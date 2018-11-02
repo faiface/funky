@@ -47,7 +47,7 @@ func skip-whitespace : IO -> IO =
 func scan : (String -> IO) -> IO =
     \f
     skip-whitespace;
-    "" |> fix \loop \s
+    "" |> recur \loop \s
         getc \c
         if (whitespace? c) (
             ungetc c;
@@ -57,7 +57,7 @@ func scan : (String -> IO) -> IO =
 
 func scanln : (String -> IO) -> IO =
     \f
-    "" |> fix \loop \s
+    "" |> recur \loop \s
         getc \c
         if (c == '\n')
             (f (reverse s));
