@@ -1,0 +1,73 @@
+record Color =
+    r : Float,
+    g : Float,
+    b : Float,
+    a : Float,
+
+func transparent : Color = Color 0.0 0.0 0.0 0.0
+func white       : Color = Color 1.0 1.0 1.0 1.0
+func black       : Color = Color 0.0 0.0 0.0 1.0
+func red         : Color = Color 1.0 0.0 0.0 1.0
+func green       : Color = Color 0.0 1.0 0.0 1.0
+func blue        : Color = Color 0.0 0.0 1.0 1.0
+func yellow      : Color = Color 1.0 1.0 0.0 1.0
+func magenta     : Color = Color 1.0 0.0 1.0 1.0
+func turquoise   : Color = Color 0.0 1.0 1.0 1.0
+
+func rgb : Float -> Float -> Float -> Color =
+    \r \g \b
+    Color r g b 1.0
+
+func alpha : Float -> Color =
+    \a
+    Color a a a a
+
+func + : Color -> Color -> Color =
+    \c \d
+    Color (r c + r d) (g c + g d) (b c + b d) (a c + a d)
+
+func * : Float -> Color -> Color =
+    \x \c
+    if (x == 0.0)
+        (alpha 0.0);
+    Color (x * r c) (x * g c) (x * b c) (x * a c)
+
+func * : Color -> Float -> Color = flip (*)
+
+func * : Color -> Color -> Color =
+    \c \d
+    Color (r c * r d) (g c * g d) (b c * b d) (a c * a d)
+
+func == : Color -> Color -> Bool =
+    \c \d
+    (r c == r d) && (g c == g d) && (b c == b d) && (a c == a d)
+
+func != : Color -> Color -> Bool =
+    \c \d
+    (r c != r d) || (g c != g d) || (b c != b d) || (a c != a d)
+
+func over : Color -> Color -> Color =
+    \fg \bg
+    if (a fg == 1.0)
+        fg;
+    fg + (1.0 - a fg) * bg
+
+func in : Color -> Color -> Color =
+    \fg \bg
+    if (a bg == 0.0)
+        (alpha 0.0);
+    a bg * fg
+
+func out : Color -> Color -> Color =
+    \fg \bg
+    if (a bg == 1.0)
+        (alpha 0.0);
+    (1.0 - a bg) * fg
+
+func atop : Color -> Color -> Color =
+    \fg \bg
+    if (a bg == 0.0)
+        (alpha 0.0);
+    if (a fg == 1.0)
+        (a bg * fg);
+    (a bg * fg) + (1.0 - a fg) * bg

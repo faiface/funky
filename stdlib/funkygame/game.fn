@@ -5,10 +5,11 @@ record Image =
 
 record Sprite =
     image    : Image,
-    position : Vec2D,
-    anchor   : Vec2D,
+    position : Point,
+    anchor   : Point,
     angle    : Float,
     scale    : Float,
+    mask     : Color,
 
 record Input =
     left  : Bool,
@@ -17,10 +18,13 @@ record Input =
     down  : Bool,
     space : Bool,
 
-union Loader =
-    start String Int Int Game           |
-    load-image String (Image -> Loader) |
-
 union Game =
-    done                                |
-    frame (List Sprite) (Input -> Game) |
+    start String Int Int Loop                           |
+    load-image String (Image -> Game)                   |
+    make-image Int Int (Point -> Color) (Image -> Game) |
+
+union Loop =
+    done                    |
+    fill Color Loop         |
+    draw Sprite Loop        |
+    present (Input -> Loop) |

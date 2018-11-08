@@ -1,0 +1,30 @@
+record Point = x : Float, y : Float
+
+func pt : Float -> Float -> Point = Point
+
+func zero : Point = Point 0.0 0.0
+
+func + : Point -> Point -> Point =
+    \u \v
+    Point (x u + x v) (y u + y v)
+
+func - : Point -> Point -> Point =
+    \u \v
+    Point (x u - x v) (y u - y v)
+
+func * : Point -> Float -> Point =
+    \u \k
+    Point (x u * k) (y u * k)
+
+func * : Float -> Point -> Point =
+    \k \u
+    Point (k * x u) (k * y u)
+
+func / : Point -> Float -> Point =
+    \u \k
+    Point (x u / k) (y u / k)
+
+func length : Point -> Float = \u hypot (x u) (y u)
+func angle  : Point -> Float = \u atan2 (y u) (x u)
+
+func unit : Point -> Point = \u u / length u
