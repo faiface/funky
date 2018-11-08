@@ -169,7 +169,7 @@ func (env *Env) lazyInit() {
 	env.addFunc("float", &internal{Type: parseType("String -> Float"), Expr: mk.Op(runtime.OpStringFloat)})
 
 	// miscellaneous
-	env.addFunc("error", &internal{Type: parseType("String -> a"), Expr: mk.Op(runtime.OpError)})
+	env.addFunc("panic", &internal{Type: parseType("String -> a"), Expr: mk.Op(runtime.OpError)})
 	env.addFunc("dump", &internal{Type: parseType("String -> a -> a"), Expr: mk.Op(runtime.OpDump)})
 }
 
