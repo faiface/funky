@@ -9,7 +9,7 @@ func nothing? : Maybe a -> Bool =
 func extract : Maybe a -> a =
     \maybe
     switch maybe
-    case nothing error "extract: nothing"
+    case nothing panic "extract: nothing"
     case just \x x
 
 func do : Maybe a -> (a -> Maybe b) -> Maybe b =
@@ -18,8 +18,8 @@ func do : Maybe a -> (a -> Maybe b) -> Maybe b =
     case nothing nothing
     case just \x f x
 
-func ? : Maybe a -> a -> a =
-    \maybe \default
+func ? : a -> Maybe a -> a =
+    \default \maybe
     switch maybe
     case nothing default
     case just \x x

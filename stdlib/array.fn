@@ -68,7 +68,7 @@ func take : Int -> Array a -> Array a =
             (_node n (take i left) (_empty (n - 1)));
         _node n left (take (i - mid) right)
 
-func index : Int -> Array a -> a = index-or (error "index out of range")
+func index : Int -> Array a -> a = index-or (panic "index out of range")
 
 func index-or : a -> Int -> Array a -> a =
     \default \i \arr
@@ -86,10 +86,10 @@ func index : Int -> (a -> a) -> Array a -> Array a =
     \i \f \arr
     switch arr
     case _single \x
-        if (i != 0) (error "index out of range");
+        if (i != 0) (panic "index out of range");
         _single (f x)
     case _empty \_
-        error "index out of range"
+        panic "index out of range"
     case _node \n \left \right
         let (2 ^ n - 1) \mid
         if (i < mid)

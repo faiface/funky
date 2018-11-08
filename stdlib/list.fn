@@ -13,13 +13,13 @@ func empty? : List a -> Bool =
 func first : List a -> a =
     \list
     switch list
-    case empty       error "first: empty list"
+    case empty       panic "first: empty list"
     case (::) \x \xs x
 
 func rest : List a -> List a =
     \list
     switch list
-    case empty       error "rest: empty list"
+    case empty       panic "rest: empty list"
     case (::) \x \xs xs
 
 func length : List a -> Int = fold> (\n \_ inc n) 0
