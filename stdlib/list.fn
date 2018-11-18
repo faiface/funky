@@ -93,7 +93,7 @@ func filter : (a -> Bool) -> List a -> List a =
     \p \list
     switch list
     case empty       empty
-    case (::) \x \xs when (p x) (x ::) (filter p xs)
+    case (::) \x \xs when (p x) (yield x) (filter p xs)
 
 func zip : (a -> b -> c) -> List a -> List b -> List c =
     \f \left \right
