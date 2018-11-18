@@ -17,8 +17,7 @@ func ungetc : Char -> IO -> IO =
 
 func unscan : String -> IO -> IO =
     \s \io
-    if (empty? s)
-        io;
+    if (empty? s) io;
     switch io
     case done
         done
@@ -27,8 +26,8 @@ func unscan : String -> IO -> IO =
         unscan s;
         jo
     case getc \f
-        unscan (rest s);
-        f (first s)
+        unscan (rest! s);
+        f (first! s)
 
 func whitespace? : Char -> Bool =
     \c

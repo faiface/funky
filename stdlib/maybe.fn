@@ -6,23 +6,25 @@ func nothing? : Maybe a -> Bool =
     case nothing true
     case just \x false
 
-func extract : Maybe a -> a =
+func extract! : Maybe a -> a =
     \maybe
     switch maybe
     case nothing panic "extract: nothing"
     case just \x x
 
-func do : Maybe a -> (a -> Maybe b) -> Maybe b =
+func let-maybe : Maybe a -> (a -> Maybe b) -> Maybe b =
     \maybe \f
     switch maybe
     case nothing nothing
     case just \x f x
 
-func ? : a -> Maybe a -> a =
+func if-nothing : a -> Maybe a -> a =
     \default \maybe
     switch maybe
     case nothing default
     case just \x x
+
+func ? : a -> Maybe a -> a = if-nothing
 
 func || : Maybe a -> Maybe a -> Maybe a =
     \maybe \default

@@ -4,8 +4,8 @@ func == : String -> String -> Bool =
     \left \right
     if (empty? left && empty? right) true;
     if (empty? left || empty? right) false;
-    if (first left != first right)   false;
-    rest left == rest right
+    if (first! left != first! right) false;
+    rest! left == rest! right
 
 func != : String -> String -> Bool = not (==)
 
@@ -17,7 +17,7 @@ func % : String -> List String -> String =
     \format \substs
     if (empty? format) "";
     if (prefix? "%%" format)
-        ('%' :: rest (rest format) % substs);
+        ('%' :: rest! (rest! format) % substs);
     if (prefix? "%s" format && not empty? substs)
-        (first substs ++ rest (rest format) % rest substs);
-    first format :: rest format % substs
+        (first! substs ++ rest! (rest! format) % rest! substs);
+    first! format :: rest! format % substs

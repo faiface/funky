@@ -10,17 +10,21 @@ func empty? : List a -> Bool =
     case empty       true
     case (::) \x \xs false
 
-func first : List a -> a =
+func first : List a -> Maybe a =
     \list
     switch list
-    case empty       panic "first: empty list"
-    case (::) \x \xs x
+    case empty       nothing
+    case (::) \x \xs just x
 
-func rest : List a -> List a =
+func first! : List a -> a = \list panic "first!: empty list" ? first list
+
+func rest : List a -> Maybe (List a) =
     \list
     switch list
-    case empty       panic "rest: empty list"
-    case (::) \x \xs xs
+    case empty       nothing
+    case (::) \x \xs just xs
+
+func rest! : List a -> List a = \list panic "rest!: empty list" ? rest list
 
 func length : List a -> Int = fold> (\n \_ inc n) 0
 
@@ -28,7 +32,7 @@ func take : Int -> List a -> List a =
     \n \list
     if (n <= 0)      [];
     if (empty? list) [];
-    first list :: take (dec n) (rest list)
+    first! list :: take (dec n) (rest! list)
 
 func take-while : (a -> Bool) -> List a -> List a =
     \p \list
@@ -42,7 +46,7 @@ func drop : Int -> List a -> List a =
     \n \list
     if (n <= 0)      list;
     if (empty? list) [];
-    drop (dec n) (rest list)
+    drop (dec n) (rest! list)
 
 func drop-while : (a -> Bool) -> List a -> List a =
     \p \list
@@ -52,14 +56,16 @@ func drop-while : (a -> Bool) -> List a -> List a =
     case (::) \x \xs
         if (p x) (drop-while p xs) list
 
-func index : Int -> List a -> a =
+func index : Int -> List a -> Maybe a =
     \i \list
     first (drop i list)
+
+func index! : Int -> List a -> a = \i \list panic "index out of range" ? index i list
 
 func index : Int -> (a -> a) -> List a -> List a =
     \i \f \list
     let (drop i list) \tail
-    take i list ++ f (first tail) :: rest tail
+    take i list ++ f (first! tail) :: rest! tail
 
 func fold< : (a -> b -> b) -> List a -> b -> b =
     \f \list \zero
@@ -92,7 +98,7 @@ func filter : (a -> Bool) -> List a -> List a =
 func zip : (a -> b -> c) -> List a -> List b -> List c =
     \f \left \right
     if (empty? left || empty? right) [];
-    f (first left) (first right) :: zip f (rest left) (rest right)
+    f (first! left) (first! right) :: zip f (rest! left) (rest! right)
 
 func ++ : List a -> List a -> List a = \l \r fold< (::) l r
 
@@ -101,6 +107,11 @@ func concat : List (List a) -> List a = \lists fold< (++) lists []
 func pick : List a -> (a -> List b) -> List b =
     \list \f
     (concat . map) f list
+
+func pairwise : (a -> b -> c) -> List a -> List b -> List c =
+    \f \list1 \list2
+    pick list1 \x
+    map (f x) list2
 
 func any : (a -> Bool) -> List a -> Bool =
     \p \list
@@ -125,7 +136,7 @@ func reverse : List a -> List a =
     \list
     [] |> list |> recur \loop \left \right
         if (empty? left) right;
-        loop (rest left) (first left :: right)
+        loop (rest! left) (first! left :: right)
 
 func range : Int -> Int -> List Int =
     \from \to
