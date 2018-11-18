@@ -27,15 +27,15 @@ func <- : ((a -> a) -> s -> s) -> (a -> a) -> State s r -> State s r =
     update (accessor f);
     next
 
-func do : State s a -> (a -> State s b) -> State s b =
+func call : State s a -> (a -> State s b) -> State s b =
     \state \fnext
     switch state
     case view \f
         view \s
-        do (f s) fnext
+        call (f s) fnext
     case update \f \next
         update f;
-        do next fnext
+        call next fnext
     case return \x
         fnext x
 
