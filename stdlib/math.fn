@@ -1,0 +1,5 @@
+func min : Int -> Int -> Int = \x \y if (x < y) x y
+func max : Int -> Int -> Int = \x \y if (x > y) x y
+
+func min : Float -> Float -> Float = \x \y if (x < y) x y
+func max : Float -> Float -> Float = \x \y if (x > y) x y
