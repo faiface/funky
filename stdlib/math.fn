@@ -3,3 +3,6 @@ func max : Int -> Int -> Int = \x \y if (x > y) x y
 
 func min : Float -> Float -> Float = \x \y if (x < y) x y
 func max : Float -> Float -> Float = \x \y if (x > y) x y
+
+func even? : Int -> Bool = \i 0 == i % 2
+func odd?  : Int -> Bool = \i 1 == i % 2
