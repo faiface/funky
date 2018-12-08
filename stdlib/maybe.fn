@@ -1,39 +1,60 @@
-union Maybe a = nothing | just a
+union Maybe a = none | some a
 
-func nothing? : Maybe a -> Bool =
+func none? : Maybe a -> Bool =
     \maybe
     switch maybe
-    case nothing true
-    case just \x false
+    case none    true
+    case some \x false
 
-func extract! : Maybe a -> a =
+func some? : Maybe a -> Bool = not none?
+
+func extract! : Maybe a -> Bool =
     \maybe
     switch maybe
-    case nothing panic "extract: nothing"
-    case just \x x
+    case none    panic "extract!: none"
+    case some \x x
 
-func let-maybe : Maybe a -> (a -> Maybe b) -> Maybe b =
+func let-some : Maybe a -> (a -> Maybe b) -> Maybe b =
     \maybe \f
     switch maybe
-    case nothing nothing
-    case just \x f x
+    case none    none
+    case some \x f x
 
-func if-nothing : a -> Maybe a -> a =
+func if-some : Maybe a -> (a -> b) -> b -> b =
+    \maybe \then \else
+    switch maybe
+    case none    else
+    case some \x then x
+
+func when-some : Maybe a -> (a -> b -> b) -> b -> b =
+    \maybe \then \next
+    switch maybe
+    case none    next
+    case some \x then x; next
+
+func filter-some : List (Maybe a) -> List a =
+    \list
+    switch list
+    case empty empty
+    case (::) \m \ms (
+        switch m
+        case none    filter-some ms
+        case some \x x :: filter-some ms
+    )
+
+func for-some : List (Maybe a) -> (a -> b -> b) -> b -> b  = for . filter-some
+func pick-some : List (Maybe a) -> (a -> List b) -> List b = pick . filter-some
+
+func if-none : a -> Maybe a -> a =
     \default \maybe
     switch maybe
-    case nothing default
-    case just \x x
+    case none    default
+    case some \x x
 
-func ? : a -> Maybe a -> a = if-nothing
-
-func || : Maybe a -> Maybe a -> Maybe a =
-    \maybe \default
-    switch maybe
-    case nothing default
-    case just    just
+func ? : a -> Maybe a -> a = if-none
 
 func map : (a -> b) -> Maybe a -> Maybe b =
     \f \maybe
     switch maybe
-    case nothing nothing
-    case just \x just (f x)
+    case none    none
+    case some \x some (f x)

@@ -3,7 +3,7 @@ union Array a = empty | _node (Maybe a) (Array a) (Array a)
 func array : List a -> Array a =
     \list
     start-with empty;
-    for-pair (enumerate list) (\i \x index i := just x);
+    for-pair (enumerate list) (\i \x index i := some x);
     return self
 
 func empty? : Array a -> Bool =
@@ -18,13 +18,13 @@ func _collapse : Array a -> Array a =
     case empty
         arr
     case _node \m \a1 \a2
-        if (nothing? m && empty? a1 && empty? a2) empty arr
+        if (none? m && empty? a1 && empty? a2) empty arr
 
 func index : Int -> Array a -> Maybe a =
     \i \arr
     switch arr
     case empty
-        nothing
+        none
     case _node \m \a1 \a2
         if (i == 0) m;
         if (odd? i) (index (i / 2) a1);
@@ -35,7 +35,7 @@ func index : Int -> (Maybe a -> Maybe a) -> Array a -> Array a =
     _collapse;
     switch arr
     case empty
-        index i f (_node nothing empty empty)
+        index i f (_node none empty empty)
     case _node \m \a1 \a2
         if (i == 0) (_node (f m) a1 a2);
         if (odd? i) (_node m (index (i / 2) f a1) a2);
@@ -47,7 +47,7 @@ func map : (a -> Maybe b) -> Array a -> Array b =
     case empty
         empty
     case _node \m \a1 \a2
-        _node (let-maybe m f) (map f a1) (map f a2)
+        _node (let-some m f) (map f a1) (map f a2)
 
 func map : (a -> b) -> Array a -> Array b =
     \f \arr
