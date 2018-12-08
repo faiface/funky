@@ -23,6 +23,11 @@ func |> : (a -> b) -> (b -> c) -> a -> c =
     \g \f \x
     f (g x)
 
+func * : Int -> (a -> a) -> a -> a =
+    \n \f \x
+    if (zero? n) x;
+    (dec n * f) (f x)
+
 func when : Bool -> (a -> a) -> a -> a =
     \cond \then \next
     if cond (then next) next
