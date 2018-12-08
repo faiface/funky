@@ -8,7 +8,7 @@ func none? : Maybe a -> Bool =
 
 func some? : Maybe a -> Bool = not none?
 
-func extract! : Maybe a -> Bool =
+func extract! : Maybe a -> a =
     \maybe
     switch maybe
     case none    panic "extract!: none"
