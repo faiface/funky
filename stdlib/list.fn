@@ -26,6 +26,14 @@ func rest : List a -> Maybe (List a) =
 
 func rest! : List a -> List a = \list panic "rest!: empty list" ? rest list
 
+func last : List a -> Maybe a =
+    \list
+    switch list
+    case empty       nothing
+    case (::) \x \xs if (empty? xs) (just x) (last xs)
+
+func last! : List a -> a = \list panic "last!: empty list" ? last list
+
 func length : List a -> Int = fold> (\n \_ inc n) 0
 
 func take : Int -> List a -> List a =
