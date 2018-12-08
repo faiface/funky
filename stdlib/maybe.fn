@@ -38,15 +38,7 @@ func when-some : Maybe a -> (a -> b -> b) -> b -> b =
     case none    next
     case some \x then x; next
 
-func filter-some : List (Maybe a) -> List a =
-    \list
-    switch list
-    case empty empty
-    case (::) \m \ms (
-        switch m
-        case none    filter-some ms
-        case some \x x :: filter-some ms
-    )
+func filter-some : List (Maybe a) -> List a = (concat . map) list
 
 func for-some : List (Maybe a) -> (a -> b -> b) -> b -> b  = for . filter-some
 func pick-some : List (Maybe a) -> (a -> List b) -> List b = pick . filter-some
