@@ -1,0 +1,40 @@
+record Rectangle =
+    min : Point,
+    max : Point,
+
+func rect : Float -> Float -> Float -> Float -> Rectangle =
+    \x0 \y0 \x1 \y1
+    Rectangle (pt x0 y0) (pt x1 y1)
+
+func zero : Rectangle = Rectangle zero zero
+
+func width  : Rectangle -> Float = \rect (x . max) rect - (x . min) rect
+func height : Rectangle -> Float = \rect (y . max) rect - (y . min) rect
+func area   : Rectangle -> Float = \rect width rect * height rect
+
+func empty? : Rectangle -> Bool = \rect area rect == 0.0
+
+func center : Rectangle -> Point = \rect (min rect + max rect) / 2.0
+
+func center : (Point -> Point) -> Rectangle -> Rectangle =
+    \f \rect
+    let (f (center rect) - center rect) \delta
+    Rectangle (min rect + delta) (max rect + delta)
+
+func contains? : Point -> Rectangle -> Bool =
+    \pt \rect
+    ((x . min) rect <= x pt) && (x pt <= (x . max) rect) &&
+    ((y . min) rect <= y pt) && (y pt <= (y . max) rect)
+
+func intersection : Rectangle -> Rectangle -> Rectangle =
+    \rect1 \rect2
+    if ((x . max) rect1 <= (x . min) rect2) zero;
+    if ((x . max) rect2 <= (x . min) rect1) zero;
+    if ((y . max) rect1 <= (y . min) rect2) zero;
+    if ((y . max) rect2 <= (y . min) rect1) zero;
+    rect (max ((x . min) rect1) ((x . min) rect2))
+         (max ((y . min) rect1) ((y . min) rect2))
+         (min ((x . max) rect1) ((x . max) rect2))
+         (min ((y . max) rect1) ((y . max) rect2))
+
+func intersect? : Rectangle -> Rectangle -> Bool = empty? . intersection
