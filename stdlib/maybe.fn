@@ -14,6 +14,12 @@ func extract! : Maybe a -> Bool =
     case none    panic "extract!: none"
     case some \x x
 
+func list : Maybe a -> List a =
+    \maybe
+    switch maybe
+    case none    []
+    case some \x [x]
+
 func let-some : Maybe a -> (a -> Maybe b) -> Maybe b =
     \maybe \f
     switch maybe
