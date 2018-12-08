@@ -1,148 +1,58 @@
-union Array a = _single a | _empty Int | _node Int (Array a) (Array a)
-
-func empty : Array a = _empty 0
+union Array a = empty | _node (Maybe a) (Array a) (Array a)
 
 func array : List a -> Array a =
-    fold> (::) empty
-
-func make-array : Int -> (Int -> a) -> Array a =
-    \n \f
-    array (map f (rangex n))
-
-func list : Array a -> List a =
-    \arr
-    switch arr
-    case _single \x     [x]
-    case _empty \_      []
-    case _node \_ \l \r list l ++ list r
+    \list
+    start-with empty;
+    for-pair (enumerate list) (\i \x index i := just x);
+    return self
 
 func empty? : Array a -> Bool =
     \arr
     switch arr
-    case _single \_     false
-    case _empty \_      true
-    case _node \_ \l \r empty? l
+    case empty            true
+    case _node \m \a1 \a2 false
 
-func _level : Array a -> Int =
+func _collapse : Array a -> Array a =
     \arr
     switch arr
-    case _single \_     0
-    case _empty \n      n
-    case _node \n \_ \_ n
+    case empty
+        arr
+    case _node \m \a1 \a2
+        if (nothing? m && empty? a1 && empty? a2) empty arr
 
-func :: : Array a -> a -> Array a =
-    \arr \x
-    switch arr
-    case _single \y
-        _node 1 (_single y) (_single x)
-    case _empty \n
-        if (n == 0)
-            (_single x);
-        _node n (_empty (n - 1) :: x) (_empty (n - 1))
-    case _node \n \left \right
-        if (empty? right) (
-            let (left :: x) \new-left
-            if (_level new-left < n)
-                (_node n new-left right);
-            new-left
-        );
-        let (right :: x) \new-right
-        if (_level new-right < n)
-            (_node n left new-right);
-        _node (inc n) (_node n left right) (_empty n :: x)
-
-func ++ : Array a -> List a -> Array a =
-    fold> (::)
-
-func take : Int -> Array a -> Array a =
+func index : Int -> Array a -> Maybe a =
     \i \arr
     switch arr
-    case _single \x
-        if (i < 1) (_empty 0);
-        _single x
-    case _empty \n
-        _empty n
-    case _node \n \left \right
-        let (2 ^ n - 1) \mid
-        if (i < mid)
-            (_node n (take i left) (_empty (n - 1)));
-        _node n left (take (i - mid) right)
+    case empty
+        nothing
+    case _node \m \a1 \a2
+        if (i == 0) m;
+        if (odd? i) (index (i / 2) a1);
+        index (dec i / 2) a2
 
-func index : Int -> Array a -> a = index-or (panic "index out of range")
-
-func index-or : a -> Int -> Array a -> a =
-    \default \i \arr
-    switch arr
-    case _single \x
-        if (i != 0) default x
-    case _empty \_
-        default
-    case _node \n \left \right
-        let (2 ^ n - 1) \mid
-        if (i < mid) (index i left);
-        index (i - mid) right
-
-func index : Int -> (a -> a) -> Array a -> Array a =
+func index : Int -> (Maybe a -> Maybe a) -> Array a -> Array a =
     \i \f \arr
+    _collapse;
     switch arr
-    case _single \x
-        if (i != 0) (panic "index out of range");
-        _single (f x)
-    case _empty \_
-        panic "index out of range"
-    case _node \n \left \right
-        let (2 ^ n - 1) \mid
-        if (i < mid)
-            (_node n (index i f left) right);
-        _node n left (index (i - mid) f right)
+    case empty
+        index i f (_node nothing empty empty)
+    case _node \m \a1 \a2
+        if (i == 0) (_node (f m) a1 a2);
+        if (odd? i) (_node m (index (i / 2) f a1) a2);
+        _node m a1 (index (dec i / 2) f a2)
 
-func length : Array a -> Int =
-    \arr
+func map : (a -> Maybe b) -> Array a -> Array b =
+    \f \arr
     switch arr
-    case _single \_
-        1
-    case _empty \_
-        0
-    case _node \n \left \right
-        if (empty? right) (length left);
-        (2 ^ n - 1) + length right
-
-func fold< : (a -> b -> b) -> Array a -> b -> b =
-    \f \arr \zero
-    switch arr
-    case _single \x
-        f x zero
-    case _empty \_
-        zero
-    case _node \_ \left \right
-        fold< f left (fold< f right zero)
-
-func fold> : (b -> a -> b) -> b -> Array a -> b =
-    \f \zero \arr
-    switch arr
-    case _single \x
-        f zero x
-    case _empty \_
-        zero
-    case _node \_ \left \right
-        fold> f (fold> f zero left) right
+    case empty
+        empty
+    case _node \m \a1 \a2
+        _node (let-maybe m f) (map f a1) (map f a2)
 
 func map : (a -> b) -> Array a -> Array b =
     \f \arr
     switch arr
-    case _single \x
-        _single (f x)
-    case _empty \n
-        _empty n
-    case _node \n \left \right
-        _node n (map f left) (map f right)
-
-func map-index : (Int -> a -> b) -> Array a -> Array b =
-    0 |> recur \loop \offset \f \arr
-        switch arr
-        case _single \x
-            _single (f offset x)
-        case _empty \n
-            _empty n
-        case _node \n \left \right
-            _node n (loop offset f left) (loop (offset + 2 ^ n - 1) f right)
+    case empty
+        empty
+    case _node \m \a1 \a2
+        _node (map f m) (map f a1) (map f a2)
