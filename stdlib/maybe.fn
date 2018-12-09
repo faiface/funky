@@ -40,7 +40,7 @@ func when-some : Maybe a -> (a -> b -> b) -> b -> b =
 
 func filter-some : List (Maybe a) -> List a = (concat . map) list
 
-func for-some : List (Maybe a) -> (a -> b -> b) -> b -> b  = for . filter-some
+func for-some  : List (Maybe a) -> (a -> b -> b) -> b -> b = for . filter-some
 func pick-some : List (Maybe a) -> (a -> List b) -> List b = pick . filter-some
 
 func if-none : a -> Maybe a -> a =
