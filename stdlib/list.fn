@@ -135,10 +135,10 @@ func count : (a -> Bool) -> List a -> Int =
 
 func repeat : a -> List a = \x x :: repeat x
 
-func replicate : Int -> List a -> List a =
+func * : Int -> List a -> List a =
     \n \list
     if (n <= 0) [];
-    list ++ replicate (dec n) list
+    list ++ dec n * list
 
 func reverse : List a -> List a =
     \list
