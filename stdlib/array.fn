@@ -56,3 +56,11 @@ func map : (a -> b) -> Array a -> Array b =
         empty
     case _node \m \a1 \a2
         _node (map f m) (map f a1) (map f a2)
+
+func swap : Int -> Int -> Array a -> Array a =
+    \i \j \arr
+    start-with arr;
+    index i -> \tmp
+    index i := index j;
+    index j := tmp;
+    return self
