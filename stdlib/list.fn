@@ -38,7 +38,8 @@ func length : List a -> Int = fold> (\n \_ inc n) 0
 
 func take : Int -> List a -> List a =
     \n \list
-    if (n <= 0)      [];
+    if (n < 0) (take (max 0 (length list + n)) list);
+    if (n == 0)      [];
     if (empty? list) [];
     first! list :: take (dec n) (rest! list)
 
@@ -52,7 +53,8 @@ func take-while : (a -> Bool) -> List a -> List a =
 
 func drop : Int -> List a -> List a =
     \n \list
-    if (n <= 0)      list;
+    if (n < 0) (drop (max 0 (length list + n)) list);
+    if (n == 0)      list;
     if (empty? list) [];
     drop (dec n) (rest! list)
 
