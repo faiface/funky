@@ -16,7 +16,7 @@ import (
 
 func Run(main string) (value *runtime.Value, cleanup func()) {
 	stats := flag.Bool("stats", false, "print stats after running program")
-	typesSandbox := flag.Bool("types-sandbox", false, "start types sandbox instead of running the program")
+	typesSandbox := flag.Bool("types", false, "start types sandbox instead of running the program")
 	dump := flag.String("dump", "", "specify a file to dump the compiled code into")
 	flag.Parse()
 
