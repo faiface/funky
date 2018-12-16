@@ -3,7 +3,7 @@ union Array a = empty | _node (Maybe a) (Array a) (Array a)
 func array : List a -> Array a =
     \list
     start-with empty;
-    for-pair (enumerate list) (\i \x index i := some x);
+    for-pair (enumerate list) (\i \x at i := some x);
     return self
 
 func empty? : Array a -> Bool =
@@ -20,26 +20,30 @@ func _collapse : Array a -> Array a =
     case _node \m \a1 \a2
         if (none? m && empty? a1 && empty? a2) empty arr
 
-func index : Int -> Array a -> Maybe a =
+func at : Int -> Array a -> Maybe a =
     \i \arr
     switch arr
     case empty
         none
     case _node \m \a1 \a2
         if (i == 0) m;
-        if (odd? i) (index (i / 2) a1);
-        index (dec i / 2) a2
+        if (odd? i) (at (i / 2) a1);
+        at (dec i / 2) a2
 
-func index : Int -> (Maybe a -> Maybe a) -> Array a -> Array a =
+func at! : Int -> Array a -> a = \i \arr panic "at!: out of range" ? at i arr
+
+func at : Int -> (Maybe a -> Maybe a) -> Array a -> Array a =
     \i \f \arr
     _collapse;
     switch arr
     case empty
-        index i f (_node none empty empty)
+        at i f (_node none empty empty) : Array a
     case _node \m \a1 \a2
         if (i == 0) (_node (f m) a1 a2);
-        if (odd? i) (_node m (index (i / 2) f a1) a2);
-        _node m a1 (index (dec i / 2) f a2)
+        if (odd? i) (_node m (at (i / 2) f a1) a2);
+        _node m a1 (at (dec i / 2) f a2)
+
+func at : Int -> (a -> a) -> Array a -> Array a = \i \f at i (map f)
 
 func map : (a -> Maybe b) -> Array a -> Array b =
     \f \arr
@@ -60,7 +64,7 @@ func map : (a -> b) -> Array a -> Array b =
 func swap : Int -> Int -> Array a -> Array a =
     \i \j \arr
     start-with arr;
-    index i -> \tmp
-    index i := index j;
-    index j := tmp;
+    at i -> \tmp
+    at i := at j;
+    at j := tmp;
     return self

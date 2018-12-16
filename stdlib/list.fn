@@ -71,13 +71,13 @@ func slice : Int -> Int -> List a -> List a =
     if (from < 0) (slice (max 0 (length list + from)) to list);
     drop from (take to list)
 
-func index : Int -> List a -> Maybe a =
+func at : Int -> List a -> Maybe a =
     \i \list
     first (drop i list)
 
-func index! : Int -> List a -> a = \i \list panic "index out of range" ? index i list
+func at! : Int -> List a -> a = \i \list panic "at!: out of range" ? at i list
 
-func index : Int -> (a -> a) -> List a -> List a =
+func at : Int -> (a -> a) -> List a -> List a =
     \i \f \list
     let (drop i list) \tail
     take i list ++ f (first! tail) :: rest! tail
