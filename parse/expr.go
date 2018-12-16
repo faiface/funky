@@ -62,7 +62,7 @@ func TreeToExpr(tree Tree) (expr.Expr, error) {
 			return nil, err
 		}
 		if right == nil {
-			return left
+			return left, nil
 		}
 		return &expr.Appl{Left: left, Right: right}, nil
 	}
