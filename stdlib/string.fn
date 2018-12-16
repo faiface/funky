@@ -22,4 +22,5 @@ func % : String -> List String -> String =
         (first! substs ++ rest! (rest! format) % rest! substs);
     first! format :: rest! format % substs
 
-func string : Char -> String = \c [c]
+func string : Char -> String   = \c [c]
+func string : String -> String = self
