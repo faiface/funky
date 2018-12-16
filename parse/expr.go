@@ -51,7 +51,7 @@ func TreeToExpr(tree Tree) (expr.Expr, error) {
 		return nil, nil
 	}
 
-	beforeSpecial, atSpecial, _ := FindNextSpecialOrBinding(false, tree, ";", "switch", "special")
+	beforeSpecial, atSpecial, _ := FindNextSpecialOrBinding(false, tree, ";", "switch", "strict")
 	if beforeSpecial != nil && atSpecial != nil {
 		left, err := TreeToExpr(beforeSpecial)
 		if err != nil {
@@ -60,6 +60,9 @@ func TreeToExpr(tree Tree) (expr.Expr, error) {
 		right, err := TreeToExpr(atSpecial)
 		if err != nil {
 			return nil, err
+		}
+		if right == nil {
+			return left
 		}
 		return &expr.Appl{Left: left, Right: right}, nil
 	}
@@ -203,6 +206,9 @@ func TreeToExpr(tree Tree) (expr.Expr, error) {
 			exp, err := TreeToExpr(tree.After)
 			if err != nil {
 				return nil, err
+			}
+			if exp == nil {
+				return nil, &Error{tree.SourceInfo(), "no expression after strict"}
 			}
 			return &expr.Strict{SI: tree.SourceInfo(), Expr: exp}, nil
 		}
