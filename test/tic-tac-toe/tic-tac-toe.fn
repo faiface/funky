@@ -22,50 +22,50 @@ record Board =
 func make-board : Int -> Int -> Board =
     \width \height
     Board width height;
-    make-array height \y
-    make-array width  \x
+    make-array (rangex height) \y
+    make-array (rangex width)  \x
     none
 
-func index : Int -> Int -> Board -> Player =
+func at! : Int -> Int -> Board -> Player =
     \x \y \board
-    (index x . index y . rows) board
+    (at! x . at! y . rows) board
 
-func index : Int -> Int -> (Player -> Player) -> Board -> Board =
+func at : Int -> Int -> (Player -> Player) -> Board -> Board =
     \x \y \f \board
-    (rows . index y . index x) f board
+    (rows . at y . at x) f board
 
 record Images =
     square : Image,
     cross  : Image,
     circle : Image,
 
-func square-sprite : Image -> Vec2D -> Float -> Sprite =
+func square-sprite : Image -> Point -> Float -> Sprite =
     \image \position \size
-    Sprite image position zero 0.0 (size / float (width image))
+    Sprite image position zero 0.0 (size / float (width image)) white
 
 func select-image : Player -> Images -> Image =
     \player \images
     switch player
-    case none   error "none"
+    case none   panic "none"
     case cross  cross images
     case circle circle images
 
-func draw : Float -> Images -> Board -> List Sprite =
-    \size \images \board
+func draw : Float -> Images -> Board -> Loop -> Loop =
+    \size \images \board \next
     for (rangex (width board)) (
         \ix \next
         for (rangex (height board)) (
             \iy \next
             let (float ix * size) \x
             let (float iy * size) \y
-            yield (square-sprite (square images) (vec x y) size);
-            when (not none? (index ix iy board))
-                (yield (square-sprite (select-image (index ix iy board) images) (vec x y) size));
+            draw (square-sprite (square images) (pt x y) size);
+            when (not none? (at! ix iy board))
+                (draw (square-sprite (select-image (at! ix iy board) images) (pt x y) size));
             next
         );
         next
     );
-    empty
+    next
 
 record Vars =
     timeout  : Int,
@@ -74,7 +74,7 @@ record Vars =
     player   : Player,
     board    : Board,
 
-func main : Loader =
+func main : Game =
     load-image "square.png"   \square-image
     load-image "cross.png"    \cross-image
     load-image "circle.png"   \circle-image
@@ -82,11 +82,14 @@ func main : Loader =
     let (Images square-image cross-image circle-image) \images
     start "Tic Tac Toe" 640 640;
     start-with (Vars 0 5 5 cross (make-board 10 10));
-    fix \loop
-    retreat \s
-    let (vec (float (cursor-x s) * 64.0) (float (cursor-y s) * 64.0)) \cursor-pos
+    recur \loop
+    return \s
+    let (pt (float (cursor-x s) * 64.0) (float (cursor-y s) * 64.0)) \cursor-pos
     let (square-sprite selected-image cursor-pos 64.0) \cursor
-    frame (draw 64.0 images (board s) ++ [cursor]) \input
+    fill (rgb 0.5 0.8 0.2);
+    draw 64.0 images (board s);
+    draw cursor;
+    present \input
     start-with s;
     when (timeout s > 0) (timeout <- dec);
     when (timeout s <= 0) (
@@ -98,9 +101,9 @@ func main : Loader =
         when (left input || right input || up input || down input) (timeout := 15);
         next
     );
-    when (space input && none? (index (cursor-x s) (cursor-y s) (board s))) (
+    when (space input && none? (at! (cursor-x s) (cursor-y s) (board s))) (
         \next
-        (board . index (cursor-x s) (cursor-y s)) <= player;
+        (board . at (cursor-x s) (cursor-y s)) := player;
         player <- other;
         next
     );
