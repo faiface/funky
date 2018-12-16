@@ -49,7 +49,8 @@ func at : Int -> (Maybe a -> Maybe a) -> Array a -> Array a =
         if (odd? i) (_node m (at (i / 2) f a1) a2);
         _node m a1 (at (dec i / 2) f a2)
 
-func at : Int -> (a -> a) -> Array a -> Array a = \i \f at i (map f)
+func at : Int -> (Maybe a -> Maybe a) -> Maybe (Array a) -> Maybe (Array a) =
+    \i \f map (at i f)
 
 func map : (a -> Maybe b) -> Array a -> Array b =
     \f \arr
