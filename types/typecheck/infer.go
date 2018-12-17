@@ -475,16 +475,16 @@ func infer(
 						subst := substs[i]
 						exp := exprs[i]
 						for _, resultCase := range resultsCases[altIndex] {
-							subst, ok := subst.Unify(names, resultCase.Subst)
+							s, ok := Unify(names, altType, resultCase.Subst.ApplyToType(resultCase.Type))
 							if !ok {
 								continue
 							}
-							s, ok := Unify(names, altType, subst.ApplyToType(resultCase.Type))
+							newSubst := resultCase.Subst.Compose(s)
+							newSubst, ok = newSubst.Unify(names, subst)
 							if !ok {
 								continue
 							}
-							subst = subst.Compose(s)
-							newSubsts = append(newSubsts, subst)
+							newSubsts = append(newSubsts, newSubst)
 							newExprs = append(newExprs, &expr.Switch{
 								SI:   exp.SI,
 								Expr: exp.Expr,
