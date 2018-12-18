@@ -160,6 +160,14 @@ func range : Int -> Int -> List Int =
 
 func rangex : Int -> List Int = \n range 0 (dec n)
 
+func range-2d : Int -> Int -> Int -> Int -> List (Pair Int Int) =
+    \from1 \from2 \to1 \to2
+    pairwise pair (range from1 to1) (range from2 to2)
+
+func rangex-2d : Int -> Int -> List (Pair Int Int) =
+    \n1 \n2
+    pairwise pair (rangex n1) (rangex n2)
+
 func iterate : (a -> a) -> a -> List a =
     \f \z
     z :: iterate f (strict f z)
