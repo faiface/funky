@@ -27,6 +27,18 @@ func <- : ((a -> a) -> s -> s) -> (a -> a) -> State s r -> State s r =
     update (accessor f);
     next
 
+func start-with : s -> State s r -> r =
+    \value \state
+    switch state
+    case view \f
+        start-with value;
+        f value
+    case update \f \next
+        start-with (f value);
+        next
+    case return \x
+        x
+
 func call : State s a -> (a -> State s b) -> State s b =
     \state \fnext
     switch state
@@ -39,14 +51,10 @@ func call : State s a -> (a -> State s b) -> State s b =
     case return \x
         fnext x
 
-func start-with : s -> State s r -> r =
-    \value \state
-    switch state
-    case view \f
-        start-with value;
-        f value
-    case update \f \next
-        start-with (f value);
-        next
-    case return \x
-        x
+func while : (s -> Bool) -> (State s a -> State s a) -> State s a -> State s a =
+    \cond \body \next
+    view \s
+    if (not cond s) next;
+    body;
+    while cond body;
+    next
