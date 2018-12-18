@@ -32,7 +32,7 @@ func at! : Int -> Int -> Board -> Player =
 
 func at : Int -> Int -> (Player -> Player) -> Board -> Board =
     \x \y \f \board
-    (rows . at y . at x) f board
+    (rows . at y . at x) (map f) board
 
 record Images =
     square : Image,
