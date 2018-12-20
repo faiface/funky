@@ -17,22 +17,19 @@ func other : Player -> Player =
 record Board =
     width  : Int,
     height : Int,
-    rows   : Array (Array Player),
+    field  : Field Player,
 
 func make-board : Int -> Int -> Board =
     \width \height
-    Board width height;
-    make-array (rangex height) \y
-    make-array (rangex width)  \x
-    none
+    Board width height (empty none)
 
 func at! : Int -> Int -> Board -> Player =
     \x \y \board
-    (at! x . at! y . rows) board
+    (at x y . field) board
 
 func at : Int -> Int -> (Player -> Player) -> Board -> Board =
     \x \y \f \board
-    (rows . at y . at x) (map f) board
+    (field . at x y) f board
 
 record Images =
     square : Image,
