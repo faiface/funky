@@ -1,0 +1,46 @@
+union Slots a = empty | node (Maybe a) (Slots a) (Slots a) (Slots a) (Slots a)
+
+func empty? : Slots a -> Bool =
+    \slots
+    switch slots
+    case empty                   true
+    case node \m \s1 \s2 \s3 \s4 false
+
+func at : Int -> Slots a -> Maybe a =
+    \i \slots
+    switch slots
+    case empty
+        none
+    case node \m \s1 \s2 \s3 \s4
+        if (i == 0) m;
+        let (i % 4) \mod
+        if (mod == 1) (at (i / 4) s1);
+        if (mod == 2) (at (i / 4) s2);
+        if (mod == 3) (at (i / 4) s3);
+        at (dec (i / 4)) s4
+
+func at! : Int -> Slots a -> a = \i \slots panic "at!: index not set" ? at i slots
+
+func at : Int -> (Maybe a -> Maybe a) -> Slots a -> Slots a =
+    \i \f \slots
+    _collapse;
+    switch slots
+    case empty
+        at i f (node none empty empty empty empty)
+    case node \m \s1 \s2 \s3 \s4
+        if (i == 0) (node (f m) s1 s2 s3 s4);
+        let (i % 4) \mod
+        if (mod == 1) (node m (at (i / 4) f s1) s2 s3 s4);
+        if (mod == 2) (node m s1 (at (i / 4) f s2) s3 s4);
+        if (mod == 3) (node m s1 s2 (at (i / 4) f s3) s4);
+        node m s1 s2 s3 (at (dec (i / 4)) f s4)
+
+func _collapse : Slots a -> Slots a =
+    \slots
+    switch slots
+    case empty
+        empty
+    case node \m \s1 \s2 \s3 \s4
+        if (none? m && empty? s1 && empty? s2 && empty? s3 && empty? s4)
+            empty;
+        slots

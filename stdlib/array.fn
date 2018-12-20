@@ -1,77 +1,21 @@
-union Array a = empty | _node (Maybe a) (Array a) (Array a)
+record Array a =
+    _default : a,
+    _left    : Slots a,
+    _right   : Slots a,
 
-func array : List a -> Array a =
-    \list
-    start-with empty;
-    for-pair (enumerate list) (\i \x at i := some x);
-    return self
+func empty : a -> Array a = \default Array default empty empty
 
-func make-array : List Int -> (Int -> a) -> Array a =
-    \indices \f
-    start-with empty;
-    for indices (\i at i := some (f i));
-    return self
+func at : Int -> Array a -> a =
+    \i \array
+    if (i < 0) (_default array ? at (neg i) (_left array));
+    _default array ? at i (_right array)
 
-func empty? : Array a -> Bool =
-    \arr
-    switch arr
-    case empty            true
-    case _node \m \a1 \a2 false
+func at : Int -> (a -> a) -> Array a -> Array a =
+    \i \f \array
+    if (i < 0) ((_left . at (neg i)) (\m some; f; _default array ? m) array);
+    (_right . at i) (\m some; f; _default array ? m) array
 
-func _collapse : Array a -> Array a =
-    \arr
-    switch arr
-    case empty
-        arr
-    case _node \m \a1 \a2
-        if (none? m && empty? a1 && empty? a2) empty arr
-
-func at : Int -> Array a -> Maybe a =
-    \i \arr
-    switch arr
-    case empty
-        none
-    case _node \m \a1 \a2
-        if (i == 0) m;
-        if (odd? i) (at (i / 2) a1);
-        at (dec i / 2) a2
-
-func at! : Int -> Array a -> a = \i \arr panic "at!: out of range" ? at i arr
-
-func at : Int -> (Maybe a -> Maybe a) -> Array a -> Array a =
-    \i \f \arr
-    _collapse;
-    switch arr
-    case empty
-        at i f (_node none empty empty) : Array a
-    case _node \m \a1 \a2
-        if (i == 0) (_node (f m) a1 a2);
-        if (odd? i) (_node m (at (i / 2) f a1) a2);
-        _node m a1 (at (dec i / 2) f a2)
-
-func at : Int -> (Maybe a -> Maybe a) -> Maybe (Array a) -> Maybe (Array a) =
-    \i \f map (at i f)
-
-func map : (a -> Maybe b) -> Array a -> Array b =
-    \f \arr
-    switch arr
-    case empty
-        empty
-    case _node \m \a1 \a2
-        _node (let-some m f) (map f a1) (map f a2)
-
-func map : (a -> b) -> Array a -> Array b =
-    \f \arr
-    switch arr
-    case empty
-        empty
-    case _node \m \a1 \a2
-        _node (map f m) (map f a1) (map f a2)
-
-func swap : Int -> Int -> Array a -> Array a =
-    \i \j \arr
-    start-with arr;
-    at i -> \tmp
-    at i := at j;
-    at j := tmp;
-    return self
+func reset : Int -> Array a -> Array a =
+    \i \array
+    if (i < 0) ((_left . at (neg i)) (const none) array);
+    (_right . at i) (const none) array
