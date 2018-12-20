@@ -1,0 +1,18 @@
+record Field a = _rows : Array (Array a)
+
+func empty : a -> Field a = Field . empty . empty
+
+func at : Int -> Int -> Field a -> a =
+    \x \y
+    at x . at y . _rows
+
+func at : Int -> Int -> (a -> a) -> Field a -> Field a =
+    \x \y \f
+    (_rows . at y . at x) f
+
+func reset : Int -> Int -> Field a -> Field a =
+    \x \y \field
+    let (reset x ((at y . _rows) field)) \reset-row
+    if (empty? (_left reset-row) && empty? (_right reset-row))
+        (_rows (reset y) field);
+    (_rows . at y) (const reset-row) field
