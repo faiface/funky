@@ -34,7 +34,7 @@ func start-with : s -> State s r -> r =
         start-with value;
         f value
     case update \f \next
-        start-with (f value);
+        start-with (strict f value);
         next
     case return \x
         x
