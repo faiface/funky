@@ -23,7 +23,7 @@ func make-board : Int -> Int -> Board =
     \width \height
     Board width height (empty none)
 
-func at! : Int -> Int -> Board -> Player =
+func at : Int -> Int -> Board -> Player =
     \x \y \board
     (at x y . field) board
 
@@ -49,17 +49,13 @@ func select-image : Player -> Images -> Image =
 
 func draw : Float -> Images -> Board -> Loop -> Loop =
     \size \images \board \next
-    for (rangex (width board)) (
-        \ix \next
-        for (rangex (height board)) (
-            \iy \next
-            let (float ix * size) \x
-            let (float iy * size) \y
-            draw (square-sprite (square images) (pt x y) size);
-            when (not none? (at! ix iy board))
-                (draw (square-sprite (select-image (at! ix iy board) images) (pt x y) size));
-            next
-        );
+    for-pair (rangex-2d (width board) (height board)) (
+        \ix \iy \next
+        let (float ix * size) \x
+        let (float iy * size) \y
+        draw (square-sprite (square images) (pt x y) size);
+        when (not none? (at ix iy board))
+            (draw (square-sprite (select-image (at ix iy board) images) (pt x y) size));
         next
     );
     next
@@ -98,7 +94,7 @@ func main : Game =
         when (left input || right input || up input || down input) (timeout := 15);
         next
     );
-    when (space input && none? (at! (cursor-x s) (cursor-y s) (board s))) (
+    when (space input && none? (at (cursor-x s) (cursor-y s) (board s))) (
         \next
         (board . at (cursor-x s) (cursor-y s)) := player;
         player <- other;
