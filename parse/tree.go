@@ -258,7 +258,7 @@ func SingleTree(tokens []Token) (t Tree, end int, err error) {
 	default:
 		switch LiteralKindOf(tokens[0].Value) {
 		case LiteralIdentifier:
-			if !hasLetterOrDigit(tokens[0].Value) {
+			if !HasLetterOrDigit(tokens[0].Value) {
 				after, err := MultiTree(tokens[1:])
 				if err != nil {
 					return nil, 0, err
@@ -303,7 +303,7 @@ func MultiTree(tokens []Token) (Tree, error) {
 	return t, nil
 }
 
-func hasLetterOrDigit(s string) bool {
+func HasLetterOrDigit(s string) bool {
 	for _, r := range s {
 		if unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_' {
 			return true

@@ -3,19 +3,27 @@ package parse
 import (
 	"fmt"
 	"unicode"
-	"unicode/utf8"
 
 	"github.com/faiface/funky/types"
 )
 
 func IsTypeName(name string) bool {
-	r, _ := utf8.DecodeRuneInString(name)
-	return unicode.IsUpper(r)
+	if !HasLetterOrDigit(name) {
+		return false
+	}
+	for _, r := range name {
+		if unicode.IsUpper(r) {
+			return true
+		}
+	}
+	return false
 }
 
 func IsTypeVar(name string) bool {
-	r, _ := utf8.DecodeRuneInString(name)
-	return unicode.IsLower(r)
+	if !HasLetterOrDigit(name) {
+		return false
+	}
+	return !IsTypeName(name)
 }
 
 func Type(tokens []Token) (types.Type, error) {
