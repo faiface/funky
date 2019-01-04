@@ -18,7 +18,7 @@ func main() {
 loop:
 	for {
 		switch program.Alternative() {
-		case 0: // done
+		case 0: // quit
 			break loop
 		case 1: // putc
 			_, err := out.WriteRune(program.Field(0).Char())

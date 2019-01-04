@@ -89,7 +89,7 @@ func runLoop(title string, w, h int, images []*ebiten.Image, loop *runtime.Value
 		screen.Fill(color.Black)
 		for {
 			switch loop.Alternative() {
-			case 0: // done
+			case 0: // quit
 				return io.EOF
 			case 1: // fill
 				bgColor := loop.Field(0)

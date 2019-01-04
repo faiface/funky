@@ -24,7 +24,7 @@ union Game =
     make-image Int Int (Point -> Color) (Image -> Game) |
 
 union Loop =
-    done                    |
+    quit                    |
     fill Color Loop         |
     draw Sprite Loop        |
     present (Input -> Loop) |

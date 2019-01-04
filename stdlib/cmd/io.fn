@@ -1,4 +1,4 @@
-union IO = done | putc Char IO | getc (Char -> IO)
+union IO = quit | putc Char IO | getc (Char -> IO)
 
 func print   : String -> IO -> IO = \s \next for s putc; next
 func println : String -> IO -> IO = print . (++ "\n")
@@ -6,8 +6,8 @@ func println : String -> IO -> IO = print . (++ "\n")
 func ungetc : Char -> IO -> IO =
     \c \io
     switch io
-    case done
-        done
+    case quit
+        quit
     case putc \d \jo
         putc d;
         ungetc c;
@@ -19,8 +19,8 @@ func unscan : String -> IO -> IO =
     \s \io
     if (empty? s) io;
     switch io
-    case done
-        done
+    case quit
+        quit
     case putc \d \jo
         putc d;
         unscan s;
