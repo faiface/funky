@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/faiface/funky/compile"
@@ -24,10 +25,32 @@ func Run(main string) (value *runtime.Value, cleanup func()) {
 
 	var definitions []parse.Definition
 
-	for _, filename := range flag.Args() {
-		b, err := ioutil.ReadFile(filename)
+	// files from the standard library
+	if funkyPath, ok := os.LookupEnv("FUNKY"); ok {
+		err := filepath.Walk(funkyPath, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if info.IsDir() {
+				return nil
+			}
+			b, err := ioutil.ReadFile(path)
+			handleErrs(err)
+			tokens, err := parse.Tokenize(path, string(b))
+			handleErrs(err)
+			defs, err := parse.Definitions(tokens)
+			handleErrs(err)
+			definitions = append(definitions, defs...)
+			return nil
+		})
 		handleErrs(err)
-		tokens, err := parse.Tokenize(filename, string(b))
+	}
+
+	// files included on the command line
+	for _, path := range flag.Args() {
+		b, err := ioutil.ReadFile(path)
+		handleErrs(err)
+		tokens, err := parse.Tokenize(path, string(b))
 		handleErrs(err)
 		defs, err := parse.Definitions(tokens)
 		handleErrs(err)
