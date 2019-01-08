@@ -69,6 +69,7 @@ func Run(main string) (value *runtime.Value, cleanup func()) {
 				fmt.Printf("  %s\n", value.SourceInfo())
 			}
 		}
+		os.Exit(0)
 	}
 
 	env := new(compile.Env)
