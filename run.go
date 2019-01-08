@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/faiface/funky/compile"
+	"github.com/faiface/funky/expr"
 	"github.com/faiface/funky/parse"
 	"github.com/faiface/funky/runtime"
 
@@ -19,6 +20,7 @@ func Run(main string) (value *runtime.Value, cleanup func()) {
 	noStdlib := flag.Bool("nostd", false, "do not automatically include files from $FUNKY")
 	stats := flag.Bool("stats", false, "print stats after running program")
 	typesSandbox := flag.Bool("types", false, "start types sandbox instead of running the program")
+	listDefinitions := flag.Bool("list", false, "list all the definitions instead of running the program")
 	dump := flag.String("dump", "", "specify a file to dump the compiled code into")
 	flag.Parse()
 
@@ -58,9 +60,20 @@ func Run(main string) (value *runtime.Value, cleanup func()) {
 		definitions = append(definitions, defs...)
 	}
 
+	if *listDefinitions {
+		for _, def := range definitions {
+			switch value := def.Value.(type) {
+			case expr.Expr:
+				fmt.Printf("%s\n", def.Name)
+				fmt.Printf("  %s\n", value.TypeInfo())
+				fmt.Printf("  %s\n", value.SourceInfo())
+			}
+		}
+	}
+
 	env := new(compile.Env)
-	for _, definition := range definitions {
-		err := env.Add(definition)
+	for _, def := range definitions {
+		err := env.Add(def)
 		handleErrs(err)
 	}
 
