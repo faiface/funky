@@ -1,8 +1,35 @@
+func even? : Int -> Bool = \i 0 == i % 2
+func odd?  : Int -> Bool = \i 1 == i % 2
+
 func min : Int -> Int -> Int = \x \y if (x < y) x y
 func max : Int -> Int -> Int = \x \y if (x > y) x y
 
 func min : Float -> Float -> Float = \x \y if (x < y) x y
 func max : Float -> Float -> Float = \x \y if (x > y) x y
 
-func even? : Int -> Bool = \i 0 == i % 2
-func odd?  : Int -> Bool = \i 1 == i % 2
+func min : List Int -> Maybe Int =
+    \nums
+    if (empty? nums) none;
+    some; fold> min (first! nums) (rest! nums)
+
+func max : List Int -> Maybe Int =
+    \nums
+    if (empty? nums) none;
+    some; fold> max (first! nums) (rest! nums)
+
+func min! : List Int -> Int = \nums panic "min!: empty list" ? min nums
+func max! : List Int -> Int = \nums panic "max!: empty list" ? max nums
+
+func min : List Float -> Float =
+    \nums
+    fold> min +inf nums
+
+func max : List Float -> Float =
+    \nums
+    fold> max -inf nums
+
+func sum : List Int -> Int     = \nums fold> (+) 0 nums
+func sum : List Float -> Float = \nums fold> (+) 0.0 nums
+
+func product : List Int -> Int     = \nums fold> (*) 1 nums
+func product : List Float -> Float = \nums fold> (*) 1.0 nums
