@@ -153,6 +153,11 @@ func reverse : List a -> List a =
         if (empty? left) right;
         loop (rest! left) (first! left :: right)
 
+func transpose : List (List a) -> List (List a) =
+    \rows
+    if (all empty? rows) [];
+    filter-some (map first rows) :: transpose (filter-some; map rest rows)
+
 func range : Int -> Int -> List Int =
     \from \to
     if (from > to) [];
