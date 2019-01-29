@@ -32,3 +32,20 @@ func left-pad : Char -> Int -> String -> String =
 func right-pad : Char -> Int -> String -> String =
     \c \width \s
     s ++ take (width - length s) (repeat c)
+
+func format-table : Int -> List (List String) -> String =
+    \spacing \rows
+    let (transpose rows)                  \columns
+    let (map (map length) columns)        \cell-lengths
+    let (map (\r 0 ? max r) cell-lengths) \column-widths
+    for rows (
+        \row \next
+        for-pair (zip pair row column-widths) (
+            \cell \width \next
+            yield-all (right-pad ' ' (width + spacing) cell);
+            next
+        );
+        yield '\n';
+        next
+    );
+    empty
