@@ -35,9 +35,9 @@ func right-pad : Char -> Int -> String -> String =
 
 func format-table : Int -> List (List String) -> String =
     \spacing \rows
-    let (transpose rows)                  \columns
-    let (map (map length) columns)        \cell-lengths
-    let (map (\r 0 ? max r) cell-lengths) \column-widths
+    let (transpose rows)           \columns
+    let (map (map length) columns) \cell-lengths
+    let (map max! cell-lengths)    \column-widths
     for rows (
         \row \next
         for-pair (zip pair row column-widths) (
