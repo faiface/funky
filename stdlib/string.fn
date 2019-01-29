@@ -24,3 +24,11 @@ func % : String -> List String -> String =
 
 func string : Char -> String   = \c [c]
 func string : String -> String = self
+
+func left-pad : Char -> Int -> String -> String =
+    \c \width \s
+    take (width - length s) (repeat c) ++ s
+
+func right-pad : Char -> Int -> String -> String =
+    \c \width \s
+    s ++ take (width - length s) (repeat c)
