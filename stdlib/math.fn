@@ -33,3 +33,83 @@ func sum : List Float -> Float = \nums fold> (+) 0.0 nums
 
 func product : List Int -> Int     = \nums fold> (*) 1 nums
 func product : List Float -> Float = \nums fold> (*) 1.0 nums
+
+record Rat =
+    num : Int,
+    den : Int,
+
+func gcd : Int -> Int -> Int =
+    \a \b
+    if (zero? b) a;
+    gcd b (a % b)
+
+func norm : Rat -> Rat =
+    \x
+    let (gcd (abs; num x) (abs; den x)) \d
+    if (d == 0) x;
+    if (den x < 0) (Rat (num x / neg d) (den x / neg d));
+    Rat (num x / d) (den x / d)
+
+func string : Rat -> String =
+    \x
+    if (den x == 1) (string (num x));
+    string (num x) ++ "/" ++ string (den x)
+
+func rat : Int -> Int -> Rat =
+    \a \b
+    norm (Rat a b)
+
+func // : Int -> Int -> Rat = rat
+
+func neg : Rat -> Rat =
+    \x
+    Rat (neg; num x) (den x)
+
+func inv : Rat -> Rat =
+    \x
+    Rat (den x) (num x)
+
+func + : Rat -> Rat -> Rat =
+    \x \y
+    ((num x * den y) + (num y * den x)) // (den x * den y)
+
+func - : Rat -> Rat -> Rat =
+    \x \y
+    x + neg y
+
+func * : Rat -> Rat -> Rat =
+    \x \y
+    (num x * num y) // (den x * den y)
+
+func / : Rat -> Rat -> Rat =
+    \x \y
+    x * inv y
+
+func ^ : Rat -> Int -> Rat =
+    \x \n
+    if (n < 0) (inv (x ^ neg n));
+    (n * (x *)) (1 // 1)
+
+func == : Rat -> Rat -> Bool =
+    \x \y
+    (den x == den y) && (num x == num y)
+
+func != : Rat -> Rat -> Bool =
+    \x \y
+    (den x != den y) || (num x != num y)
+
+func < : Rat -> Rat -> Bool =
+    \x \y
+    (num x * den y) < (num y * den x)
+
+func <= : Rat -> Rat -> Bool =
+    \x \y
+    (num x * den y) <= (num y * den x)
+
+func > : Rat -> Rat -> Bool =
+    \x \y
+    (num x * den y) > (num y * den x)
+
+func >= : Rat -> Rat -> Bool =
+    \x \y
+    (num x * den y) >= (num y * den x)
