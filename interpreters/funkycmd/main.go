@@ -21,8 +21,12 @@ loop:
 		case 0: // quit
 			break loop
 		case 1: // putc
-			_, err := out.WriteRune(program.Field(0).Char())
+			r := program.Field(0).Char()
+			_, err := out.WriteRune(r)
 			handleErr(err)
+			if r == '\n' {
+				out.Flush()
+			}
 			program = program.Field(1)
 		case 2: // getc
 			err := out.Flush()
