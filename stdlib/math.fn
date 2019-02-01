@@ -55,11 +55,15 @@ func string : Rat -> String =
     if (den x == 1) (string (num x));
     string (num x) ++ "/" ++ string (den x)
 
-func rat : Int -> Int -> Rat =
+func float : Rat -> Float =
+    \x
+    float (num x) / float (den x)
+
+func rat : Int -> Rat = \n Rat n 1
+
+func // : Int -> Int -> Rat =
     \a \b
     norm (Rat a b)
-
-func // : Int -> Int -> Rat = rat
 
 func neg : Rat -> Rat =
     \x
