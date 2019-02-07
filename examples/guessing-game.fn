@@ -4,6 +4,7 @@ func main : IO =
     println "Think a number between 1 and 100.";
 
     # Function `recur` creates an anonymous recursive function.
+    # You can think of it as a goto label with possible arguments.
     # For example: `recur \xs 1 :: xs` is an infinite list [1, 1, 1, ...].
     # Here, `recur \loop \lo \hi ...` is a recursive function with two arguments: `lo` and `hi`.
     # We can use the `loop` identifier to make recursive calls inside the body of this function.
