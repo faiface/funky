@@ -1,0 +1,5 @@
+# Run wit `funkycm`
+
+func main : IO =
+    println "Hello, world!";
+    quit

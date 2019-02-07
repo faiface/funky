@@ -1,3 +1,5 @@
+# Run with `funkygame`
+
 union Player = none | cross | circle
 
 func none? : Player -> Bool =

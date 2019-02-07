@@ -1,0 +1,31 @@
+# Run with `funkycmd`
+
+func main : IO =
+    println "Think a number between 1 and 100.";
+
+    # Function `recur` creates an anonymous recursive function.
+    # For example: `recur \xs 1 :: xs` is an infinite list [1, 1, 1, ...].
+    # Here, `recur \loop \lo \hi ...` is a recursive function with two arguments: `lo` and `hi`.
+    # We can use the `loop` identifier to make recursive calls inside the body of this function.
+    # Using `100 |> 1 |> ...` we supply initial arguments to this function.
+    100 |> 1 |> recur \loop \lo \hi
+
+    # We keep track of the lower and upper bound of the possible answer and guess the middle.
+    let ((lo + hi) / 2) \mid
+    print ("Is it " ++ string mid ++ "? (answer: yes/less/more) ");
+    scanln \answer
+
+    # If the answer is "yes", we express happiness and quit the program.
+    if (answer == "yes") (
+        println "Weeee!! See you next time!";
+        quit
+    );
+
+    # If the answer if "less" or "more", we continue the loop with updated bounds.
+    if (answer == "less") (loop lo (mid - 1));
+    if (answer == "more") (loop (mid + 1) hi);
+
+    # If the answer is neither "yes", "less", nor "more", we report invalid answer
+    # and continue with the original bounds.
+    println ("Invalid answer. Please answer one of 'yes', 'less', or 'more'.");
+    loop lo hi

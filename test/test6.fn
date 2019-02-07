@@ -1,6 +1,0 @@
-func main : IO =
-    let (fold> (+) 0 (range 1 100)) \x
-    let (map (x +) (range 1 100)) \ys
-    let (fold> (+) 0 ys) \z
-    println (string z);
-    done
