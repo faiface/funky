@@ -19,3 +19,11 @@ func reset : Int -> Array a -> Array a =
     \i \array
     if (i < 0) ((_left . at (neg i)) (const none) array);
     (_right . at i) (const none) array
+
+func swap : Int -> Int -> Array a -> Array a =
+    \i \j \array
+    start-with array;
+    at i -> \tmp
+    at i := at j;
+    at j := tmp;
+    return self
