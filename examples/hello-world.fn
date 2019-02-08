@@ -1,4 +1,4 @@
-# Run wit `funkycm`
+# Run with `funkycmd`
 
 func main : IO =
     println "Hello, world!";
