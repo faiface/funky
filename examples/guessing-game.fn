@@ -28,5 +28,5 @@ func main : IO =
 
     # If the answer is neither "yes", "less", nor "more", we report invalid answer
     # and continue with the original bounds.
-    println ("Invalid answer. Please answer one of 'yes', 'less', or 'more'.");
+    println "Invalid answer. Please answer one of 'yes', 'less', or 'more'.";
     loop lo hi
