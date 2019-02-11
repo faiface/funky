@@ -26,6 +26,12 @@ func let-some : Maybe a -> (a -> Maybe b) -> Maybe b =
     case none    none
     case some \x f x
 
+func let-some : Maybe a -> (a -> b) -> Maybe b =
+    \maybe \f
+    switch maybe
+    case none    none
+    case some \x some (f x)
+
 func if-some : Maybe a -> (a -> b) -> b -> b =
     \maybe \then \else
     switch maybe
