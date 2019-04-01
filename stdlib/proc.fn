@@ -1,7 +1,7 @@
 union Proc s r =
     view (s -> Proc s r)       |
     update (s -> s) (Proc s r) |
-    return r                    |
+    return r                   |
 
 func return : (s -> a) -> Proc s a =
     \f
