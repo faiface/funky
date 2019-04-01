@@ -1,35 +1,35 @@
-union State s r =
-    view (s -> State s r)       |
-    update (s -> s) (State s r) |
+union Proc s r =
+    view (s -> Proc s r)       |
+    update (s -> s) (Proc s r) |
     return r                    |
 
-func return : (s -> a) -> State s a =
+func return : (s -> a) -> Proc s a =
     \f
     view \x
     return (f x)
 
-func -> : (s -> a) -> (a -> State s r) -> State s r =
+func -> : (s -> a) -> (a -> Proc s r) -> Proc s r =
     \viewer \fnext
     view (fnext . viewer)
 
-func := : ((a -> a) -> s -> s) -> a -> State s r -> State s r =
+func := : ((a -> a) -> s -> s) -> a -> Proc s r -> Proc s r =
     \accessor \value \next
     update (accessor (const value));
     next
 
-func := : ((a -> a) -> s -> s) -> (s -> a) -> State s r -> State s r =
+func := : ((a -> a) -> s -> s) -> (s -> a) -> Proc s r -> Proc s r =
     \accessor \viewer \next
     update (\s accessor (const (viewer s)) s);
     next
 
-func <- : ((a -> a) -> s -> s) -> (a -> a) -> State s r -> State s r =
+func <- : ((a -> a) -> s -> s) -> (a -> a) -> Proc s r -> Proc s r =
     \accessor \f \next
     update (accessor f);
     next
 
-func start-with : s -> State s r -> r =
-    \value \state
-    switch state
+func start-with : s -> Proc s r -> r =
+    \value \Proc
+    switch Proc
     case view \f
         start-with value;
         f value
@@ -39,9 +39,9 @@ func start-with : s -> State s r -> r =
     case return \x
         x
 
-func call : State s a -> (a -> State s b) -> State s b =
-    \state \fnext
-    switch state
+func call : Proc s a -> (a -> Proc s b) -> Proc s b =
+    \Proc \fnext
+    switch Proc
     case view \f
         view \s
         call (f s) fnext
@@ -51,7 +51,7 @@ func call : State s a -> (a -> State s b) -> State s b =
     case return \x
         fnext x
 
-func while : (s -> Bool) -> (State s a -> State s a) -> State s a -> State s a =
+func while : (s -> Bool) -> (Proc s a -> Proc s a) -> Proc s a -> Proc s a =
     \cond \body \next
     view \s
     if (not cond s) next;
