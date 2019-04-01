@@ -9,22 +9,22 @@ func return : (s -> a) -> Proc s a =
     return (f x)
 
 func -> : (s -> a) -> (a -> Proc s r) -> Proc s r =
-    \viewer \fnext
-    view (fnext . viewer)
+    \getter \fnext
+    view (fnext . getter)
 
 func := : ((a -> a) -> s -> s) -> a -> Proc s r -> Proc s r =
-    \accessor \value \next
-    update (accessor (const value));
+    \updater \value \next
+    update (updater (const value));
     next
 
 func := : ((a -> a) -> s -> s) -> (s -> a) -> Proc s r -> Proc s r =
-    \accessor \viewer \next
-    update (\s accessor (const (viewer s)) s);
+    \updater \getter \next
+    update (\s updater (const (getter s)) s);
     next
 
 func <- : ((a -> a) -> s -> s) -> (a -> a) -> Proc s r -> Proc s r =
-    \accessor \f \next
-    update (accessor f);
+    \updater \f \next
+    update (updater f);
     next
 
 func start-with : s -> Proc s r -> r =
