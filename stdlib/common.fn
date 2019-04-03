@@ -1,3 +1,6 @@
+union Absurd
+union Trivial = trivial
+
 func self  : a -> a             = \x x
 func const : a -> b -> a        = \x \_ x
 func apply : (a -> b) -> a -> b = \f \x f x
