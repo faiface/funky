@@ -1,5 +1,5 @@
 union Absurd
-union Trivial = trivial
+union Nothing = nothing
 
 func self  : a -> a             = \x x
 func const : a -> b -> a        = \x \_ x
