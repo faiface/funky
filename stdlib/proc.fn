@@ -28,8 +28,8 @@ func <- : ((a -> a) -> s -> s) -> (a -> a) -> Proc s r -> Proc s r =
     next
 
 func start-with : s -> Proc s r -> r =
-    \value \Proc
-    switch Proc
+    \value \proc
+    switch proc
     case view \f
         start-with value;
         f value
@@ -40,8 +40,8 @@ func start-with : s -> Proc s r -> r =
         x
 
 func call : Proc s a -> (a -> Proc s b) -> Proc s b =
-    \Proc \fnext
-    switch Proc
+    \proc \fnext
+    switch proc
     case view \f
         view \s
         call (f s) fnext
@@ -50,6 +50,11 @@ func call : Proc s a -> (a -> Proc s b) -> Proc s b =
         call next fnext
     case return \x
         fnext x
+
+func call : Proc s a -> Proc s b -> Proc s b =
+    \proc \next
+    call proc \_
+    next
 
 func while : (s -> Bool) -> (Proc s a -> Proc s a) -> Proc s a -> Proc s a =
     \cond \body \next
