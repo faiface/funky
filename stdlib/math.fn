@@ -28,7 +28,7 @@ func max : List Float -> Float =
     \nums
     fold> max -inf nums
 
-func exp : Float -> Float = \x e ^ x
+func exp : Float -> Float = e ^
 
 func sum : List Int -> Int     = \nums fold> (+) 0 nums
 func sum : List Float -> Float = \nums fold> (+) 0.0 nums
