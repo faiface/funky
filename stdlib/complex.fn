@@ -1,0 +1,130 @@
+record Complex =
+    real : Float,
+    imag : Float,
+
+func cplx : Float -> Float -> Complex =
+    Complex
+
+func re : Float -> Complex =
+    flip cplx 0.0
+
+func im : Float -> Complex =
+    cplx 0.0
+
+func + : Complex -> Complex -> Complex =
+    \z \w cplx (real z + real w) (imag z + imag w)
+
+func - : Complex -> Complex -> Complex =
+    \z \w cplx (real z - real w) (imag z - imag w)
+
+func * : Complex -> Complex -> Complex =
+    \z \w cplx
+        ((real z * real w) - (imag z * imag w))
+        ((real z * imag w) + (imag z * real w))
+
+func abs^2 : Complex -> Float =
+    \z (real z ^ 2.0) + (imag z ^ 2.0)
+
+func abs : Complex -> Float =
+    sqrt . abs^2
+
+func conj : Complex -> Complex =
+    \z cplx (real z) (neg; imag z)
+
+func inv : Complex -> Complex =
+    \z conj z *; re; 1.0 / abs^2 z
+
+func / : Complex -> Complex -> Complex =
+    \z \w z * inv w
+
+func phase : Complex -> Float =
+    \z atan2 (imag z) (real z)
+
+func exp : Complex -> Complex =
+    \z (cplx (cos; imag z) (sin; imag z)) * re (e ^ real z)
+
+func cis : Float -> Complex =
+    exp . im
+
+func log : Complex -> Complex =
+    \z cplx (log; abs z) (phase z)
+
+func ^ : Complex -> Complex -> Complex =
+    \z \w exp; log z * w
+
+func sqrt : Complex -> Complex =
+    \z z ^ re 0.5
+
+func cbrt : Complex -> Complex =
+    \z z ^ re (1.0 / 3.0)
+
+func neg : Complex -> Complex =
+    re 0.0 -
+
+func cosh : Complex -> Complex =
+    \z (exp z +; exp; neg z) / re 2.0
+
+func sinh : Complex -> Complex =
+    \z (exp z -; exp; neg z) / re 2.0
+
+func tanh : Complex -> Complex =
+    \z ((exp; re 2.0 * z) - re 1.0) / (exp; re 2.0 * z) + re 1.0
+
+func acosh : Complex -> Complex =
+    \z log; z +; sqrt; (z ^ re 2.0) - re 1.0
+
+func asinh : Complex -> Complex =
+    \z log; z +; sqrt; (z ^ re 2.0) + re 1.0
+
+func atanh : Complex -> Complex =
+    \z re 0.5 *; log; (re 1.0 + z) / (re 1.0 - z)
+
+func cos : Complex -> Complex =
+    cosh . im 1.0 *
+
+func sin : Complex -> Complex =
+    \z im -1.0 *; sinh; im 1.0 * z
+
+func tan : Complex -> Complex =
+    \z im -1.0 *; tanh; im 1.0 * z
+
+func acos : Complex -> Complex =
+    \z (im -1.0) *; log; z +; sqrt; (z ^ re 2.0) - re 1.0
+
+func asin : Complex -> Complex =
+    \z re (pi / 2.0) - acos z
+
+func atan : Complex -> Complex =
+    \z (log; (im 1.0 - z) / (im 1.0 + z)) / (im 2.0)
+
+func == : Complex -> Complex -> Bool =
+    \z \w (real z == real w) && (imag z == imag w)
+
+func != : Complex -> Complex -> Bool =
+    \z \w (real z != real w) || (imag z != imag w)
+
+func product : List Complex -> Complex =
+    fold> (*) (re 1.0)
+
+func sum : List Complex -> Complex =
+    fold> (+) (re 0.0)
+
+func real? : Complex -> Bool =
+    \z (imag z == 0.0) && (real z != 0.0)
+
+func imag? : Complex -> Bool =
+    \z (real z == 0.0) && (imag z != 0.0)
+
+func cplx? : Complex -> Bool =
+    \z (real z != 0.0) && (imag z != 0.0)
+
+func zero? : Complex -> Bool =
+    re 0.0 ==
+
+func string : Complex -> String =
+    \z
+    if (imag z == 0.0) (string; real z);
+    if (real z == 0.0) (string (imag z) ++ "i");
+    yield-all (string; real z);
+    when (imag z > 0.0) (yield '+');
+    string (imag z) ++ "i";
