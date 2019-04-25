@@ -119,6 +119,19 @@ func ++ : List a -> List a -> List a = \l \r fold< (::) l r
 
 func concat : List (List a) -> List a = \lists fold< (++) lists []
 
+func join : List a -> List (List a) -> List a =
+    \sep \lists
+    switch lists
+    case empty
+        empty
+    case (::) \xs \xss (
+        switch xss
+        case empty
+            xs
+        case (::) \_ \_
+            xs ++ sep ++ join sep xss
+    )
+
 func pick : List a -> (a -> List b) -> List b =
     \list \f
     (concat . map) f list
