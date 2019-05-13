@@ -136,9 +136,9 @@ func pick : List a -> (a -> List b) -> List b =
     \list \f
     (concat . map) f list
 
-func adjacent : List a -> List (Pair a a) =
-    \list
-    zip pair list ([] ? rest list)
+func adjacent : (a -> a -> b) -> List a -> List b =
+    \f \list
+    zip f list ([] ? rest list)
 
 func pairwise : (a -> b -> c) -> List a -> List b -> List c =
     \f \list1 \list2
