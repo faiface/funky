@@ -67,9 +67,8 @@ func drop-while : (a -> Bool) -> List a -> List a =
         if (p x) (drop-while p xs) list
 
 func slice : Int -> Int -> List a -> List a =
-    \from \to \list
-    if (from < 0) (slice (max 0 (length list + from)) to list);
-    drop from (take to list)
+    \from \len \list
+    take len; drop from list
 
 func at : Int -> List a -> Maybe a =
     \i \list
