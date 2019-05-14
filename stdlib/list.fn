@@ -110,6 +110,12 @@ func filter : (a -> Bool) -> List a -> List a =
     case empty       empty
     case (::) \x \xs when (p x) (yield x) (filter p xs)
 
+func every : Int -> List a -> List a =
+    \n \list
+    enumerate list
+    |> filter (zip \i \x zero? (i % n))
+    |> map second
+
 func zip : (a -> b -> c) -> List a -> List b -> List c =
     \f \left \right
     if (empty? left || empty? right) [];
