@@ -34,6 +34,18 @@ func last : List a -> Maybe a =
 
 func last! : List a -> a = \list panic "last!: empty list" ? last list
 
+func let-:: : List a -> (a -> List a -> Maybe b) -> Maybe b =
+    \list \f
+    switch list
+    case empty       none
+    case (::) \x \xs f x xs
+
+func let-:: : List a -> (a -> List a -> b) -> Maybe b =
+    \list \f
+    switch list
+    case empty       none
+    case (::) \x \xs some (f x xs)
+
 func length : List a -> Int = fold> (\n \_ inc n) 0
 
 func take : Int -> List a -> List a =
