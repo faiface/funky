@@ -5,6 +5,13 @@ record Array a =
 
 func empty : a -> Array a = \default Array default empty empty
 
+func array : a -> List a -> Array a =
+    \default \list
+    start-with (empty default);
+    for-pair (enumerate list)
+        (\i \x at i := x);
+    return self
+
 func at : Int -> Array a -> a =
     \i \array
     if (i < 0) (_default array ? at (neg i) (_left array));
