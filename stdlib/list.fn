@@ -213,3 +213,16 @@ func iterate : (a -> a) -> a -> List a =
 
 func enumerate : List a -> List (Pair Int a) =
     zip pair (iterate inc 0)
+
+func sort : (a -> a -> Bool) -> List a -> List a =
+    \(<) \list
+    let (length list) \len
+    if (len <= 1) list;
+    let (take (len / 2) list) \left
+    let (drop (len / 2) list) \right
+    sort (<) right |> sort (<) left |> recur \merge \left \right
+        if-none (left ++ right);
+        let-:: left  \l \ls
+        let-:: right \r \rs
+        if (l < r) (l :: merge ls right);
+        r :: merge left rs
