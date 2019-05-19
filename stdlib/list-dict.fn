@@ -1,0 +1,34 @@
+record List-Dict k v =
+    _equals  : k -> k -> Bool,
+    _default : v,
+    _entries : List (Pair k v),
+
+func list-dict : (k -> k -> Bool) -> v -> List (Pair k v) -> List-Dict k v =
+    \equals \default \entries
+    start-with (List-Dict equals default []);
+    for-pair entries
+        (\k \v at k := v);
+    return self
+
+func keys   : List-Dict k v -> List k = map first . _entries
+func values : List-Dict k v -> List v = map second . _entries
+
+func empty? : List-Dict k v -> Bool = empty? . _entries
+
+func contains? : k -> List-Dict k v -> Bool =
+    \k \dict
+    any (_equals dict k) (map first; _entries dict)
+
+func remove : k -> List-Dict k v -> List-Dict k v =
+    \k \dict
+    _entries (filter (not; _equals dict k . first)) dict
+
+func at : k -> List-Dict k v -> v =
+    \k \dict
+    if-none (_default dict);
+    let-some (first; filter (_equals dict k . first) (_entries dict)) \entry
+    second entry
+
+func at : k -> (v -> v) -> List-Dict k v -> List-Dict k v =
+    \k \f \dict
+    _entries (pair k (f (at k dict)) ::) (remove k dict)

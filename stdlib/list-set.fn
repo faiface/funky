@@ -16,8 +16,7 @@ func contains? : a -> List-Set a -> Bool =
 
 func add : a -> List-Set a -> List-Set a =
     \x \set
-    if (contains? x set) set;
-    _values (x ::) set
+    _values (x ::) (remove x set)
 
 func add-all : List a -> List-Set a -> List-Set a =
     \xs \set
