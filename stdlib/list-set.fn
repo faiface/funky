@@ -1,0 +1,32 @@
+record List-Set a =
+    _equals : a -> a -> Bool,
+    _values : List a,
+
+func list-set : (a -> a -> Bool) -> List a -> List-Set a =
+    \equals \values
+    add-all values (List-Set equals [])
+
+func values : List-Set a -> List a = _values
+
+func empty? : List-Set a -> Bool = empty? . _values
+
+func contains? : a -> List-Set a -> Bool =
+    \x \set
+    any (_equals set x) (_values set)
+
+func add : a -> List-Set a -> List-Set a =
+    \x \set
+    if (contains? x set) set;
+    _values (x ::) set
+
+func add-all : List a -> List-Set a -> List-Set a =
+    \xs \set
+    fold< add xs set
+
+func remove : a -> List-Set a -> List-Set a =
+    \x \set
+    _values (filter (not; _equals set x)) set
+
+func remove-all : List a -> List-Set a -> List-Set a =
+    \xs \set
+    fold< remove xs set
