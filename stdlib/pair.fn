@@ -2,6 +2,8 @@ record Pair a b = first : a, second : b
 
 func pair : a -> b -> Pair a b = Pair
 
+func => : a -> b -> Pair a b = Pair
+
 func map : (a -> b) -> Pair a a -> Pair b b =
     \f \p
     pair (f (first p)) (f (second p))
