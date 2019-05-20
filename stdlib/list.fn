@@ -127,6 +127,18 @@ func every : Int -> List a -> List a =
     |> filter (zip \i \x zero? (i % n))
     |> map second
 
+func split : (a -> Bool) -> List a -> List (List a) =
+    \p \list
+    if-none [[]];
+    let-:: list \x \xs
+    if (p x) ([] :: split p xs);
+    if-none [[x]];
+    let-:: (split p xs) \w \ws
+    (x :: w) :: ws
+
+func split-no-empty : (a -> Bool) -> List a -> List (List a) =
+    filter (not empty?) . split
+
 func zip : (a -> b -> c) -> List a -> List b -> List c =
     \f \left \right
     if (empty? left || empty? right) [];
