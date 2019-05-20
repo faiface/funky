@@ -29,3 +29,38 @@ func remove : a -> List-Set a -> List-Set a =
 func remove-all : List a -> List-Set a -> List-Set a =
     \xs \set
     fold< remove xs set
+
+func find : (a -> Bool) -> List-Set a -> Maybe a =
+    \p \set
+    first (filter p; _values set)
+
+func + : List-Set a -> List-Set a -> List-Set a =
+    \set1 \set2
+    add-all (_values set2) set1
+
+func - : List-Set a -> List-Set a -> List-Set a =
+    \set1 \set2
+    remove-all (_values set2) set1
+
+func & : List-Set a -> List-Set a -> List-Set a =
+    \set1 \set2
+    _values (filter (\x contains? x set2)) set1
+
+func <= : List-Set a -> List-Set a -> Bool =
+    \set1 \set2
+    all (\x contains? x set2) (_values set1)
+
+func >= : List-Set a -> List-Set a -> Bool =
+    flip (<=)
+
+func == : List-Set a -> List-Set a -> Bool =
+    (<=) && (>=)
+
+func != : List-Set a -> List-Set a -> Bool =
+    not (==)
+
+func < : List-Set a -> List-Set a -> Bool =
+    (<=) && not (>=)
+
+func > : List-Set a -> List-Set a -> Bool =
+    (>=) && not (<=)
