@@ -10,14 +10,19 @@ func list-dict : (k -> k -> Bool) -> v -> List (Pair k v) -> List-Dict k v =
         (\k \v at k := v);
     return self
 
-func keys   : List-Dict k v -> List k = map first . _entries
-func values : List-Dict k v -> List v = map second . _entries
+func entries : List-Dict k v -> List (Pair k v) = _entries
+func keys    : List-Dict k v -> List k          = map first . _entries
+func values  : List-Dict k v -> List v          = map second . _entries
 
 func empty? : List-Dict k v -> Bool = empty? . _entries
 
 func contains? : k -> List-Dict k v -> Bool =
     \k \dict
     any (_equals dict k) (map first; _entries dict)
+
+func add : Pair k v -> List-Dict k v -> List-Dict k v =
+    \entry \dict
+    _entries (entry ::) (remove (first entry) dict)
 
 func remove : k -> List-Dict k v -> List-Dict k v =
     \k \dict
