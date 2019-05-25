@@ -91,6 +91,14 @@ func (env *Env) lazyInit() {
 	env.addFunc("<=", &internal{Type: parseType("Char -> Char -> Bool"), Expr: mk.Op(runtime.OpCharLessEq)})
 	env.addFunc(">", &internal{Type: parseType("Char -> Char -> Bool"), Expr: mk.Op(runtime.OpCharMore)})
 	env.addFunc(">=", &internal{Type: parseType("Char -> Char -> Bool"), Expr: mk.Op(runtime.OpCharMoreEq)})
+	env.addFunc("upper", &internal{Type: parseType("Char -> Char"), Expr: mk.Op(runtime.OpCharToUpper)})
+	env.addFunc("lower", &internal{Type: parseType("Char -> Char"), Expr: mk.Op(runtime.OpCharToLower)})
+	env.addFunc("whitespace?", &internal{Type: parseType("Char -> Bool"), Expr: mk.Op(runtime.OpCharIsWhitespace)})
+	env.addFunc("letter?", &internal{Type: parseType("Char -> Bool"), Expr: mk.Op(runtime.OpCharIsLetter)})
+	env.addFunc("digit?", &internal{Type: parseType("Char -> Bool"), Expr: mk.Op(runtime.OpCharIsDigit)})
+	env.addFunc("upper?", &internal{Type: parseType("Char -> Bool"), Expr: mk.Op(runtime.OpCharIsUpper)})
+	env.addFunc("lower?", &internal{Type: parseType("Char -> Bool"), Expr: mk.Op(runtime.OpCharIsLower)})
+	env.addFunc("ascii?", &internal{Type: parseType("Char -> Bool"), Expr: mk.Op(runtime.OpCharIsASCII)})
 
 	// Int
 	env.addFunc("char", &internal{Type: parseType("Int -> Char"), Expr: mk.Op(runtime.OpIntChar)})

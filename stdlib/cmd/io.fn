@@ -29,10 +29,6 @@ func unscan : String -> IO -> IO =
         unscan (rest! s);
         f (first! s)
 
-func whitespace? : Char -> Bool =
-    \c
-    any (c ==) [' ', '\t', '\n', '\r']
-
 func skip-whitespace : IO -> IO =
     \io
     getc \c
