@@ -98,7 +98,8 @@ func main : Game =
     );
     when (space input && none? (at (cursor-x s) (cursor-y s) (board s))) (
         \next
-        (board . at (cursor-x s) (cursor-y s)) := player;
+        player -> \pl
+        (board . at (cursor-x s) (cursor-y s)) := pl;
         player <- other;
         next
     );

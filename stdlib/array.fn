@@ -30,7 +30,8 @@ func reset : Int -> Array a -> Array a =
 func swap : Int -> Int -> Array a -> Array a =
     \i \j \array
     start-with array;
-    at i -> \tmp
-    at i := at j;
-    at j := tmp;
+    at i -> \at-i
+    at j -> \at-j
+    at i := at-j;
+    at j := at-i;
     return self

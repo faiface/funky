@@ -17,11 +17,6 @@ func := : ((a -> a) -> s -> s) -> a -> Proc s r -> Proc s r =
     update (updater (const value));
     next
 
-func := : ((a -> a) -> s -> s) -> (s -> a) -> Proc s r -> Proc s r =
-    \updater \getter \next
-    update (\s updater (const (getter s)) s);
-    next
-
 func <- : ((a -> a) -> s -> s) -> (a -> a) -> Proc s r -> Proc s r =
     \updater \f \next
     update (updater f);
