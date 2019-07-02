@@ -1,0 +1,218 @@
+func lost-keys-story : Adventure =
+    adventure
+        "office"
+        ["office"              => office,
+         "hallway"             => hallway,
+         "miss quick's office" => miss-quick's-office,
+         "kitchen"             => kitchen,
+         "victory"             => victory,
+         "death"               => death]
+        []
+
+# Office
+
+func office : Place =
+    place
+        ("The coffee is waiting in the company kitchen. You are standing in your office. " ++
+         "You have been working here for many years, it's like your second home. " ++
+         "Last month you painted the walls green, " ++
+         "which makes for a good vibe when the whole city is so grey. ")
+        [desk, chair, closed-door, window]
+        [key]
+        []
+
+func desk : Object =
+    object "desk"
+        "Your desk is right in front of you."
+        ("A big, bulky wooden desk with not much functionality. " ++
+         "Since the job doesn't require much ingenuity, it's sufficient.")
+        []
+
+func chair : Object =
+    object "chair"
+        "Behind the desk is a nice, comfortable chair."
+        ("You remember buying the chair at the IKEA some two years ago. " ++
+         "Walking back and forth, inspecting every single chair, " ++
+         "until your eyes laid down on this beautiful, soft, black chair. " ++
+         "It was a good decision.")
+        [action ["spin"]
+            "You spin the chair around. It spins full 360 degrees, landing in the original position."
+            [] self,
+         action ["sit"]
+            "No time for that right now. The coffee is waiting."
+            [] self]
+
+func closed-door : Object =
+    object "door"
+        "The door to the hallway is on the left."
+        ("Pretty shitty metal door. Like the company couldn't bother to buy something more depressing. " ++
+         "You always make sure to lock them. The colleagues can't be trusted.")
+        [action ["open"]
+            "The door is locked."
+            [] self,
+         action ["open", "unlock", "use"]
+            "The door opens, revealing the way out to the hallway."
+            [key] (add open-door . remove closed-door)]
+
+func open-door : Direction =
+    direction ["left", "door", "hallway", "hall"]
+        "The door on the left is open."
+        "You walk through the door and close it behind your back."
+        "hallway"
+
+func window : Object =
+    object "window"
+        "Opposite the door, there's a window."
+        "The plastic window is showing a view of a grey, industrialized city. At least it's a sunny day."
+        [action ["jump"]
+            "You jump out of the window, falling from the 104th floor. You died. Congratulations."
+            [] (go-to "death")]
+
+func key : Item =
+    item "key"
+        "The key to the office is laying on the desk."
+        "The key is small and a little rusty."
+
+# Hallway
+
+func hallway : Place =
+    place
+        "The hallway is long and roughly empty."
+        [office-door, elevator-door, painting]
+        []
+        [miss-quick's-open-door, kitchen-open-door]
+
+func office-door : Object =
+    object "office"
+        "The door to your office is on one end."
+        "The same old rusty metal door. Looks the same from the outside as it does from the inside of the office."
+        [action ["open"]
+            "The door is locked."
+            [] self,
+         action ["open", "unlock", "use"]
+            "Oh... where did the key go?"
+            [] self]
+
+func elevator-door : Object =
+    object "elevator"
+        "On the right side of the hallway is the elevator door."
+        "The elevator is always disabled until 5PM."
+        []
+
+func painting : Object =
+    object "painting"
+        "There is a single painting on the wall."
+        "Of course, it's a painting of the company president. What an ugly piece of shit."
+        []
+
+func miss-quick's-open-door : Direction =
+    direction ["miss", "quick"]
+        ("Your colleague, Miss Quick, resides in an office right opposite yours. " ++
+         "Her door is always open. You can see her with her headphones on, " ++
+         "probably listening to some funky music.")
+        "You quietly step inside her office. She hasn't noticed."
+        "miss quick's office"
+
+func kitchen-open-door : Direction =
+    direction ["across", "kitchen"]
+        ("The kitchen is straight across the hall.")
+        ("Walking past the portrait of the boss is always uncomfortable, " ++
+         "but it's the only way to the kitchen - the only good place.")
+        "kitchen"
+
+# Miss Quick's Office
+
+func miss-quick's-office : Place =
+    place
+        "Miss Quick's office."
+        [closed-drawer]
+        []
+        [way-out]
+
+func closed-drawer : Object =
+    object "drawer"
+        "Her table has a drawer, unlike yours. Well, she's probably gotta more work to do."
+        "The drawer isn't fully closed."
+        [action ["open", "pull"]
+            "You carefully open the drawer. She still hasn't noticed you. What?!?! There it is! Your key!"
+            [] (add key-in-the-drawer . add open-drawer . remove closed-drawer)]
+
+func open-drawer : Object =
+    object "drawer"
+        "The drawer on the table is now open."
+        "Your office key is in the drawer! It can't be anything else, you know it like nothing else."
+        []
+
+func key-in-the-drawer : Object =
+    object "key"
+        "There's your office key! Right in the drawer!"
+        "Your office key is in the drawer! It can't be anything else, you know it like nothing else."
+        [action ["pick"]
+            ("Oh no, she noticed... whoa, Miss Quick turned full red, jumped straight out of her chair " ++
+             "right between the door, blocking the exit. You caught her red handed and she won't let you out alive.")
+            [] (add miss-quick . remove way-out . remove open-drawer . remove key-in-the-drawer)]
+
+func miss-quick : Object =
+    object "miss"
+        "Miss Quick is standing in the door."
+        "Her eyes are flaming like devil's! She probably wants to kill you."
+        [action ["attack", "punch", "hit"]
+            "Oh hey, let's punch her in the face! Oh no... miss Quick pulled out a huge kitchen knife and stabbed you to death."
+            [] (go-to "death"),
+         action ["attack", "stab"]
+            "That'll work, let's stab her first! Oh no... she pulled out a gun and bang! You're dead."
+            [knife] (go-to "death"),
+         action ["attack", "throw"]
+            ("Throw that hot coffee on the lady! There we go! Miss Quick screams and falls to the floor. You take the key, " ++
+             "jump over her limp body and dash back to your office. You shut the door behind, exhale, sit in your chair. " ++
+             "What an interesting day this was. You won!")
+            [coffee] (go-to "victory")]
+
+func way-out : Direction =
+    direction ["back", "out", "hall", "hallway"]
+        "You can still go back to the hallway. No need to cause trouble."
+        "You quietly step back from the office. Ooof, how could she not notice?"
+        "hallway"
+
+# Kitchen
+
+func kitchen : Place =
+    place
+        "Finally, the kitchen!"
+        [microwave]
+        [coffee]
+        [back-to-the-hallway]
+
+func microwave : Object =
+    object "microwave"
+        "Oh, there's the microwave the boss bought but no one can operate it."
+        "What are look those buttons for? Where do I set the minutes?"
+        []
+
+func knife : Item =
+    item "knife"
+        "There's also a knife lying here."
+        "A big, dangerous kitchen knife. Someone could die."
+
+func coffee : Item =
+    item "coffee"
+        ("And there it is! The coffee! Fresh, steam rising from the cup, great smell. " ++
+         "If there's one thing this company does well, it's gotta be the coffee. " ++
+         "All that remains is take to it to the office and enjoy.")
+        "Why just look? Take it while it's hot!"
+
+func back-to-the-hallway : Direction =
+    direction ["back", "hall", "hallway"]
+        "The hallway is right behind your back."
+        "There we go! Back to the office!"
+        "hallway"
+
+# Victory
+
+func victory : Place =
+    place "You won the game!" [] [] []
+
+# Death
+
+func death : Place =
+    place "You are dead now." [] [] []

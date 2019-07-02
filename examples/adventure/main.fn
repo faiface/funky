@@ -1,0 +1,2 @@
+func main : IO =
+    play lost-keys-story

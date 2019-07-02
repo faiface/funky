@@ -1,0 +1,325 @@
+# Records
+
+record Adventure =
+    inventory          : List-Set Item,
+    current-place-name : String,
+    places             : List-Dict String Place,
+    combinations       : List Combination,
+
+record Place =
+    description : String,
+    objects     : List-Set Object,
+    items       : List-Set Item,
+    directions  : List-Set Direction,
+
+record Direction =
+    names          : List-Set String,
+    description    : String,
+    go-description : String,
+    destination    : String,
+
+record Object =
+    name              : String,
+    short-description : String,
+    long-description  : String,
+    actions           : List Action,
+
+record Item =
+    name              : String,
+    short-description : String,
+    long-description  : String,
+
+record Action =
+    names       : List-Set String,
+    description : String,
+    items       : List-Set Item,
+    outcome     : Adventure -> Adventure,
+
+record Combination =
+    name        : String,
+    description : String,
+    use-items   : List-Set Item,
+    new-items   : List-Set Item,
+
+record Command =
+    description : String,
+    change      : Adventure -> Adventure,
+
+# Constructors
+
+func adventure : String -> List (Pair String Place) -> List Combination -> Adventure =
+    \current-place-name \places \combinations
+    Adventure
+        (list-set (==) [])
+        current-place-name
+        (list-dict (==) invalid-place places)
+        combinations
+
+func place : String -> List Object -> List Item -> List Direction -> Place =
+    \description \objects \items \directions
+    Place
+        description
+        (list-set (==) objects)
+        (list-set (==) items)
+        (list-set (==) directions)
+
+func invalid-place : Place = place "Invalid place. Reaching this place is a bug." [] [] []
+
+func direction : List String -> String -> String -> String -> Direction =
+    \names \description \go-description \destination
+    Direction
+        (list-set (==) names)
+        description
+        go-description
+        destination
+
+func object : String -> String -> String -> List Action -> Object = Object
+
+func item : String -> String -> String -> Item = Item
+
+func action : List String -> String -> List Item -> (Adventure -> Adventure) -> Action =
+    \names \description \items \outcome
+    Action
+        (list-set (==) names)
+        description
+        (list-set (==) items)
+        outcome
+
+func combo : String -> String -> List Item -> List Item -> Combination =
+    \name \description \use-items \new-items
+    Combination
+        name
+        description
+        (list-set (==) use-items)
+        (list-set (==) new-items)
+
+# Adventure functions
+
+func current-place : Adventure -> Place =
+    \adv
+    (at (current-place-name adv) . places) adv
+
+func current-place : (Place -> Place) -> Adventure -> Adventure =
+    \f \adv
+    (places . at (current-place-name adv)) f adv
+
+func show-inventory : Adventure -> String =
+    \adv
+    if (empty? (inventory adv)) "(empty)";
+    (join " " . map name . values . inventory) adv
+
+# Place functions
+
+func full-description : Place -> String =
+    \place
+    yield-all (description place);
+    for (values; objects place)
+        (yield-all . (" " ++) . short-description);
+    for (values; items place)
+        (yield-all . (" " ++) . short-description);
+    for (values; directions place)
+        (yield-all . (" " ++) . description);
+    empty
+
+# Direction functions
+
+func == : Direction -> Direction -> Bool =
+    \dir1 \dir2
+    names dir1 == names dir2
+
+func != : Direction -> Direction -> Bool =
+    not (==)
+
+# Object functions
+
+func == : Object -> Object -> Bool =
+    \object1 \object2
+    name object1 == name object2
+
+func != : Object -> Object -> Bool =
+    not (==)
+
+# Item functions
+
+func == : Item -> Item -> Bool =
+    \item1 \item2
+    name item1 == name item2
+
+func != : Item -> Item -> Bool =
+    not (==)
+
+# Helper functions for building commands and actions
+
+func pick : Item -> Adventure -> Adventure =
+    \item \adv
+    start-with adv;
+    (current-place . items) <- remove item;
+    inventory <- add item;
+    return self
+
+func use : Object -> Action -> Adventure -> Adventure =
+    \object \action \adv
+    start-with adv;
+    inventory <- - items action;
+    self <- outcome action;
+    return self
+
+func combine : Combination -> Adventure -> Adventure =
+    \combo \adv
+    start-with adv;
+    inventory <- - use-items combo;
+    inventory <- + new-items combo;
+    return self
+
+func go-to : String -> Adventure -> Adventure =
+    current-place-name . const
+
+func add : Item -> Adventure -> Adventure =
+    current-place . items . add
+
+func add : Object -> Adventure -> Adventure =
+    current-place . objects . add
+
+func add : Direction -> Adventure -> Adventure =
+    current-place . directions . add
+
+func remove : Item -> Adventure -> Adventure =
+    current-place . items . remove
+
+func remove : Object -> Adventure -> Adventure =
+    current-place . objects . remove
+
+func remove : Direction -> Adventure -> Adventure =
+    current-place . directions . remove
+
+# Parsing and interpreting commands
+
+func special-words : Adventure -> List-Set String =
+    \adv
+    list-set (==);
+    yield-all ["exit", "restart", "inventory", "look", "pick"];
+    for (values; inventory adv)
+        (yield . name);
+    for (values; items; current-place adv)
+        (yield . name);
+    for (values; objects; current-place adv)
+        (yield . name);
+    for (map values; map names; concat; map actions; values; objects; current-place adv)
+        yield-all;
+    for (map values; map names; values; directions; current-place adv)
+        yield-all;
+    for (combinations adv)
+        (yield . name);
+    empty
+
+func parse-words : String -> List-Set String =
+    list-set (==) . split-no-empty whitespace?
+
+func decode-command : Adventure -> List-Set String -> Command =
+    \adv \words
+    let (special-words adv & words) \words
+
+    if (words == list-set (==) ["inventory"])
+        (Command (show-inventory adv) self);
+
+    if (words == list-set (==) ["look"])
+        (Command (full-description; current-place adv) self);
+    
+    for (values; inventory adv) (
+        \item \next
+        if (words == list-set (==) ["look", name item])
+            (Command (long-description item) self);
+        next
+    );
+
+    for (values; items; current-place adv) (
+        \item \next
+        if (words == list-set (==) ["look", name item])
+            (Command (long-description item) self);
+
+        let (list-set (==) ["pick", name item]) \pick-words
+        if (words == pick-words)
+            (Command
+                ("You picked the " ++ name item ++ ".")
+                (pick item));
+        next
+    );
+
+    for (values; objects; current-place adv) (
+        \object \next
+        if (words == list-set (==) ["look", name object])
+            (Command (long-description object) self);
+
+        for (actions object) (
+            \action \next
+            let (map name; values; items action) \required-items
+            for (map (add-all (name object :: required-items)); subsets (names action)) (
+                \use-words \next
+                if ((words == use-words) && (items action <= inventory adv))
+                    (Command
+                        (description action)
+                        (use object action));
+                next
+            );
+            next
+        );
+        next
+    );
+
+    for (values; directions; current-place adv) (
+        \dir \next
+        for (subsets; names dir) (
+            \required-words \next
+            if (words == required-words) (
+                let (at (destination dir); places adv) \new-place
+                Command
+                    (go-description dir ++ " " ++ full-description new-place)
+                    (go-to; destination dir)
+            );
+            next
+        );
+        next
+    );
+
+    for (combinations adv) (
+        \combo \next
+        let (list-set (==) (name combo :: (map name; values; use-items combo))) \combo-words
+        if ((words == combo-words) && (use-items combo <= inventory adv))
+            (Command
+                (description combo)
+                (combine combo));
+        next
+    );
+
+    Command "Can't do that." self
+
+# Playing the adventure
+
+func play : Adventure -> IO =
+    \start
+    println "Welcome to the adventure! Are you ready?";
+    println "If not, type 'exit' to quit the game.";
+    println "To play again, type 'restart'.";
+    println "To pick items, use 'pick'. For other actions, try.";
+    println "Common sense isn't guaranteed to work.";
+    println "";
+    println (description; decode-command start; parse-words "look around");
+
+    start |> recur \loop \adv
+
+    print "> ";
+    scanln \input
+    let (parse-words input) \words
+
+    if (empty? words)
+        (loop adv);
+
+    if (words == list-set (==) ["exit"])
+        quit;
+    if (words == list-set (==) ["restart"])
+        (play start);
+
+    let (decode-command adv words) \command
+    println (description command);
+
+    loop (change command adv)
