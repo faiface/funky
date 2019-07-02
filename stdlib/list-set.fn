@@ -64,3 +64,9 @@ func < : List-Set a -> List-Set a -> Bool =
 
 func > : List-Set a -> List-Set a -> Bool =
     (>=) && not (<=)
+
+func subsets : List-Set a -> List (List-Set a) =
+    \set
+    if (empty? set) [set];
+    pick (subsets (_values rest! set)) \subset-rest
+    [subset-rest, _values (first! (_values set) ::) subset-rest]
