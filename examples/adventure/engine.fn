@@ -253,7 +253,7 @@ func decode-command : Adventure -> List-Set String -> Command =
         for (actions object) (
             \action \next
             let (map name; values; items action) \required-items
-            for (map (add-all (name object :: required-items)); subsets (names action)) (
+            for (map (add-all (name object :: required-items)); filter (not empty?); subsets (names action)) (
                 \use-words \next
                 if ((words == use-words) && (items action <= inventory adv))
                     (Command
@@ -268,7 +268,7 @@ func decode-command : Adventure -> List-Set String -> Command =
 
     for (values; directions; current-place adv) (
         \dir \next
-        for (subsets; names dir) (
+        for (filter (not empty?); subsets; names dir) (
             \required-words \next
             if (words == required-words) (
                 let (at (destination dir); places adv) \new-place
