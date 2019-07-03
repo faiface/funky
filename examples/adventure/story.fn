@@ -180,7 +180,7 @@ func kitchen : Place =
     place
         "Finally, the kitchen!"
         [microwave]
-        [coffee]
+        [coffee, knife]
         [back-to-the-hallway]
 
 func microwave : Object =
