@@ -22,14 +22,14 @@ func office : Place =
         []
 
 func desk : Object =
-    object "desk"
+    object ["desk", "table"]
         "Your desk is right in front of you."
         ("A big, bulky wooden desk with not much functionality. " ++
          "Since the job doesn't require much ingenuity, it's sufficient.")
         []
 
 func chair : Object =
-    object "chair"
+    object ["chair"]
         "Behind the desk is a nice, comfortable chair."
         ("You remember buying the chair at the IKEA some two years ago. " ++
          "Walking back and forth, inspecting every single chair, " ++
@@ -43,7 +43,7 @@ func chair : Object =
             [] self]
 
 func closed-door : Object =
-    object "door"
+    object ["door"]
         "The door to the hallway is on the left."
         ("Pretty shitty metal door. Like the company couldn't bother to buy something more depressing. " ++
          "You always make sure to lock them. The colleagues can't be trusted.")
@@ -61,7 +61,7 @@ func open-door : Direction =
         "hallway"
 
 func window : Object =
-    object "window"
+    object ["window"]
         "Opposite the door, there's a window."
         "The plastic window is showing a view of a grey, industrialized city. At least it's a sunny day."
         [action ["jump"]
@@ -83,7 +83,7 @@ func hallway : Place =
         [miss-quick's-open-door, kitchen-open-door]
 
 func office-door : Object =
-    object "office"
+    object ["door", "office"]
         "The door to your office is on one end."
         "The same old rusty metal door. Looks the same from the outside as it does from the inside of the office."
         [action ["open"]
@@ -94,19 +94,19 @@ func office-door : Object =
             [] self]
 
 func elevator-door : Object =
-    object "elevator"
+    object ["elevator"]
         "On the right side of the hallway is the elevator door."
         "The elevator is always disabled until 5PM."
         []
 
 func painting : Object =
-    object "painting"
+    object ["painting", "picture"]
         "There is a single painting on the wall."
         "Of course, it's a painting of the company president. What an ugly piece of shit."
         []
 
 func miss-quick's-open-door : Direction =
-    direction ["miss", "quick"]
+    direction ["miss", "quick", "office"]
         ("Your colleague, Miss Quick, resides in an office right opposite yours. " ++
          "Her door is always open. You can see her with her headphones on, " ++
          "probably listening to some funky music.")
@@ -114,7 +114,7 @@ func miss-quick's-open-door : Direction =
         "miss quick's office"
 
 func kitchen-open-door : Direction =
-    direction ["across", "kitchen"]
+    direction ["across", "kitchen",]
         ("The kitchen is straight across the hall.")
         ("Walking past the portrait of the boss is always uncomfortable, " ++
          "but it's the only way to the kitchen - the only good place.")
@@ -130,7 +130,7 @@ func miss-quick's-office : Place =
         [way-out]
 
 func closed-drawer : Object =
-    object "drawer"
+    object ["drawer"]
         "Her table has a drawer, unlike yours. Well, she's probably gotta more work to do."
         "The drawer isn't fully closed."
         [action ["open", "pull"]
@@ -138,13 +138,13 @@ func closed-drawer : Object =
             [] (add key-in-the-drawer . add open-drawer . remove closed-drawer)]
 
 func open-drawer : Object =
-    object "drawer"
+    object ["drawer"]
         "The drawer on the table is now open."
         "Your office key is in the drawer! It can't be anything else, you know it like nothing else."
         []
 
 func key-in-the-drawer : Object =
-    object "key"
+    object ["key"]
         "There's your office key! Right in the drawer!"
         "Your office key is in the drawer! It can't be anything else, you know it like nothing else."
         [action ["pick"]
@@ -153,7 +153,7 @@ func key-in-the-drawer : Object =
             [] (add miss-quick . remove way-out . remove open-drawer . remove key-in-the-drawer)]
 
 func miss-quick : Object =
-    object "miss"
+    object ["miss", "quick"]
         "Miss Quick is standing in the door."
         "Her eyes are flaming like devil's! She probably wants to kill you."
         [action ["attack", "punch", "hit"]
@@ -184,7 +184,7 @@ func kitchen : Place =
         [back-to-the-hallway]
 
 func microwave : Object =
-    object "microwave"
+    object ["microwave"]
         "Oh, there's the microwave the boss bought but no one can operate it."
         "What are look those buttons for? Where do I set the minutes?"
         []

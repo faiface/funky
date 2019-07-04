@@ -19,7 +19,7 @@ record Direction =
     destination    : String,
 
 record Object =
-    name              : String,
+    names             : List-Set String,
     short-description : String,
     long-description  : String,
     actions           : List Action,
@@ -73,7 +73,13 @@ func direction : List String -> String -> String -> String -> Direction =
         go-description
         destination
 
-func object : String -> String -> String -> List Action -> Object = Object
+func object : List String -> String -> String -> List Action -> Object =
+    \names \short-description \long-description \actions
+    Object
+        (list-set (==) names)
+        short-description
+        long-description
+        actions
 
 func item : String -> String -> String -> Item = Item
 
@@ -134,7 +140,7 @@ func != : Direction -> Direction -> Bool =
 
 func == : Object -> Object -> Bool =
     \object1 \object2
-    name object1 == name object2
+    names object1 == names object2
 
 func != : Object -> Object -> Bool =
     not (==)
@@ -203,11 +209,11 @@ func special-words : Adventure -> List-Set String =
     for (values; items; current-place adv)
         (yield . name);
     for (values; objects; current-place adv)
-        (yield . name);
-    for (map values; map names; concat; map actions; values; objects; current-place adv)
-        yield-all;
-    for (map values; map names; values; directions; current-place adv)
-        yield-all;
+        (yield-all . values . names);
+    for ((concat . map) actions; values; objects; current-place adv)
+        (yield-all . values . names);
+    for (values; directions; current-place adv)
+        (yield-all . values . names);
     for (combinations adv)
         (yield . name);
     empty
@@ -247,18 +253,27 @@ func decode-command : Adventure -> List-Set String -> Command =
 
     for (values; objects; current-place adv) (
         \object \next
-        if (words == list-set (==) ["look", name object])
-            (Command (long-description object) self);
+        for (filter (not empty?); subsets (names object)) (
+            \name-words \next
+            if (words == add "look" name-words)
+                (Command (long-description object) self);
+            next
+        );
 
         for (actions object) (
             \action \next
             let (map name; values; items action) \required-items
-            for (map (add-all (name object :: required-items)); filter (not empty?); subsets (names action)) (
-                \use-words \next
-                if ((words == use-words) && (items action <= inventory adv))
-                    (Command
-                        (description action)
-                        (use object action));
+            for (filter (not empty?); subsets (names action)) (
+                \action-words \next
+                for (filter (not empty?); subsets (names object)) (
+                    \name-words \next
+                    let (action-words + name-words + list-set (==) required-items) \required-words
+                    if ((words == required-words) && (items action <= inventory adv))
+                        (Command
+                            (description action)
+                            (use object action));
+                    next
+                );
                 next
             );
             next
@@ -300,7 +315,7 @@ func play : Adventure -> IO =
     println "Welcome to the adventure! Are you ready?";
     println "If not, type 'exit' to quit the game.";
     println "To play again, type 'restart'.";
-    println "To pick items, use 'pick'. For other actions, try.";
+    println "Actions include 'pick', 'look', 'inventory'. For other actions, try.";
     println "Common sense isn't guaranteed to work.";
     println "";
     println (description; decode-command start; parse-words "look around");
