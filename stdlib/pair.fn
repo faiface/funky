@@ -8,6 +8,14 @@ func map : (a -> b) -> Pair a a -> Pair b b =
     \f \p
     pair (f (first p)) (f (second p))
 
+func map-first : (a -> b) -> Pair a t -> Pair b t =
+    \f \p
+    pair (f (first p)) (second p)
+
+func map-second : (a -> b) -> Pair t a -> Pair t b =
+    \f \p
+    pair (first p) (f (second p))
+
 func zip : (a -> b -> c) -> Pair a b -> c =
     \f \p
     f (first p) (second p)
