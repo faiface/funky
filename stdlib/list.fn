@@ -63,6 +63,14 @@ func take-while : (a -> Bool) -> List a -> List a =
     case (::) \x \xs
         if (p x) (x :: take-while p xs) []
 
+func take-until : (a -> Bool) -> List a -> List a =
+    \p \list
+    switch list
+    case empty
+        []
+    case (::) \x \xs
+        if (p x) [x] (x :: take-until p xs)
+
 func drop : Int -> List a -> List a =
     \n \list
     if (n < 0) (drop (max 0 (length list + n)) list);
@@ -77,6 +85,14 @@ func drop-while : (a -> Bool) -> List a -> List a =
         []
     case (::) \x \xs
         if (p x) (drop-while p xs) list
+
+func drop-until : (a -> Bool) -> List a -> List a =
+    \p \list
+    switch list
+    case empty
+        []
+    case (::) \x \xs
+        if (p x) xs (drop-until p xs)
 
 func slice : Int -> Int -> List a -> List a =
     \from \len \list
