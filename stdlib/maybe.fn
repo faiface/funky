@@ -62,3 +62,9 @@ func map : (a -> b) -> Maybe a -> Maybe b =
     switch maybe
     case none    none
     case some \x some (f x)
+
+func filter : (a -> Bool) -> Maybe a -> Maybe a =
+    \p \maybe
+    switch maybe
+    case none    none
+    case some \x if (p x) (some x) none
