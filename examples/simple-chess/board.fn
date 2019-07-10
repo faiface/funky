@@ -109,7 +109,7 @@ func - : Position -> Position -> Delta =
 
 func string : Position -> String =
     \pos
-    ('A' + column pos) :: ('1' + row pos) :: empty
+    ['A' + column pos, '1' + row pos]
 
 record Board =
     rows : Field (Maybe Piece),
