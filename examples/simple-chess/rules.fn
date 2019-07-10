@@ -143,6 +143,6 @@ func move : Position -> Position -> Board -> Board =
     start-with board;
     (at (row from) (column from) . rows) -> \from-piece
     let (map (moved; const true) from-piece) \from-piece
-    (rows . at (row to) (column to)) := map (moved (const true)) from-piece;
+    (rows . at (row to) (column to)) := from-piece;
     (rows . at (row from) (column from)) := none;
     return self
