@@ -58,7 +58,7 @@ func rel-traces-of : Piece -> List Rel-Trace =
     case queen  queen-traces
     case king   king-traces
 
-func in-board : Position -> Bool =
+func in-board? : Position -> Bool =
     \pos
     (row pos >= 0)    &&
     (row pos <= 7)    &&
@@ -68,7 +68,7 @@ func in-board : Position -> Bool =
 func cut-abs-trace : Side -> Board -> Abs-Trace -> List Position =
     \turn \board \trace
     start-with (second trace);
-    self <- take-while in-board;
+    self <- take-while in-board?;
     self <- take-while (\p turn != opposite turn ? map side (at p board)); # stop before first own piece
     self <- take-until (\p some? (at p board));                            # stop at the first enemy piece
     when (not move? (first trace))

@@ -64,7 +64,7 @@ func main : IO =
             loop
         );
         let-some (position from-str) \from
-        if (not in-board from) (
+        if (not in-board? from) (
             println ("position not inside board: " ++ from-str);
             loop
         );
