@@ -1,0 +1,94 @@
+func print-board-and-turn : Board -> Side -> IO -> IO =
+    \board \turn \next
+    print (string board);
+    println ("It's " ++ string turn ++ "'s turn.");
+    println "";
+    next
+
+func main : IO =
+    println "Commands:";
+    println "  exit      end the program";
+    println "  restart   start the game over";
+    println "  undo      revert the last move";
+    println "  moves     list all available moves";
+    println "  moves XY  list all available moves from XY";
+    println "  XYZW      make a move from XY to ZW";
+    println "";
+
+    white |> initial-board |> [] |> recur \new-turn \history \board \turn
+    print-board-and-turn board turn;
+
+    when (check? turn board)
+        (println "Check!");
+    when (checkmate? turn board)
+        (println ("Checkmate! " ++ at 0 upper (string; opposite turn) ++ " won!"));
+    when (stalemate? turn board)
+        (println "Stalemate!");
+
+    recur \loop
+
+    print "> ";
+    scanln \input
+    let (split-no-empty whitespace? input) \parts
+
+    if (empty? parts)
+        loop;
+
+    let (first! parts) \command
+
+    if (command == "exit")
+        quit;
+
+    if (command == "restart")
+        main;
+    
+    if (command == "undo") (
+        if-none (
+            println "No turn made yet.";
+            loop
+        );
+        let-:: history \last \prev-history
+        new-turn prev-history last (opposite turn)
+    );
+
+    if (command == "moves") (
+        if (length parts == 1) (
+            let (all-moves turn board) \moves
+            let (map (\m string (first m) ++ string (second m)) moves) \moves-str
+            println (join " " moves-str);
+            loop
+        );
+        let (at! 1 parts) \from-str
+        if-none (
+            println ("invalid position: " ++ from-str);
+            loop
+        );
+        let-some (position from-str) \from
+        if (not in-board from) (
+            println ("position not inside board: " ++ from-str);
+            loop
+        );
+        println (join " " (map string; moves from board));
+        loop
+    );
+
+    let (filter (letter? || digit?) input) \letters-and-digits
+    let (take 2 letters-and-digits) \from-str
+    let (drop 2 letters-and-digits) \to-str
+    if-none (
+        println ("invalid position: " ++ from-str);
+        loop
+    );
+    let-some (position from-str) \from
+    if-none (
+        println ("invalid position: " ++ to-str);
+        loop
+    );
+    let-some (position to-str) \to
+
+    if (not (valid-move? turn from to board)) (
+        println ("move not allowed: " ++ string from ++ string to);
+        loop
+    );
+
+    new-turn (board :: history) (move from to board) (opposite turn)

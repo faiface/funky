@@ -1,0 +1,148 @@
+union Side   = white | black
+union Figure = pawn | rook | knight | bishop | queen | king
+
+func string : Side -> String =
+    \side
+    switch side
+    case white "white"
+    case black "black"
+
+func white? : Side -> Bool =
+    \side
+    switch side
+    case white true
+    case black false
+
+func black? : Side -> Bool = not white?
+
+func opposite : Side -> Side =
+    \side
+    switch side
+    case white black
+    case black white
+
+func == : Side -> Side -> Bool =
+    \side1 \side2
+    white? side1 == white? side2
+
+func != : Side -> Side -> Bool =
+    not (==)
+
+record Piece =
+    side   : Side,
+    figure : Figure,
+    moved  : Bool,
+
+func new-piece : Side -> Figure -> Piece =
+    \side \figure
+    Piece side figure false
+
+func white? : Piece -> Bool = white? . side
+func black? : Piece -> Bool = black? . side
+
+func string : Piece -> String =
+    \piece
+    switch figure piece
+    case pawn   if (white? piece) "♙" "♟"
+    case rook   if (white? piece) "♖" "♜"
+    case knight if (white? piece) "♘" "♞"
+    case bishop if (white? piece) "♗" "♝"
+    case queen  if (white? piece) "♕" "♛"
+    case king   if (white? piece) "♔" "♚"
+
+func piece : Char -> Maybe Piece =
+    \char
+    if (char == '♙') (some; new-piece white pawn);
+    if (char == '♟') (some; new-piece black pawn);
+    if (char == '♖') (some; new-piece white rook);
+    if (char == '♜') (some; new-piece black rook);
+    if (char == '♘') (some; new-piece white knight);
+    if (char == '♞') (some; new-piece black knight);
+    if (char == '♗') (some; new-piece white bishop);
+    if (char == '♝') (some; new-piece black bishop);
+    if (char == '♕') (some; new-piece white queen);
+    if (char == '♛') (some; new-piece black queen);
+    if (char == '♔') (some; new-piece white king);
+    if (char == '♚') (some; new-piece black king);
+    none
+
+record Position =
+    row    : Int,
+    column : Int,
+
+func position : String -> Maybe Position =
+    \str
+    let-:: str \a \str
+    let-:: str \b \str
+    if (not empty? str) none;
+    let (int a - int 'A') \c
+    let (int b - int '1') \r
+    some (Position r c)
+
+func == : Position -> Position -> Bool =
+    \pos1 \pos2
+    (row pos1 == row pos2) &&
+    (column pos1 == column pos2)
+
+func != : Position -> Position -> Bool =
+    not (==)
+
+record Delta =
+    row-by    : Int,
+    column-by : Int,
+
+func + : Position -> Delta -> Position =
+    \pos \delta
+    Position (row pos + row-by delta) (column pos + column-by delta)
+
+func + : Delta -> Delta -> Delta =
+    \delta1 \delta2
+    Delta (row-by delta1 + row-by delta2) (column-by delta1 + column-by delta2)
+
+func transpose : Delta -> Delta =
+    \delta
+    Delta (column-by delta) (row-by delta)
+
+func - : Position -> Position -> Delta =
+    \pos1 \pos2
+    Delta (row pos2 - row pos1) (column pos2 - column pos1)
+
+func string : Position -> String =
+    \pos
+    ('A' + column pos) :: ('1' + row pos) :: empty
+
+record Board =
+    rows : Field (Maybe Piece),
+
+func initial-board : Board =
+    ["♜♞♝♛♚♝♞♜",
+     "♟♟♟♟♟♟♟♟",
+     "        ",
+     "        ",
+     "        ",
+     "        ",
+     "♙♙♙♙♙♙♙♙",
+     "♖♘♗♕♔♗♘♖"]
+    |> reverse
+    |> map (map piece)
+    |> field none
+    |> Board
+
+func at : Int -> Int -> Board -> Maybe Piece =
+    \r \c \board
+    at r c (rows board)
+
+func at : Position -> Board -> Maybe Piece = \pos at (row pos) (column pos)
+
+func string : Board -> String =
+    \board
+    yield-all " ABCDEFGH \n";
+    for (reverse; rangex 8) (
+        \r \next
+        yield-all (string; r + 1);
+        yield-all ((concat . map) (\c " " ? map string (at r c board)) (rangex 8));
+        yield-all (string; r + 1);
+        yield '\n';
+        next
+    );
+    " ABCDEFGH \n"

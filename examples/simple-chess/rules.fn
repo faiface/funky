@@ -1,0 +1,148 @@
+union Trace-Mode = move | take | move&take
+
+func move? : Trace-Mode -> Bool =
+    \mode
+    switch mode
+    case move      true
+    case take      false
+    case move&take true
+
+func take? : Trace-Mode -> Bool =
+    \mode
+    switch mode
+    case move      false
+    case take      true
+    case move&take true
+
+alias Rel-Trace = Pair Trace-Mode (List Delta)
+alias Abs-Trace = Pair Trace-Mode (List Position)
+
+func pawn-traces : Side -> Bool -> List Rel-Trace =
+    \side \moved
+    let (if (white? side) (Delta +1 0) (Delta -1 0)) \step
+    yield-all (map (pair take) [[step + Delta 0 +1], [step + Delta 0 -1]]);
+    if moved [pair move [step]];
+    [pair move [step, step + step]]
+
+func rook-traces : List Rel-Trace =
+    [Delta +1 0, Delta -1 0, Delta 0 +1, Delta 0 -1]
+    |> map (\step iterate (+ step) step)
+    |> map (pair move&take)
+
+func knight-traces : List Rel-Trace =
+    let [Delta 0 +1, Delta 0 -1] \short-step
+    let [Delta +2 0, Delta -2 0] \long-step
+    let (pairwise (+) short-step long-step) \H-steps
+    (H-steps ++ map transpose H-steps)
+    |> map (\x [x])
+    |> map (pair move&take)
+
+func bishop-traces : List Rel-Trace =
+    [Delta +1 +1, Delta +1 -1, Delta -1 +1, Delta -1 -1]
+    |> map (\step iterate (+ step) step)
+    |> map (pair move&take)
+
+func queen-traces : List Rel-Trace =
+    rook-traces ++ bishop-traces
+
+func king-traces : List Rel-Trace =
+    map (map-second (take 1)) queen-traces
+
+func rel-traces-of : Piece -> List Rel-Trace =
+    \piece
+    switch figure piece
+    case pawn   pawn-traces (side piece) (moved piece)
+    case rook   rook-traces
+    case knight knight-traces
+    case bishop bishop-traces
+    case queen  queen-traces
+    case king   king-traces
+
+func in-board : Position -> Bool =
+    \pos
+    (row pos >= 0)    &&
+    (row pos <= 7)    &&
+    (column pos >= 0) &&
+    (column pos <= 7)
+
+func cut-abs-trace : Side -> Board -> Abs-Trace -> List Position =
+    \turn \board \trace
+    start-with (second trace);
+    self <- take-while in-board;
+    self <- take-while (\p turn != opposite turn ? map side (at p board)); # stop before first own piece
+    self <- take-until (\p some? (at p board));                            # stop at the first enemy piece
+    when (not move? (first trace))
+        (self <- drop-while (\p none? (at p board)));
+    when (not take? (first trace))
+        (self <- take-while (\p none? (at p board)));
+    return self
+
+func moves-ignore-check : Position -> Board -> List Position =
+    \from \board
+    if-none [];
+    let-some (at from board) \piece
+    rel-traces-of piece
+    |> map (map-second; map (from +)) # turn relative Deltas into absolute Positions
+    |> map (cut-abs-trace (side piece) board)
+    |> concat
+
+func moves : Position -> Board -> List Position =
+    \from \board
+    if-none [];
+    let-some (at from board) \piece
+    moves-ignore-check from board
+    |> filter (\to not check? (side piece) (move from to board))
+
+func all-moves-ignore-check : Side -> Board -> List (Pair Position Position) =
+    \turn \board
+    for (pairwise Position (range 0 7) (range 0 7)) (
+        \from \next
+        if (turn != opposite turn ? map side (at from board))
+            next;
+        yield-all (map (pair from) (moves-ignore-check from board));
+        next
+    );
+    empty
+
+func all-moves : Side -> Board -> List (Pair Position Position) =
+    \turn \board
+    all-moves-ignore-check turn board
+    |> filter (\p let-pair p \from \to not check? turn (move from to board))
+
+func positions-of : Side -> Figure -> Board -> List Position =
+    \sid \fig \board
+    pick (pairwise Position (range 0 7) (range 0 7)) \pos
+    if-none empty;
+    let-some (at pos board) \piece
+    if (string piece == string (new-piece sid fig))
+        [pos];
+    empty
+
+func check? : Side -> Board -> Bool =
+    \turn \board
+    if-none false; # no king on the board, no check possible
+    let-some (first; positions-of turn king board) \pos
+    any (\p p == pos) (map second (all-moves-ignore-check (opposite turn) board))
+
+func checkmate? : Side -> Board -> Bool =
+    \turn \board
+    check? turn board && empty? (all-moves turn board)
+
+func stalemate? : Side -> Board -> Bool =
+    \turn \board
+    not check? turn board && empty? (all-moves turn board)
+
+func valid-move? : Side -> Position -> Position -> Board -> Bool =
+    \turn \from \to \board
+    if (turn != opposite turn ? map side (at from board))
+        false;
+    any (== to) (moves from board)
+
+func move : Position -> Position -> Board -> Board =
+    \from \to \board
+    start-with board;
+    (at (row from) (column from) . rows) -> \from-piece
+    let (map (moved; const true) from-piece) \from-piece
+    (rows . at (row to) (column to)) := map (moved (const true)) from-piece;
+    (rows . at (row from) (column from)) := none;
+    return self
