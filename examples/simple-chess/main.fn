@@ -41,7 +41,7 @@ func main : IO =
 
     if (command == "restart")
         main;
-    
+
     if (command == "undo") (
         if-none (
             println "No turn made yet.";
