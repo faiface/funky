@@ -46,7 +46,8 @@ func ls : Command =
     );
     if-error (\msg println msg; next d);
     let-ok (move-to-path (at! 0 args) d) \ls-d
-    for (list-directory ls-d) println;
+    for (list-directory ls-d)
+        println;
     next d
 
 func mkdir : Command =
