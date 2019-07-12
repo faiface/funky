@@ -84,7 +84,7 @@ func touch : Command =
 func rm : Command =
     \cmd \args \d \next
     if (length args != 1) (
-        println "remove a file or a directory in the current directory";
+        println "remove a file or a directory from the current directory";
         println ("  usage: " ++ cmd ++ " <name>");
         next d
     );
