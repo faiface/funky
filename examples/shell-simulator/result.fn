@@ -1,0 +1,37 @@
+union Result a = error String | ok a
+
+func error? : Result a -> Bool =
+    \result
+    switch result
+    case error \msg true
+    case ok \x      false
+
+func ok? : Result a -> Bool =
+    \result
+    switch result
+    case error \msg false
+    case ok \x      true
+
+func let-ok : Result a -> (a -> Result b) -> Result b =
+    \result \f
+    switch result
+    case error \msg error msg
+    case ok \x      f x
+
+func let-ok : Result a -> (a -> b) -> Result b =
+    \result \f
+    switch result
+    case error \msg error msg
+    case ok \x      ok (f x)
+
+func if-error : (String -> a) -> Result a -> a =
+    \f \result
+    switch result
+    case error \msg f msg
+    case ok \x      x
+
+func ? : a -> Result a -> a =
+    \default \result
+    switch result
+    case error \msg default
+    case ok \x      x

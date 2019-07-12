@@ -1,0 +1,10 @@
+func main : IO =
+    println ("commands: " ++ join " " (sort (<) (keys commands)));
+    new-root-directory |> recur \loop \d
+    print "$ ";
+    scanln \input
+    let (split-no-empty whitespace? input) \parts
+    if-none (loop d);
+    let-:: parts \cmd \args
+    (at cmd commands) cmd args d \new-d
+    loop new-d

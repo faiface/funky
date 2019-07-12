@@ -1,0 +1,93 @@
+union File-System =
+    file File     |
+    dir Directory |
+
+record File
+
+record Directory =
+    name     : String,
+    parent   : Directory,
+    children : List-Dict String File-System,
+
+func split-path : String -> List String =
+    \path
+    split (== '/') (if (not empty? path && last! path == '/') (take -1 path) path)
+
+func invalid-directory : Directory =
+    Directory "" invalid-directory (list-dict (==) (dir invalid-directory) [])
+
+func empty-directory : String -> Directory -> Directory =
+    \name \parent
+    Directory name parent (list-dict (==) (dir invalid-directory) [])
+
+func new-root-directory : Directory =
+    empty-directory "" new-root-directory
+
+func current-path : Directory -> String =
+    \d
+    if (name d == "") "/";
+    current-path (parent d) ++ name d ++ "/"
+
+func move-up : Directory -> Directory =
+    \d
+    if (name d == "") d;
+    start-with (parent d);
+    (children . at (name d)) := dir d; # the current directory might have changed, keep it consistent
+    return self
+
+func move-to-child : String -> Directory -> Result Directory =
+    \name \d
+    if (not contains? name (children d))
+        (error "no such file or directory");
+    switch at name (children d)
+    case file \f
+        error "not a directory"
+    case dir \next-d
+        start-with next-d;
+        parent := d; # the current directory might have changed
+        return ok
+
+func move-to-root : Directory -> Directory =
+    \d
+    if (name d == "") d;
+    move-to-root (move-up d)
+
+func move-to-path : String -> Directory -> Result Directory =
+    \path \d
+    split-path path |> d |> recur \loop \d \parts
+    if-none (ok d);
+    let-:: parts \head \tail
+    if (head == "")   (loop (move-to-root d) tail);
+    if (head == ".")  (loop d tail);
+    if (head == "..") (loop (move-up d) tail);
+    if-error (\msg error msg);
+    let-ok (move-to-child head d) \next-d
+    loop next-d tail
+
+func list-directory : Directory -> List String =
+    \d
+    sort (<) (keys; children d)
+
+func make-file : String -> Directory -> Result Directory =
+    \name \d
+    if (contains? name (children d))
+        (error "file or directory already exists");
+    start-with d;
+    (children . at name) := file File;
+    return ok
+
+func make-directory : String -> Directory -> Result Directory =
+    \name \d
+    if (contains? name (children d))
+        (error "file or directory already exists");
+    start-with d;
+    (children . at name) := dir (empty-directory name d);
+    return ok
+
+func remove-child : String -> Directory -> Result Directory =
+    \name \d
+    if (not contains? name (children d))
+        (error "no such file or directory");
+    start-with d;
+    children <- remove name;
+    return ok

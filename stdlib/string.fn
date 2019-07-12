@@ -9,6 +9,28 @@ func == : String -> String -> Bool =
 
 func != : String -> String -> Bool = not (==)
 
+func < : String -> String -> Bool =
+    \left \right
+    if (empty? left) (not empty? right);
+    if (empty? right) false;
+    if (first! left < first! right) true;
+    if (first! left > first! right) false;
+    rest! left < rest! right
+
+func <= : String -> String -> Bool =
+    \left \right
+    if (empty? left) true;
+    if (empty? right) false;
+    if (first! left < first! right) true;
+    if (first! left > first! right) false;
+    rest! left <= rest! right
+
+func > : String -> String -> Bool =
+    flip (<)
+
+func >= : String -> String -> Bool =
+    flip (<=)
+
 func prefix? : String -> String -> Bool =
     \prefix \s
     take (length prefix) s == prefix

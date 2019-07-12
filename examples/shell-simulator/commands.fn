@@ -1,0 +1,98 @@
+alias Command = String -> List String -> Directory -> (Directory -> IO) -> IO
+
+func commands : List-Dict String Command =
+    list-dict (==) invalid-command [
+        "pwd"   => pwd,
+        "cd"    => cd,
+        "ls"    => ls,
+        "mkdir" => mkdir,
+        "touch" => touch,
+        "rm"    => rm,
+    ]
+
+func invalid-command : Command =
+    \cmd \args \d \next
+    println (cmd ++ ": command does not exist");
+    next d
+
+func pwd : Command =
+    \cmd \args \d \next
+    if (not empty? args) (
+        println "print the current directory";
+        println ("  usage: " ++ cmd);
+        next d
+    );
+    println (current-path d);
+    next d
+
+func cd : Command =
+    \cmd \args \d \next
+    if (length args != 1) (
+        println "move to a directory";
+        println ("  usage: " ++ cmd ++ " <path>");
+        next d
+    );
+    if-error (\msg println msg; next d);
+    let-ok (move-to-path (at! 0 args) d) \new-d
+    next new-d
+
+func ls : Command =
+    \cmd \args \d \next
+    let (if (empty? args) ["."] args) \args
+    if (length args != 1) (
+        println "list the contents of a directory (default current)";
+        println ("  usage: " ++ cmd ++ " [path]");
+        next d
+    );
+    if-error (\msg println msg; next d);
+    let-ok (move-to-path (at! 0 args) d) \ls-d
+    for (list-directory ls-d) println;
+    next d
+
+func mkdir : Command =
+    \cmd \args \d \next
+    if (length args != 1) (
+        println "create a new sub-directory in the current directory";
+        println ("  usage: " ++ cmd ++ " <name>");
+        next d
+    );
+    let (at! 0 args) \name
+    if (any (== '/') name) (
+        println "directory name cannot contain '/'";
+        next d
+    );
+    if-error (\msg println msg; next d);
+    let-ok (make-directory name d) \new-d
+    next new-d
+
+func touch : Command =
+    \cmd \args \d \next
+    if (length args != 1) (
+        println "create a new file in the current directory";
+        println ("  usage: " ++ cmd ++ " <name>");
+        next d
+    );
+    let (at! 0 args) \name
+    if (any (== '/') name) (
+        println "file name cannot contain '/'";
+        next d
+    );
+    if-error (\msg println msg; next d);
+    let-ok (make-file name d) \new-d
+    next new-d
+
+func rm : Command =
+    \cmd \args \d \next
+    if (length args != 1) (
+        println "remove a file or a directory in the current directory";
+        println ("  usage: " ++ cmd ++ " <name>");
+        next d
+    );
+    let (at! 0 args) \name
+    if (any (== '/') name) (
+        println "file or directory name cannot contain '/'";
+        next d
+    );
+    if-error (\msg println msg; next d);
+    let-ok (remove-child name d) \new-d
+    next new-d
