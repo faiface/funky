@@ -125,12 +125,10 @@ func check? : Side -> Board -> Bool =
     any (\p p == pos) (map second (all-moves-ignore-check (opposite turn) board))
 
 func checkmate? : Side -> Board -> Bool =
-    \turn \board
-    check? turn board && empty? (all-moves turn board)
+    check? && empty? . all-moves
 
 func stalemate? : Side -> Board -> Bool =
-    \turn \board
-    not check? turn board && empty? (all-moves turn board)
+    not check? && empty? . all-moves
 
 func valid-move? : Side -> Position -> Position -> Board -> Bool =
     \turn \from \to \board
